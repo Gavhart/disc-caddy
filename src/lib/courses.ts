@@ -1,0 +1,198 @@
+import { supabase } from './supabase'
+import {
+  Course,
+  CourseHole,
+  Elevation,
+  HoleDirection,
+} from '../types'
+
+interface CourseRow {
+  id: string
+  name: string
+  locality: string | null
+  region_code: string | null
+  country_code: string | null
+  lat: number | null
+  lon: number | null
+  source: 'user' | 'discgolfapi'
+  source_id: string | null
+  created_by: string | null
+  created_at: string
+}
+
+interface CourseHoleRow {
+  id: string
+  course_id: string
+  number: number
+  distance: number
+  par: number | null
+  direction: HoleDirection
+  elevation: Elevation
+  notes: string | null
+  created_by: string | null
+}
+
+function rowToCourse(r: CourseRow): Course {
+  return {
+    id: r.id,
+    name: r.name,
+    locality: r.locality,
+    regionCode: r.region_code,
+    countryCode: r.country_code,
+    lat: r.lat !== null ? Number(r.lat) : null,
+    lon: r.lon !== null ? Number(r.lon) : null,
+    source: r.source,
+    sourceId: r.source_id,
+    createdBy: r.created_by,
+    createdAt: r.created_at,
+  }
+}
+
+function rowToHole(r: CourseHoleRow): CourseHole {
+  return {
+    id: r.id,
+    courseId: r.course_id,
+    number: r.number,
+    distance: r.distance,
+    par: r.par,
+    direction: r.direction,
+    elevation: r.elevation,
+    notes: r.notes,
+    createdBy: r.created_by,
+  }
+}
+
+// ---------- Courses ----------
+
+export async function listCourses(): Promise<Course[]> {
+  const { data, error } = await supabase
+    .from('courses')
+    .select('*')
+    .order('name', { ascending: true })
+  if (error) throw error
+  return (data ?? []).map(rowToCourse)
+}
+
+export async function searchCoursesByName(q: string): Promise<Course[]> {
+  const trimmed = q.trim()
+  if (!trimmed) return []
+  const { data, error } = await supabase
+    .from('courses')
+    .select('*')
+    .ilike('name', `%${trimmed}%`)
+    .order('name', { ascending: true })
+    .limit(50)
+  if (error) throw error
+  return (data ?? []).map(rowToCourse)
+}
+
+export interface NewCourseInput {
+  name: string
+  locality?: string | null
+  regionCode?: string | null
+  countryCode?: string | null
+  lat?: number | null
+  lon?: number | null
+  source?: 'user' | 'discgolfapi'
+  sourceId?: string | null
+}
+
+export async function createCourse(input: NewCourseInput): Promise<Course> {
+  const { data: userData } = await supabase.auth.getUser()
+  const user = userData.user
+  if (!user) throw new Error('Not signed in')
+
+  const { data, error } = await supabase
+    .from('courses')
+    .insert({
+      name: input.name.trim(),
+      locality: input.locality ?? null,
+      region_code: input.regionCode ?? null,
+      country_code: input.countryCode ?? null,
+      lat: input.lat ?? null,
+      lon: input.lon ?? null,
+      source: input.source ?? 'user',
+      source_id: input.sourceId ?? null,
+      created_by: user.id,
+    })
+    .select('*')
+    .single()
+  if (error) throw error
+  return rowToCourse(data)
+}
+
+// ---------- Course holes ----------
+
+export async function listHolesForCourse(courseId: string): Promise<CourseHole[]> {
+  const { data, error } = await supabase
+    .from('course_holes')
+    .select('*')
+    .eq('course_id', courseId)
+    .order('number', { ascending: true })
+  if (error) throw error
+  return (data ?? []).map(rowToHole)
+}
+
+export interface NewCourseHoleInput {
+  courseId: string
+  number: number
+  distance: number
+  par?: number | null
+  direction?: HoleDirection
+  elevation?: Elevation
+  notes?: string | null
+}
+
+export async function createCourseHole(input: NewCourseHoleInput): Promise<CourseHole> {
+  const { data: userData } = await supabase.auth.getUser()
+  const user = userData.user
+  if (!user) throw new Error('Not signed in')
+
+  const { data, error } = await supabase
+    .from('course_holes')
+    .insert({
+      course_id: input.courseId,
+      number: input.number,
+      distance: input.distance,
+      par: input.par ?? null,
+      direction: input.direction ?? 'straight',
+      elevation: input.elevation ?? 'flat',
+      notes: input.notes ?? null,
+      created_by: user.id,
+    })
+    .select('*')
+    .single()
+  if (error) throw error
+  return rowToHole(data)
+}
+
+export async function updateCourseHole(
+  holeId: string,
+  patch: Partial<{
+    distance: number
+    par: number | null
+    direction: HoleDirection
+    elevation: Elevation
+    notes: string | null
+  }>,
+): Promise<void> {
+  const update: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  }
+  if (patch.distance !== undefined) update.distance = patch.distance
+  if (patch.par !== undefined) update.par = patch.par
+  if (patch.direction !== undefined) update.direction = patch.direction
+  if (patch.elevation !== undefined) update.elevation = patch.elevation
+  if (patch.notes !== undefined) update.notes = patch.notes
+
+  const { error } = await supabase
+    .from('course_holes')
+    .update(update)
+    .eq('id', holeId)
+  if (error) throw error
+}
+
+export async function deleteCourseHole(holeId: string): Promise<void> {
+  const { error } = await supabase.from('course_holes').delete().eq('id', holeId)
+  if (error) throw error
+}
