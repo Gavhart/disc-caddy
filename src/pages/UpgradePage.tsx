@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { isStripeConfigured, startCheckout } from '../lib/subscription'
+import { isNativeApp, isWebCheckoutAvailable } from '../lib/platform'
 
 const FEATURES_FREE = [
   '1 bag',
@@ -64,6 +65,14 @@ export function UpgradePage() {
           power-user features.
         </p>
 
+        {isNativeApp() && (
+          <p className="muted small native-billing-note">
+            Pro subscriptions aren't sold inside the mobile app. If you
+            subscribed on the web, your Pro features sync here automatically
+            when you're signed in.
+          </p>
+        )}
+
         <div className="plans">
           <div className="plan">
             <h3>Free</h3>
@@ -88,7 +97,7 @@ export function UpgradePage() {
                 <li key={f}>{f}</li>
               ))}
             </ul>
-            {isStripeConfigured ? (
+            {isStripeConfigured && isWebCheckoutAvailable() ? (
               <button
                 className="btn-primary"
                 onClick={handleUpgrade}
@@ -96,6 +105,10 @@ export function UpgradePage() {
               >
                 {busy ? 'Redirecting…' : 'Upgrade — $4.99 / mo'}
               </button>
+            ) : isNativeApp() ? (
+              <p className="muted small plan-cta">
+                Available on the Disc Caddy website
+              </p>
             ) : (
               <button className="btn-primary" disabled title="Stripe not configured">
                 Coming soon

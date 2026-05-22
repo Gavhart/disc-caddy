@@ -8,3 +8,11 @@ dist
 supabase/.branches
 supabase/.temp
 .vercel
+
+# Capacitor / native build artifacts
+ios/App/Pods/
+ios/DerivedData/
+android/.gradle/
+android/app/build/
+android/build/
+*.xcuserstate

@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { isWebCheckoutAvailable } from './platform'
 
 const STRIPE_PRICE_ID = import.meta.env.VITE_STRIPE_PRICE_ID
 
@@ -18,6 +19,9 @@ export const FREE_TIER = {
  * supabase/functions/create-checkout-session and returns { url }.
  */
 export async function startCheckout(): Promise<void> {
+  if (!isWebCheckoutAvailable()) {
+    throw new Error('Pro subscriptions are managed on the Disc Caddy website.')
+  }
   if (!isStripeConfigured) {
     throw new Error('Stripe is not configured yet. See README setup.')
   }
@@ -43,6 +47,9 @@ export async function startCheckout(): Promise<void> {
  * The Edge Function lives at supabase/functions/create-portal-session.
  */
 export async function openBillingPortal(): Promise<void> {
+  if (!isWebCheckoutAvailable()) {
+    throw new Error('Billing is managed on the Disc Caddy website.')
+  }
   const { data, error } = await supabase.functions.invoke(
     'create-portal-session',
     {

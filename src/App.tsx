@@ -16,6 +16,8 @@ import { SettingsPage } from './pages/SettingsPage'
 import { UpgradePage } from './pages/UpgradePage'
 import { WelcomePage } from './pages/WelcomePage'
 import { UpdatesPage } from './pages/UpdatesPage'
+import { PrivacyPage } from './pages/PrivacyPage'
+import { TermsPage } from './pages/TermsPage'
 
 function AppShell() {
   const { session, me, loading } = useAuth()
@@ -40,6 +42,8 @@ function AppShell() {
             element={session ? <Navigate to="/" replace /> : <SignupPage />}
           />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
 
           <Route
             path="/welcome"

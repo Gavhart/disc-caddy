@@ -2,7 +2,9 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { signOut } from '../lib/auth'
+import { deleteAccount } from '../lib/account'
 import { isStripeConfigured, openBillingPortal, syncSubscription } from '../lib/subscription'
+import { isNativeApp, isWebCheckoutAvailable } from '../lib/platform'
 import { updatePlayer } from '../lib/profile'
 import { Hand, ThrowStyle } from '../types'
 
@@ -13,6 +15,7 @@ export function SettingsPage() {
   const [busy, setBusy] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const [savingPlayer, setSavingPlayer] = useState(false)
+  const [deletingAccount, setDeletingAccount] = useState(false)
   const [playerError, setPlayerError] = useState<string | null>(null)
   const [hand, setHand] = useState<Hand>('right')
   const [primary, setPrimary] = useState<ThrowStyle>('backhand')
@@ -109,6 +112,22 @@ export function SettingsPage() {
   async function handleSignOut() {
     await signOut()
     navigate('/login', { replace: true })
+  }
+
+  async function handleDeleteAccount() {
+    const confirmed = window.confirm(
+      'Delete your Disc Caddy account permanently? This removes your bags, rounds, and profile. This cannot be undone.',
+    )
+    if (!confirmed) return
+    setDeletingAccount(true)
+    try {
+      await deleteAccount()
+      navigate('/login', { replace: true })
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Could not delete account')
+    } finally {
+      setDeletingAccount(false)
+    }
   }
 
   async function handleBilling() {
@@ -341,6 +360,12 @@ export function SettingsPage() {
 
       <div className="card">
         <h2>Subscription</h2>
+        {isNativeApp() && (
+          <p className="muted small native-billing-note">
+            Subscriptions are managed on the Disc Caddy website. Pro status
+            syncs to this app when you're signed in.
+          </p>
+        )}
         <div className="setting-row">
           <span className="setting-label">Plan</span>
           <span>
@@ -366,7 +391,8 @@ export function SettingsPage() {
           </div>
         )}
         {me.isPro ? (
-          isStripeConfigured && (
+          isStripeConfigured &&
+          isWebCheckoutAvailable() && (
             <button
               className="btn-secondary"
               onClick={handleBilling}
@@ -377,10 +403,12 @@ export function SettingsPage() {
           )
         ) : (
           <>
-            <Link to="/upgrade" className="btn-primary">
-              Upgrade to Pro
-            </Link>
-            {isStripeConfigured && (
+            {isWebCheckoutAvailable() && (
+              <Link to="/upgrade" className="btn-primary">
+                Upgrade to Pro
+              </Link>
+            )}
+            {isStripeConfigured && isWebCheckoutAvailable() && (
               <button
                 type="button"
                 className="btn-secondary"
@@ -393,6 +421,14 @@ export function SettingsPage() {
             )}
           </>
         )}
+      </div>
+
+      <div className="card">
+        <h2>Legal</h2>
+        <div className="legal-links">
+          <Link to="/privacy">Privacy Policy</Link>
+          <Link to="/terms">Terms of Service</Link>
+        </div>
       </div>
 
       <div className="card">
@@ -409,6 +445,22 @@ export function SettingsPage() {
         <h2>Session</h2>
         <button className="btn-secondary" onClick={handleSignOut}>
           Sign out
+        </button>
+      </div>
+
+      <div className="card card-danger">
+        <h2>Delete account</h2>
+        <p className="muted small">
+          Permanently delete your account and all data. Required for App Store
+          compliance — this action cannot be undone.
+        </p>
+        <button
+          type="button"
+          className="btn-danger"
+          onClick={handleDeleteAccount}
+          disabled={deletingAccount}
+        >
+          {deletingAccount ? 'Deleting…' : 'Delete my account'}
         </button>
       </div>
     </div>

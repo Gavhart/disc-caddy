@@ -199,7 +199,25 @@ When you're ready for native, spin up an Expo project and copy:
 
 You'll rewrite `src/components/` and `src/pages/` using React Native primitives (`View` / `Text` / `Pressable` / `TextInput`) and React Navigation instead of React Router. The Supabase Storage upload helper needs a small tweak (use `expo-image-picker` to get the file, then upload via base64).
 
-For payments on mobile, you'll need In-App Purchases (Apple/Google take 30%) — that's a v2 problem.
+For payments on mobile, you'll need In-App Purchases (Apple/Google take 30%) — that's a v2 problem. See [docs/APP_STORE.md](docs/APP_STORE.md) for the Capacitor setup and store submission checklist.
+
+---
+
+## Mobile apps (iOS & Android)
+
+The repo includes a **Capacitor** wrapper so the same web app ships to the App Store and Google Play.
+
+```bash
+npm run build:mobile   # build web + sync to native projects
+npm run cap:ios        # open Xcode
+npm run cap:android    # open Android Studio
+```
+
+**App ID:** `com.disccaddy.app`
+
+Full publish checklist (icons, signing, store listings, legal URLs, account deletion): **[docs/APP_STORE.md](docs/APP_STORE.md)**
+
+**Important:** Pro subscriptions are sold on the **website** (Stripe), not inside the native app — required for App Store / Play billing rules. Pro status syncs when users sign in with the same account.
 
 ---
 

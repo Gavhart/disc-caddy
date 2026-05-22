@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { signOut } from '../lib/auth'
+import { isWebCheckoutAvailable } from '../lib/platform'
 import { Logo } from './Logo'
 
 export function Navigation() {
@@ -24,7 +25,7 @@ export function Navigation() {
         <NavLink to="/bags">Bags</NavLink>
         <NavLink to="/courses">Courses</NavLink>
         <NavLink to="/settings">Settings</NavLink>
-        {me && !me.isPro && (
+        {me && !me.isPro && isWebCheckoutAvailable() && (
           <NavLink to="/upgrade" className="nav-upgrade">
             Upgrade ✨
           </NavLink>
