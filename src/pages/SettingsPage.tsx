@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { signOut } from '../lib/auth'
 import { isStripeConfigured, openBillingPortal } from '../lib/subscription'
 import { updatePlayer } from '../lib/profile'
-import { Hand } from '../types'
+import { Hand, ThrowStyle } from '../types'
 
 export function SettingsPage() {
   const { user, me, refreshMe } = useAuth()
@@ -13,16 +13,38 @@ export function SettingsPage() {
   const [savingPlayer, setSavingPlayer] = useState(false)
   const [playerError, setPlayerError] = useState<string | null>(null)
   const [hand, setHand] = useState<Hand>('right')
+  const [primary, setPrimary] = useState<ThrowStyle>('backhand')
   const [throwsFH, setThrowsFH] = useState(false)
   const [fhDistance, setFhDistance] = useState<string>('')
+  const [putterDistance, setPutterDistance] = useState<string>('')
+  const [midDistance, setMidDistance] = useState<string>('')
+  const [fairwayDistance, setFairwayDistance] = useState<string>('')
 
   useEffect(() => {
     if (!me) return
     setHand(me.dominantHand)
-    setThrowsFH(me.throwsForehand)
-    // Only seed the input when the user has actually set a forehand distance
-    // distinct from max distance; otherwise leave blank so the placeholder
-    // signals "falls back to max distance".
+    setPrimary(me.primaryThrow)
+    // Picking FH as primary implies you throw FH; reflect that in the UI
+    // even if the DB has a stale `throws_forehand = false` row from before
+    // primary_throw existed.
+    setThrowsFH(me.throwsForehand || me.primaryThrow === 'forehand')
+    // Only seed inputs when the user has actually customized a value off the
+    // default ratio; otherwise leave blank so the placeholder signals
+    // "deriving from driver distance".
+    const defaults = {
+      putter: Math.round(me.maxDistance * 0.5),
+      mid: Math.round(me.maxDistance * 0.7),
+      fairway: Math.round(me.maxDistance * 0.85),
+    }
+    setPutterDistance(
+      me.putterMaxDistance !== defaults.putter ? String(me.putterMaxDistance) : '',
+    )
+    setMidDistance(
+      me.midrangeMaxDistance !== defaults.mid ? String(me.midrangeMaxDistance) : '',
+    )
+    setFairwayDistance(
+      me.fairwayMaxDistance !== defaults.fairway ? String(me.fairwayMaxDistance) : '',
+    )
     setFhDistance(
       me.throwsForehand && me.forehandMaxDistance !== me.maxDistance
         ? String(me.forehandMaxDistance)
@@ -30,19 +52,36 @@ export function SettingsPage() {
     )
   }, [me])
 
+  /** Parse one of the optional distance fields; throw with a labeled error. */
+  function parseOptionalDistance(raw: string, label: string): number | null {
+    if (raw.trim() === '') return null
+    const n = Number(raw)
+    if (!Number.isFinite(n) || n < 50 || n > 800) {
+      throw new Error(`${label} must be 50–800 ft (or blank to derive from driver).`)
+    }
+    return n
+  }
+
   async function savePlayer() {
     if (!user) return
     setSavingPlayer(true)
     setPlayerError(null)
     try {
-      const fhNum = fhDistance.trim() === '' ? null : Number(fhDistance)
-      if (fhNum !== null && (!Number.isFinite(fhNum) || fhNum < 50 || fhNum > 800)) {
-        throw new Error('Forehand distance must be 50–800 ft (or blank to mirror max).')
-      }
+      const putterNum = parseOptionalDistance(putterDistance, 'Putter distance')
+      const midNum = parseOptionalDistance(midDistance, 'Midrange distance')
+      const fairwayNum = parseOptionalDistance(fairwayDistance, 'Fairway distance')
+      const fhNum = parseOptionalDistance(fhDistance, 'Forehand distance')
+      // Force throwsForehand on when primary is FH so the stored profile
+      // is internally consistent regardless of what the toggle below said.
+      const effectiveThrowsFH = primary === 'forehand' ? true : throwsFH
       await updatePlayer(user.id, {
         dominantHand: hand,
-        throwsForehand: throwsFH,
-        forehandMaxDistance: throwsFH ? fhNum : null,
+        primaryThrow: primary,
+        throwsForehand: effectiveThrowsFH,
+        forehandMaxDistance: effectiveThrowsFH ? fhNum : null,
+        putterMaxDistance: putterNum,
+        midrangeMaxDistance: midNum,
+        fairwayMaxDistance: fairwayNum,
       })
       await refreshMe()
     } catch (err) {
@@ -98,7 +137,8 @@ export function SettingsPage() {
         <h2>Player</h2>
         <p className="muted small">
           The recommender uses these to choose between backhand and forehand,
-          and to mirror disc behavior for left-handed players.
+          to mirror disc behavior for left-handed players, and to scale
+          expected distance by disc type.
         </p>
         <div className="setting-row">
           <span className="setting-label">Dominant hand</span>
@@ -119,17 +159,123 @@ export function SettingsPage() {
             </button>
           </div>
         </div>
+
         <div className="setting-row">
-          <label className="setting-label" htmlFor="fh-toggle">
-            I throw forehand
-          </label>
-          <input
-            id="fh-toggle"
-            type="checkbox"
-            checked={throwsFH}
-            onChange={e => setThrowsFH(e.target.checked)}
-          />
+          <span className="setting-label">Primary throw</span>
+          <div className="segmented">
+            <button
+              type="button"
+              className={primary === 'backhand' ? 'segmented-on' : ''}
+              onClick={() => setPrimary('backhand')}
+            >
+              Backhand
+            </button>
+            <button
+              type="button"
+              className={primary === 'forehand' ? 'segmented-on' : ''}
+              onClick={() => {
+                setPrimary('forehand')
+                setThrowsFH(true)
+              }}
+            >
+              Forehand
+            </button>
+          </div>
         </div>
+        <p className="muted small">
+          Your preferred release. When two picks score close, the recommender
+          breaks ties in this style's favor.
+        </p>
+
+        <h3 className="settings-subheading">Backhand distances</h3>
+        <p className="muted small">
+          Your max with each disc class. Driver lives on the Recommend page;
+          others fall back to a fraction of driver until you set them.
+        </p>
+        <div className="setting-row">
+          <label className="setting-label" htmlFor="bh-driver">
+            Driver
+          </label>
+          <span>
+            {me.maxDistance} ft <span className="muted small">(edit on Recommend page)</span>
+          </span>
+        </div>
+        <div className="setting-row">
+          <label className="setting-label" htmlFor="bh-fairway">
+            Fairway driver
+          </label>
+          <div className="input-group" style={{ width: 'auto' }}>
+            <input
+              id="bh-fairway"
+              type="number"
+              min={50}
+              max={800}
+              step={5}
+              value={fairwayDistance}
+              placeholder={`${Math.round(me.maxDistance * 0.85)} (derived)`}
+              onChange={e => setFairwayDistance(e.target.value)}
+              style={{ width: 160 }}
+            />
+            <span className="suffix">ft</span>
+          </div>
+        </div>
+        <div className="setting-row">
+          <label className="setting-label" htmlFor="bh-mid">
+            Midrange
+          </label>
+          <div className="input-group" style={{ width: 'auto' }}>
+            <input
+              id="bh-mid"
+              type="number"
+              min={50}
+              max={800}
+              step={5}
+              value={midDistance}
+              placeholder={`${Math.round(me.maxDistance * 0.7)} (derived)`}
+              onChange={e => setMidDistance(e.target.value)}
+              style={{ width: 160 }}
+            />
+            <span className="suffix">ft</span>
+          </div>
+        </div>
+        <div className="setting-row">
+          <label className="setting-label" htmlFor="bh-putter">
+            Putter
+          </label>
+          <div className="input-group" style={{ width: 'auto' }}>
+            <input
+              id="bh-putter"
+              type="number"
+              min={50}
+              max={800}
+              step={5}
+              value={putterDistance}
+              placeholder={`${Math.round(me.maxDistance * 0.5)} (derived)`}
+              onChange={e => setPutterDistance(e.target.value)}
+              style={{ width: 160 }}
+            />
+            <span className="suffix">ft</span>
+          </div>
+        </div>
+
+        <h3 className="settings-subheading">Forehand</h3>
+        {primary === 'forehand' ? (
+          <p className="muted small">
+            Forehand is enabled because it's set as your primary throw.
+          </p>
+        ) : (
+          <div className="setting-row">
+            <label className="setting-label" htmlFor="fh-toggle">
+              I also throw forehand
+            </label>
+            <input
+              id="fh-toggle"
+              type="checkbox"
+              checked={throwsFH}
+              onChange={e => setThrowsFH(e.target.checked)}
+            />
+          </div>
+        )}
         {throwsFH && (
           <div className="setting-row">
             <label className="setting-label" htmlFor="fh-distance">
@@ -145,7 +291,7 @@ export function SettingsPage() {
                 value={fhDistance}
                 placeholder={`${me.maxDistance} (same as BH)`}
                 onChange={e => setFhDistance(e.target.value)}
-                style={{ width: 140 }}
+                style={{ width: 160 }}
               />
               <span className="suffix">ft</span>
             </div>

@@ -2,11 +2,13 @@
  * Shown when Supabase env vars are missing. Walks the developer through the
  * minimum setup needed to boot the app.
  */
+import { Logo } from './Logo'
+
 export function SetupScreen() {
   return (
     <div className="app">
       <header className="app-header">
-        <h1>Disc Caddy</h1>
+        <Logo height={96} />
         <p className="muted">First-time setup needed</p>
       </header>
       <section className="card">

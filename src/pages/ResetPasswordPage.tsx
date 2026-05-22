@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { Logo } from '../components/Logo'
 
 export function ResetPasswordPage() {
   const [password, setPassword] = useState('')
@@ -30,7 +31,9 @@ export function ResetPasswordPage() {
   return (
     <div className="auth-shell">
       <div className="auth-card">
-        <h1 className="brand">Disc Caddy</h1>
+        <div className="auth-brand">
+          <Logo height={80} />
+        </div>
         <h2>Set a new password</h2>
         <form onSubmit={handleSubmit}>
           <label htmlFor="password">New password</label>

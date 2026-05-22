@@ -1,6 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { signOut } from '../lib/auth'
+import { Logo } from './Logo'
 
 export function Navigation() {
   const { me } = useAuth()
@@ -14,7 +15,7 @@ export function Navigation() {
   return (
     <nav className="nav">
       <NavLink to="/" end className="nav-brand">
-        Disc Caddy
+        <Logo height={40} />
       </NavLink>
       <div className="nav-links">
         <NavLink to="/" end>

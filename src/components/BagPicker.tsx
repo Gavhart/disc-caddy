@@ -8,8 +8,10 @@ interface Props {
   bags: Bag[]
   activeBagId: string | null
   onSelect: (bagId: string) => void
-  onCreate: (name: string) => Promise<void>
-  onRename: (bagId: string, name: string) => Promise<void>
+  onCreate?: (name: string) => Promise<void>
+  onRename?: (bagId: string, name: string) => Promise<void>
+  /** Recommend page: dropdown only; bag CRUD lives on /bags. */
+  compact?: boolean
 }
 
 export function BagPicker({
@@ -18,6 +20,7 @@ export function BagPicker({
   onSelect,
   onCreate,
   onRename,
+  compact = false,
 }: Props) {
   const { me } = useAuth()
   const isPro = me?.isPro ?? false
@@ -37,14 +40,14 @@ export function BagPicker({
   }, [activeBag?.id, renaming])
 
   async function handleCreate() {
-    if (!name.trim()) return
+    if (!name.trim() || !onCreate) return
     await onCreate(name.trim())
     setName('')
     setCreating(false)
   }
 
   async function handleRename() {
-    if (!activeBag) return
+    if (!activeBag || !onRename) return
     const trimmed = renameName.trim()
     if (!trimmed || trimmed === activeBag.name) {
       setRenaming(false)
@@ -66,7 +69,7 @@ export function BagPicker({
         <label htmlFor="active-bag" className="muted small">
           Active bag
         </label>
-        {renaming && activeBag ? (
+        {renaming && activeBag && onRename ? (
           <div className="bag-picker-create">
             <input
               type="text"
@@ -103,7 +106,7 @@ export function BagPicker({
                 </option>
               ))}
             </select>
-            {activeBag && (
+            {activeBag && onRename && !compact && (
               <button
                 onClick={startRename}
                 className="link-button"
@@ -115,7 +118,15 @@ export function BagPicker({
           </div>
         )}
       </div>
-      {creating ? (
+      {compact ? (
+        <p className="muted small bag-picker-hint">
+          Add or edit discs on the{' '}
+          <Link to="/bags" className="link-button">
+            Bags
+          </Link>{' '}
+          page.
+        </p>
+      ) : creating ? (
         <div className="bag-picker-create">
           <input
             type="text"
@@ -145,7 +156,8 @@ export function BagPicker({
           </Link>
         </div>
       ) : (
-        !renaming && (
+        !renaming &&
+        onCreate && (
           <button onClick={() => setCreating(true)} className="link-button">
             + New bag
           </button>

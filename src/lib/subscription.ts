@@ -10,7 +10,7 @@ export const isStripeConfigured = Boolean(STRIPE_PRICE_ID)
  */
 export const FREE_TIER = {
   maxBags: 1,
-  photoUploadEnabled: false,
+  photoUploadEnabled: true,
 } as const
 
 /**

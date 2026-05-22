@@ -59,9 +59,21 @@ export async function listCourses(params: ListParams = {}): Promise<DgApiCourse[
 }
 
 /**
- * The API does not support server-side name search, so we fetch a page of
- * country-scoped results and filter client-side. Reasonable for an
- * autocomplete: cap at `limit` requested, dedupe by id.
+ * Load every course in a country in a single request. The API has no cap on
+ * `limit` for the public list endpoint (we've verified it serves 4k+ rows
+ * happily), so the simplest UX is to pull the entire country slice once and
+ * filter in memory as the user types. Callers should cache the result.
+ */
+export async function loadAllForCountry(country: string): Promise<DgApiCourse[]> {
+  // Generous limit covers the largest country in the catalog; the API just
+  // returns whatever exists rather than rejecting an oversized request.
+  return listCourses({ country, limit: 100_000 })
+}
+
+/**
+ * Kept for callers that want a one-shot search. Internally just loads the
+ * country and filters. Prefer `loadAllForCountry` + in-memory filtering when
+ * the user is interactively typing.
  */
 export async function searchByName(
   q: string,
@@ -70,12 +82,9 @@ export async function searchByName(
   const needle = q.trim().toLowerCase()
   if (!needle) return []
   const country = opts.country ?? 'US'
-  const cap = opts.limit ?? 20
+  const cap = opts.limit ?? 50
 
-  // Pull a generous slice from the country; filter client-side. If we miss
-  // matches because they're past offset N, the user can refine country/region
-  // or paginate from the Courses page later.
-  const fetched = await listCourses({ country, limit: 500 })
+  const fetched = await loadAllForCountry(country)
   return fetched
     .filter(c => c.name && c.name.toLowerCase().includes(needle))
     .slice(0, cap)

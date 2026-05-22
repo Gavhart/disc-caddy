@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { BagDisc, Plastic, Weight, Wear } from '../types'
 import { DiscPhotoUploader } from './DiscPhotoUploader'
 import { DiscSelect } from './DiscSelect'
@@ -7,6 +8,8 @@ const WEIGHT_OPTIONS: Weight[] = ['Max', 'Standard', 'Light']
 const WEAR_OPTIONS: Wear[] = ['New', 'Broken In', 'Beat In']
 
 interface Props {
+  /** Optional heading; defaults to "My Bag". */
+  title?: string
   discs: BagDisc[]
   busy?: boolean
   onAdd: () => Promise<void>
@@ -16,6 +19,7 @@ interface Props {
 }
 
 export function MyBag({
+  title = 'My Bag',
   discs,
   busy,
   onAdd,
@@ -23,14 +27,45 @@ export function MyBag({
   onRemove,
   onPhotoChange,
 }: Props) {
+  const [editing, setEditing] = useState(false)
+
+  useEffect(() => {
+    if (discs.length === 0) setEditing(false)
+  }, [discs.length])
+
+  useEffect(() => {
+    setEditing(false)
+  }, [title])
+
   return (
-    <section className="card">
+    <section className={`card${editing ? ' bag-editing' : ''}`}>
       <div className="card-header">
-        <h2>My Bag</h2>
-        <button className="btn-secondary" onClick={onAdd} disabled={busy}>
-          + Add disc
-        </button>
+        <h2>{title}</h2>
+        <div className="card-header-actions">
+          {discs.length > 0 && (
+            <button
+              type="button"
+              className={editing ? 'btn-primary' : 'btn-secondary'}
+              onClick={() => setEditing(v => !v)}
+            >
+              {editing ? 'Done' : 'Edit bag'}
+            </button>
+          )}
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={onAdd}
+            disabled={busy}
+          >
+            + Add disc
+          </button>
+        </div>
       </div>
+      {editing && (
+        <p className="muted small bag-edit-hint">
+          Tap × on a disc to remove it from this bag.
+        </p>
+      )}
       {discs.length === 0 && (
         <p className="muted">
           No discs in this bag yet. Add some to start getting recommendations.
@@ -38,7 +73,7 @@ export function MyBag({
       )}
       <ul className="bag-list">
         {discs.map(d => (
-          <li key={d.id} className="bag-row">
+          <li key={d.id} className={`bag-row${editing ? ' bag-row-editing' : ''}`}>
             <div className="bag-row-top">
               <DiscPhotoUploader
                 discId={d.id}
@@ -90,14 +125,17 @@ export function MyBag({
                   </option>
                 ))}
               </select>
-              <button
-                onClick={() => onRemove(d.id)}
-                aria-label="Remove disc"
-                title="Remove disc"
-                className="btn-icon"
-              >
-                ×
-              </button>
+              {editing && (
+                <button
+                  type="button"
+                  onClick={() => onRemove(d.id)}
+                  aria-label="Remove disc"
+                  title="Remove disc"
+                  className="btn-icon btn-icon-danger"
+                >
+                  ×
+                </button>
+              )}
             </div>
           </li>
         ))}

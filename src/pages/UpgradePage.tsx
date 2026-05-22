@@ -6,13 +6,13 @@ import { isStripeConfigured, startCheckout } from '../lib/subscription'
 const FEATURES_FREE = [
   '1 bag',
   'Unlimited discs',
+  'Disc photos',
   'Full arm-speed recommendation engine',
   'Manual hole input',
 ]
 
 const FEATURES_PRO = [
   'Unlimited bags',
-  'Photo upload for every disc',
   'Sync across devices',
   'Future: course database, weather, advanced stats',
   'Support the indie dev (you)',

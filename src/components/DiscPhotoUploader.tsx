@@ -1,5 +1,4 @@
-import { ChangeEvent, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { ChangeEvent, useEffect, useRef, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { deleteDiscPhoto, getDiscPhotoUrl, uploadDiscPhoto } from '../lib/photos'
 import { updateBagDisc } from '../lib/bags'
@@ -11,8 +10,8 @@ interface Props {
 }
 
 export function DiscPhotoUploader({ discId, photoPath, onChange }: Props) {
-  const { user, me } = useAuth()
-  const isPro = me?.isPro ?? false
+  const { user } = useAuth()
+  const inputRef = useRef<HTMLInputElement>(null)
   const [url, setUrl] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -24,19 +23,6 @@ export function DiscPhotoUploader({ discId, photoPath, onChange }: Props) {
       setUrl(null)
     }
   }, [photoPath])
-
-  if (!isPro) {
-    return (
-      <div className="photo-paywall">
-        <div className="photo-placeholder" aria-hidden>
-          🥏
-        </div>
-        <Link to="/upgrade" className="upgrade-pill">
-          Pro: add photo
-        </Link>
-      </div>
-    )
-  }
 
   async function handleFile(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -76,31 +62,42 @@ export function DiscPhotoUploader({ discId, photoPath, onChange }: Props) {
 
   return (
     <div className="photo-uploader">
-      {url ? (
-        <img src={url} alt="Disc" className="photo-thumb" />
-      ) : (
-        <div className="photo-placeholder" aria-hidden>
-          🥏
-        </div>
-      )}
-      <div className="photo-actions">
-        <label className="link-button">
-          {photoPath ? 'Replace' : 'Add photo'}
-          <input
-            type="file"
-            accept="image/*"
-            capture="environment"
-            onChange={handleFile}
-            disabled={busy}
-            hidden
-          />
-        </label>
-        {photoPath && (
-          <button onClick={handleRemove} disabled={busy} className="link-button">
-            Remove
-          </button>
+      <button
+        type="button"
+        className="photo-trigger"
+        onClick={() => inputRef.current?.click()}
+        disabled={busy}
+        aria-label={photoPath ? 'Replace disc photo' : 'Add disc photo'}
+        title={photoPath ? 'Replace photo' : 'Add photo'}
+      >
+        {url ? (
+          <img src={url} alt="" className="photo-thumb" />
+        ) : (
+          <div className="photo-placeholder" aria-hidden>
+            <span className="photo-plus">+</span>
+            <span className="photo-label">Photo</span>
+          </div>
         )}
-      </div>
+      </button>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleFile}
+        disabled={busy}
+        hidden
+      />
+      {photoPath && (
+        <button
+          type="button"
+          onClick={handleRemove}
+          disabled={busy}
+          className="link-button photo-remove"
+        >
+          Remove
+        </button>
+      )}
       {busy && <span className="muted small">Working…</span>}
       {error && <span className="form-error small">{error}</span>}
     </div>

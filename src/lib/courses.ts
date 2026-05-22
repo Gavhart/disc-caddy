@@ -2,8 +2,12 @@ import { supabase } from './supabase'
 import {
   Course,
   CourseHole,
+  CourseSummary,
   Elevation,
   HoleDirection,
+  Terrain,
+  TreeCoverage,
+  TreeLayout,
 } from '../types'
 
 interface CourseRow {
@@ -14,6 +18,7 @@ interface CourseRow {
   country_code: string | null
   lat: number | null
   lon: number | null
+  total_holes: number | null
   source: 'user' | 'discgolfapi'
   source_id: string | null
   created_by: string | null
@@ -28,6 +33,9 @@ interface CourseHoleRow {
   par: number | null
   direction: HoleDirection
   elevation: Elevation
+  terrain: Terrain | null
+  tree_coverage: TreeCoverage | null
+  tree_layout: TreeLayout | null
   notes: string | null
   created_by: string | null
 }
@@ -41,6 +49,7 @@ function rowToCourse(r: CourseRow): Course {
     countryCode: r.country_code,
     lat: r.lat !== null ? Number(r.lat) : null,
     lon: r.lon !== null ? Number(r.lon) : null,
+    totalHoles: r.total_holes,
     source: r.source,
     sourceId: r.source_id,
     createdBy: r.created_by,
@@ -57,6 +66,12 @@ function rowToHole(r: CourseHoleRow): CourseHole {
     par: r.par,
     direction: r.direction,
     elevation: r.elevation,
+    // The columns have NOT NULL DB defaults from migration 006, but rows
+    // inserted by older clients (or before the migration was applied) may
+    // still come back null — fall back to the sensible "no data" values.
+    terrain: r.terrain ?? 'flat',
+    treeCoverage: r.tree_coverage ?? 'open',
+    treeLayout: r.tree_layout ?? 'none',
     notes: r.notes,
     createdBy: r.created_by,
   }
@@ -93,8 +108,17 @@ export interface NewCourseInput {
   countryCode?: string | null
   lat?: number | null
   lon?: number | null
+  /** Expected hole count (from DiscGolfAPI metadata, or user-provided). */
+  totalHoles?: number | null
   source?: 'user' | 'discgolfapi'
   sourceId?: string | null
+}
+
+export async function deleteCourse(id: string): Promise<void> {
+  // RLS only lets the creator delete; the FK on course_holes is ON DELETE
+  // CASCADE so holes go with the course in a single statement.
+  const { error } = await supabase.from('courses').delete().eq('id', id)
+  if (error) throw error
 }
 
 export async function createCourse(input: NewCourseInput): Promise<Course> {
@@ -111,6 +135,7 @@ export async function createCourse(input: NewCourseInput): Promise<Course> {
       country_code: input.countryCode ?? null,
       lat: input.lat ?? null,
       lon: input.lon ?? null,
+      total_holes: input.totalHoles ?? null,
       source: input.source ?? 'user',
       source_id: input.sourceId ?? null,
       created_by: user.id,
@@ -119,6 +144,37 @@ export async function createCourse(input: NewCourseInput): Promise<Course> {
     .single()
   if (error) throw error
   return rowToCourse(data)
+}
+
+// ---------- Course summaries ----------
+
+interface CourseSummaryRow {
+  course_id: string
+  total_holes: number | null
+  holes_filled: number
+  distance_total_ft: number
+  distance_avg_ft: number | null
+}
+
+/**
+ * Load aggregate stats for every course in one round-trip. Returned as a Map
+ * keyed by course id so callers can look up `summaries.get(course.id)`
+ * without scanning the array repeatedly.
+ */
+export async function listCourseSummaries(): Promise<Map<string, CourseSummary>> {
+  const { data, error } = await supabase.from('course_summaries').select('*')
+  if (error) throw error
+  const out = new Map<string, CourseSummary>()
+  for (const r of (data as CourseSummaryRow[]) ?? []) {
+    out.set(r.course_id, {
+      courseId: r.course_id,
+      totalHoles: r.total_holes,
+      holesFilled: r.holes_filled,
+      distanceTotalFt: r.distance_total_ft,
+      distanceAvgFt: r.distance_avg_ft,
+    })
+  }
+  return out
 }
 
 // ---------- Course holes ----------
@@ -140,6 +196,9 @@ export interface NewCourseHoleInput {
   par?: number | null
   direction?: HoleDirection
   elevation?: Elevation
+  terrain?: Terrain
+  treeCoverage?: TreeCoverage
+  treeLayout?: TreeLayout
   notes?: string | null
 }
 
@@ -157,6 +216,9 @@ export async function createCourseHole(input: NewCourseHoleInput): Promise<Cours
       par: input.par ?? null,
       direction: input.direction ?? 'straight',
       elevation: input.elevation ?? 'flat',
+      terrain: input.terrain ?? 'flat',
+      tree_coverage: input.treeCoverage ?? 'open',
+      tree_layout: input.treeLayout ?? 'none',
       notes: input.notes ?? null,
       created_by: user.id,
     })
@@ -173,6 +235,9 @@ export async function updateCourseHole(
     par: number | null
     direction: HoleDirection
     elevation: Elevation
+    terrain: Terrain
+    treeCoverage: TreeCoverage
+    treeLayout: TreeLayout
     notes: string | null
   }>,
 ): Promise<void> {
@@ -183,6 +248,9 @@ export async function updateCourseHole(
   if (patch.par !== undefined) update.par = patch.par
   if (patch.direction !== undefined) update.direction = patch.direction
   if (patch.elevation !== undefined) update.elevation = patch.elevation
+  if (patch.terrain !== undefined) update.terrain = patch.terrain
+  if (patch.treeCoverage !== undefined) update.tree_coverage = patch.treeCoverage
+  if (patch.treeLayout !== undefined) update.tree_layout = patch.treeLayout
   if (patch.notes !== undefined) update.notes = patch.notes
 
   const { error } = await supabase

@@ -2,9 +2,40 @@
 // lib/bags.ts). Only the hole input stays local — it's transient and not worth
 // persisting across devices.
 
-import { Hole } from '../types'
+import { Hole, WindDirection } from '../types'
 
 const KEY_HOLE = 'disc-caddy:hole'
+const KEY_ROUND = 'disc-caddy:round'
+
+/** Default layout values applied when a stored hole pre-dates a schema
+ *  bump. Keeps the recommender from seeing `undefined` for fields it relies
+ *  on. Mirrors `DEFAULT_HOLE` on HomePage but kept here so the storage layer
+ *  has zero downstream import coupling. */
+const HOLE_DEFAULTS = {
+  terrain: 'flat' as const,
+  treeCoverage: 'open' as const,
+  treeLayout: 'none' as const,
+  windDirection: 'none' as const,
+}
+
+/** Migrate legacy capitalized wind values to the new snake_case compass set. */
+const LEGACY_WIND_MAP: Record<string, WindDirection> = {
+  None: 'none',
+  Headwind: 'headwind',
+  Tailwind: 'tailwind',
+}
+
+function migrateWind(raw: unknown): WindDirection {
+  if (typeof raw !== 'string') return 'none'
+  if (raw in LEGACY_WIND_MAP) return LEGACY_WIND_MAP[raw]
+  return raw as WindDirection
+}
+
+/** Round-in-progress state: which course is loaded and which hole you're on. */
+export interface RoundState {
+  courseId: string | null
+  holeNumber: number | null
+}
 
 function loadJSON<T>(key: string): T | null {
   try {
@@ -24,6 +55,25 @@ function saveJSON(key: string, value: unknown) {
 }
 
 export const localState = {
-  loadHole: () => loadJSON<Hole>(KEY_HOLE),
+  loadHole: () => {
+    const raw = loadJSON<Partial<Hole>>(KEY_HOLE)
+    if (!raw) return null
+    // Hydrate older snapshots that pre-date the layout-detail columns, and
+    // migrate the wind direction enum from its legacy capitalized form.
+    return {
+      ...HOLE_DEFAULTS,
+      ...raw,
+      windDirection: migrateWind(raw.windDirection),
+    } as Hole
+  },
   saveHole: (h: Hole) => saveJSON(KEY_HOLE, h),
+  loadRound: () => loadJSON<RoundState>(KEY_ROUND),
+  saveRound: (r: RoundState) => saveJSON(KEY_ROUND, r),
+  clearRound: () => {
+    try {
+      localStorage.removeItem(KEY_ROUND)
+    } catch {
+      // ignore
+    }
+  },
 }

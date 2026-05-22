@@ -1,4 +1,12 @@
-import { Elevation, Hole, HoleDirection, WindDirection } from '../types'
+import {
+  Elevation,
+  Hole,
+  HoleDirection,
+  Terrain,
+  TreeCoverage,
+  TreeLayout,
+  WindDirection,
+} from '../types'
 
 const DIRECTION_OPTIONS: { value: HoleDirection; label: string }[] = [
   { value: 'hard_left', label: 'Hard left' },
@@ -14,19 +22,123 @@ const ELEVATION_OPTIONS: { value: Elevation; label: string }[] = [
   { value: 'downhill', label: 'Downhill' },
 ]
 
-const WIND_OPTIONS: WindDirection[] = ['None', 'Headwind', 'Tailwind']
+const TERRAIN_OPTIONS: { value: Terrain; label: string }[] = [
+  { value: 'flat', label: 'Flat' },
+  { value: 'rolling', label: 'Rolling' },
+  { value: 'hilly', label: 'Hilly' },
+  { value: 'mountainous', label: 'Mountainous' },
+]
+
+const TREE_COVERAGE_OPTIONS: { value: TreeCoverage; label: string }[] = [
+  { value: 'open', label: 'Open' },
+  { value: 'light', label: 'Light' },
+  { value: 'wooded', label: 'Wooded' },
+  { value: 'heavily_wooded', label: 'Heavy' },
+]
+
+const TREE_LAYOUT_OPTIONS: { value: TreeLayout; label: string }[] = [
+  { value: 'throughout', label: 'Throughout' },
+  { value: 'front_half', label: 'Front half' },
+  { value: 'back_half', label: 'Back half' },
+  { value: 'left', label: 'Left' },
+  { value: 'right', label: 'Right' },
+  { value: 'canopy', label: 'Canopy' },
+]
+
+/**
+ * Compass-rose layout for the wind picker. Positions correspond to where the
+ * wind is coming *from*, mirroring how a player looks at the tee shot
+ * (basket is "up"). `null` cells render an empty grid slot so the rose keeps
+ * its 3×3 shape.
+ */
+const WIND_ROSE: ({ value: WindDirection; label: string; sub: string } | null)[] = [
+  { value: 'head_from_left',  label: '↘',  sub: 'Head/L'  },
+  { value: 'headwind',         label: '↓',  sub: 'Head'    },
+  { value: 'head_from_right', label: '↙',  sub: 'Head/R'  },
+  { value: 'from_left',        label: '→',  sub: 'From L'  },
+  { value: 'none',             label: '·',  sub: 'No wind' },
+  { value: 'from_right',       label: '←',  sub: 'From R'  },
+  { value: 'tail_from_left',  label: '↗',  sub: 'Tail/L'  },
+  { value: 'tailwind',         label: '↑',  sub: 'Tail'    },
+  { value: 'tail_from_right', label: '↖',  sub: 'Tail/R'  },
+]
 
 interface Props {
   hole: Hole
   onChange: (hole: Hole) => void
-  /** When true, distance/direction/elevation are locked (driven by a course-hole pick). */
+  /** When true, layout fields are locked (driven by a course-hole pick). */
   locked?: boolean
 }
 
+/**
+ * Single-select chip group. Renders the options as buttons with
+ * `aria-pressed` toggled. Wraps to multiple lines on narrow screens; pairs
+ * naturally with `.chip-row` styling.
+ */
+function ChipGroup<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+  disabled,
+}: {
+  label: string
+  value: T
+  options: { value: T; label: string }[]
+  onChange: (v: T) => void
+  disabled?: boolean
+}) {
+  return (
+    <div className="chip-group">
+      <span className="chip-group-label">{label}</span>
+      <div className="chip-row">
+        {options.map(o => (
+          <button
+            key={o.value}
+            type="button"
+            className={`chip ${value === o.value ? 'chip-on' : ''}`}
+            aria-pressed={value === o.value}
+            onClick={() => onChange(o.value)}
+            disabled={disabled}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function HoleInput({ hole, onChange, locked = false }: Props) {
+  // Tree-layout only matters when there are actually trees in play. When the
+  // user flips coverage back to "open" we proactively clear the layout so
+  // stale "back half" picks don't survive a coverage reset.
+  const showTreeLayout = hole.treeCoverage !== 'open'
+
+  function setHole<K extends keyof Hole>(key: K, value: Hole[K]) {
+    onChange({ ...hole, [key]: value })
+  }
+
+  function setTreeCoverage(value: TreeCoverage) {
+    onChange({
+      ...hole,
+      treeCoverage: value,
+      // Reset to 'none' when we go back to open fairway; default to
+      // 'throughout' when leaving open (so the chip group has a sensible
+      // initial selection); otherwise preserve the user's existing pick.
+      treeLayout:
+        value === 'open'
+          ? 'none'
+          : hole.treeLayout === 'none'
+            ? 'throughout'
+            : hole.treeLayout,
+    })
+  }
+
   return (
     <section className="card">
-      <h2>Hole</h2>
+      <h2>What hole are you playing?</h2>
+
       <div className="field-row">
         <label htmlFor="dist">Distance</label>
         <div className="input-group">
@@ -37,65 +149,92 @@ export function HoleInput({ hole, onChange, locked = false }: Props) {
             max={800}
             step={10}
             value={hole.distance}
-            onChange={e =>
-              onChange({ ...hole, distance: Number(e.target.value) || 0 })
-            }
+            onChange={e => setHole('distance', Number(e.target.value) || 0)}
             disabled={locked}
           />
           <span className="suffix">ft</span>
         </div>
       </div>
-      <div className="field-row">
-        <label htmlFor="dir">Direction</label>
-        <select
-          id="dir"
-          value={hole.direction}
-          onChange={e =>
-            onChange({ ...hole, direction: e.target.value as HoleDirection })
-          }
+
+      <ChipGroup
+        label="Direction"
+        value={hole.direction}
+        options={DIRECTION_OPTIONS}
+        onChange={v => setHole('direction', v)}
+        disabled={locked}
+      />
+
+      <ChipGroup
+        label="Net elevation (tee → basket)"
+        value={hole.elevation}
+        options={ELEVATION_OPTIONS}
+        onChange={v => setHole('elevation', v)}
+        disabled={locked}
+      />
+
+      <ChipGroup
+        label="Terrain"
+        value={hole.terrain}
+        options={TERRAIN_OPTIONS}
+        onChange={v => setHole('terrain', v)}
+        disabled={locked}
+      />
+
+      <ChipGroup
+        label="Trees"
+        value={hole.treeCoverage}
+        options={TREE_COVERAGE_OPTIONS}
+        onChange={setTreeCoverage}
+        disabled={locked}
+      />
+
+      {showTreeLayout && (
+        <ChipGroup
+          label="Tree layout"
+          value={hole.treeLayout}
+          options={TREE_LAYOUT_OPTIONS}
+          onChange={v => setHole('treeLayout', v)}
           disabled={locked}
-        >
-          {DIRECTION_OPTIONS.map(o => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
+        />
+      )}
+
+      <div className="wind-section">
+        <span className="chip-group-label">Wind</span>
+        <p className="muted small wind-hint">
+          Tap where the wind is coming <em>from</em>. Center = no wind.
+        </p>
+        <div className="wind-rose" role="radiogroup" aria-label="Wind direction">
+          {WIND_ROSE.map((cell, i) =>
+            cell ? (
+              <button
+                key={cell.value}
+                type="button"
+                role="radio"
+                aria-checked={hole.windDirection === cell.value}
+                aria-label={cell.sub}
+                className={`wind-cell ${
+                  hole.windDirection === cell.value ? 'wind-cell-on' : ''
+                } ${cell.value === 'none' ? 'wind-cell-none' : ''}`}
+                onClick={() => {
+                  // Clearing the wind also zeros the speed so the saved state
+                  // stays consistent ("none" + 0 mph).
+                  if (cell.value === 'none') {
+                    onChange({ ...hole, windDirection: 'none', windSpeed: 0 })
+                  } else {
+                    setHole('windDirection', cell.value)
+                  }
+                }}
+              >
+                <span className="wind-cell-arrow">{cell.label}</span>
+                <span className="wind-cell-sub">{cell.sub}</span>
+              </button>
+            ) : (
+              <span key={`empty-${i}`} className="wind-cell wind-cell-empty" />
+            ),
+          )}
+        </div>
       </div>
-      <div className="field-row">
-        <label htmlFor="elev">Elevation</label>
-        <select
-          id="elev"
-          value={hole.elevation}
-          onChange={e =>
-            onChange({ ...hole, elevation: e.target.value as Elevation })
-          }
-          disabled={locked}
-        >
-          {ELEVATION_OPTIONS.map(o => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div className="field-row">
-        <label htmlFor="wind">Wind</label>
-        <select
-          id="wind"
-          value={hole.windDirection}
-          onChange={e =>
-            onChange({ ...hole, windDirection: e.target.value as WindDirection })
-          }
-        >
-          {WIND_OPTIONS.map(w => (
-            <option key={w} value={w}>
-              {w}
-            </option>
-          ))}
-        </select>
-      </div>
-      {hole.windDirection !== 'None' && (
+      {hole.windDirection !== 'none' && (
         <div className="field-row">
           <label htmlFor="windSpeed">Wind speed</label>
           <div className="input-group">
@@ -106,9 +245,7 @@ export function HoleInput({ hole, onChange, locked = false }: Props) {
               max={50}
               step={1}
               value={hole.windSpeed}
-              onChange={e =>
-                onChange({ ...hole, windSpeed: Number(e.target.value) || 0 })
-              }
+              onChange={e => setHole('windSpeed', Number(e.target.value) || 0)}
             />
             <span className="suffix">mph</span>
           </div>

@@ -1,11 +1,14 @@
 import {
   BagDisc,
   Disc,
+  DiscType,
   Hand,
   Hole,
   HoleDirection,
   Recommendation,
   ThrowStyle,
+  TreeCoverage,
+  WindDirection,
 } from '../types'
 import { DISC_BY_NAME } from './discs'
 import {
@@ -16,20 +19,30 @@ import {
 import {
   armSpeedFromMaxDistance,
   requiredArmSpeed,
-  designDistance,
 } from './armspeed'
 
 interface RecommendOptions {
   bag: BagDisc[]
   hole: Hole
-  /** Backhand max distance (the player's "headline" number). */
+  /** Backhand max distance with a driver (the player's headline number). */
   playerMaxDistance: number
-  /** Forehand max distance. Equals playerMaxDistance when not set. */
+  /** Backhand max with a putter. Defaults to 50% of playerMaxDistance. */
+  playerPutterDistance?: number
+  /** Backhand max with a midrange. Defaults to 70% of playerMaxDistance. */
+  playerMidrangeDistance?: number
+  /** Backhand max with a fairway driver. Defaults to 85% of playerMaxDistance. */
+  playerFairwayDistance?: number
+  /** Forehand max distance (single number for all FH throws). */
   playerForehandDistance?: number
   /** Dominant hand. Defaults to right. */
   hand?: Hand
   /** Whether to consider forehand throws at all. */
   throwsForehand?: boolean
+  /** Preferred release. The recommender adds a small score penalty to
+   *  attempts in the *other* style so that, all else equal, the player's
+   *  preferred shot wins ties. Does NOT gate FH on/off — that's
+   *  `throwsForehand`'s job. Defaults to backhand. */
+  primaryThrow?: ThrowStyle
 }
 
 /**
@@ -45,10 +58,42 @@ export const MODEL = {
   DISTANCE_PENALTY_PER_FT: 1,
   /** Score weight per foot of lateral error. */
   DIRECTION_PENALTY_PER_FT: 1.5,
-  /** Distance multiplier cap when player has surplus arm speed. */
-  DISTANCE_SURPLUS_CAP: 1.25,
-  DISTANCE_SURPLUS_EXPONENT: 0.3,
-  DISTANCE_DEFICIT_EXPONENT: 4,
+  /**
+   * Flat penalty added to any attempt whose throw style isn't the player's
+   * `primaryThrow`. Sized so the off-style throw has to be roughly this many
+   * feet *more accurate* in combined distance+direction error to overtake
+   * the preferred style. 15 keeps the bias modest — clearly-better off-style
+   * shots still win, but coin-flip comparisons tilt to the player's
+   * comfortable release.
+   */
+  STYLE_PREFERENCE_PENALTY: 15,
+  /**
+   * Wind distance modulation, per mph of head/tail wind. Heads shorten,
+   * tails extend. Slightly asymmetric (headwind drag hurts more than
+   * tailwind helps for typical disc shapes).
+   */
+  HEADWIND_DIST_PER_MPH: 0.015,
+  TAILWIND_DIST_PER_MPH: 0.010,
+  WIND_DIST_MULT_MIN: 0.6,
+  WIND_DIST_MULT_MAX: 1.25,
+  /**
+   * Lateral drift caused by a 1 mph pure crosswind over a 300 ft flight.
+   * Drift scales linearly with wind speed *and* with effective distance —
+   * a putter floats with the wind for less of the flight than a driver
+   * does. ~3 ft / mph at 300 ft matches what most players see in practice.
+   */
+  CROSS_DRIFT_FT_PER_MPH_AT_300: 3,
+  /**
+   * Crosswind stability shift, in stability points per mph. A crosswind
+   * blowing *into* the disc's fade side pushes it down on that side → more
+   * hyzer → more fade-like behavior. A crosswind hitting the opposite side
+   * lifts it → flip-up behavior. Universal coefficient; the spin-direction
+   * sign comes from `lateralSign(hand, style)`.
+   *
+   * Split evenly across turn and fade so both flight numbers stay
+   * internally consistent for the explanation logic.
+   */
+  CROSS_STAB_PER_MPH: 0.15,
   /**
    * Conversion from stability-units to feet of lateral movement at landing.
    * Rough rule of thumb: a fully overstable driver thrown RHBH ends ~75 ft
@@ -66,6 +111,21 @@ export const MODEL = {
    */
   FH_TURN_BONUS: 0.5, // less turn (more resistant)
   FH_FADE_BONUS: 0.5, // a touch more fade
+  /**
+   * Tree-coverage penalties. Each entry is the score added to discs that
+   * fight tight-fairway play: distance drivers (speed ≥ 10) navigate trees
+   * poorly, and very high or very low stability creates unpredictable kicks
+   * in the foliage. Open fairways get a zero penalty.
+   */
+  TREE_PENALTY: {
+    open:            { driver: 0,  highStab: 0,  flippy: 0  },
+    light:           { driver: 5,  highStab: 0,  flippy: 0  },
+    wooded:          { driver: 15, highStab: 8,  flippy: 4  },
+    heavily_wooded:  { driver: 30, highStab: 20, flippy: 10 },
+  } satisfies Record<
+    TreeCoverage,
+    { driver: number; highStab: number; flippy: number }
+  >,
 } as const
 
 /**
@@ -78,6 +138,28 @@ const TARGET_LATERAL: Record<HoleDirection, number> = {
   straight: 0,
   dogleg_right: 50,
   hard_right: 120,
+}
+
+/**
+ * Decompose a compass wind direction into head and cross components
+ * (each ranges -1..+1). Multiply by `windSpeed` to get the mph along each
+ * axis. Diagonals get √2/2 ≈ 0.71 in both axes so the magnitude still
+ * matches the user's stated speed.
+ *
+ *  - `head`  positive = headwind (slows/destabilizes), negative = tailwind
+ *  - `cross` positive = pushing the disc right, negative = pushing it left
+ */
+const DIAG = 0.7071 // cos(45°)
+const WIND_COMPONENTS: Record<WindDirection, { head: number; cross: number }> = {
+  none:             { head:  0,    cross:  0    },
+  headwind:         { head:  1,    cross:  0    },
+  head_from_left:   { head:  DIAG, cross:  DIAG },
+  head_from_right:  { head:  DIAG, cross: -DIAG },
+  from_left:        { head:  0,    cross:  1    },
+  from_right:       { head:  0,    cross: -1    },
+  tailwind:         { head: -1,    cross:  0    },
+  tail_from_left:   { head: -DIAG, cross:  DIAG },
+  tail_from_right:  { head: -DIAG, cross: -DIAG },
 }
 
 /**
@@ -101,6 +183,47 @@ interface Attempt {
   bagDisc: BagDisc
   disc: Disc
   style: ThrowStyle
+  /**
+   * Baseline distance for this disc-and-style combo, in feet. Comes from the
+   * player's stated per-type max (BH) or single forehand distance (FH). The
+   * scorer uses this directly as the no-wind/no-elevation effective distance
+   * rather than re-deriving it from arm speed and the disc's design speed.
+   */
+  baselineDistance: number
+}
+
+/**
+ * Infer a disc's type when the catalog entry doesn't carry one (rare:
+ * legacy hardcoded molds before the snapshot import). Speed-only fallback.
+ */
+function inferType(disc: Disc): DiscType {
+  if (disc.type) return disc.type
+  if (disc.speed <= 3) return 'Putter'
+  if (disc.speed <= 5) return 'Midrange'
+  if (disc.speed <= 9) return 'Fairway'
+  return 'Distance'
+}
+
+/**
+ * Pick the right baseline distance for an attempt. Backhand uses the player's
+ * per-type number; forehand uses the single forehand-distance number for all
+ * disc types (most flick players track only one FH distance).
+ */
+function pickBaseline(disc: Disc, style: ThrowStyle, opts: RecommendOptions): number {
+  if (style === 'forehand') {
+    return opts.playerForehandDistance ?? opts.playerMaxDistance
+  }
+  const t = inferType(disc)
+  switch (t) {
+    case 'Putter':
+      return opts.playerPutterDistance ?? Math.round(opts.playerMaxDistance * 0.5)
+    case 'Midrange':
+      return opts.playerMidrangeDistance ?? Math.round(opts.playerMaxDistance * 0.7)
+    case 'Fairway':
+      return opts.playerFairwayDistance ?? Math.round(opts.playerMaxDistance * 0.85)
+    case 'Distance':
+      return opts.playerMaxDistance
+  }
 }
 
 interface ScoredAttempt {
@@ -121,10 +244,9 @@ function scoreAttempt(
   hand: Hand,
   armSpeed: number,
 ): ScoredAttempt {
-  const { disc, bagDisc, style } = attempt
+  const { disc, bagDisc, style, baselineDistance } = attempt
 
   const reqSpeed = requiredArmSpeed(disc.speed)
-  const designDist = designDistance(disc.speed)
 
   const pm = PLASTIC_MODS[bagDisc.plastic]
   const wm = WEIGHT_MODS[bagDisc.weight]
@@ -137,14 +259,14 @@ function scoreAttempt(
     totalFadeMod += MODEL.FH_FADE_BONUS
   }
 
-  // Wind directly affects effective arm speed for this throw.
-  const windAdj =
-    hole.windDirection === 'Headwind'
-      ? hole.windSpeed
-      : hole.windDirection === 'Tailwind'
-        ? -hole.windSpeed
-        : 0
-  const effArmSpeed = armSpeed + windAdj
+  // Decompose wind into head + cross components. The head component drives
+  // stability and distance behavior (a head/left wind affects stability with
+  // only its head fraction, not the full speed). The cross component drives
+  // lateral drift further down in this function.
+  const windCmp = WIND_COMPONENTS[hole.windDirection] ?? WIND_COMPONENTS.none
+  const windHeadMph = windCmp.head * hole.windSpeed
+  const windCrossMph = windCmp.cross * hole.windSpeed
+  const effArmSpeed = armSpeed + windHeadMph
 
   const deficit = Math.max(0, reqSpeed - effArmSpeed)
   const surplus = Math.min(
@@ -159,36 +281,82 @@ function scoreAttempt(
     deficit * MODEL.DEFICIT_FADE_PER_MPH -
     surplus * MODEL.SURPLUS_FADE_PER_MPH
 
-  const effTurn = disc.turn + totalTurnMod + turnAdj
-  const effFade = disc.fade + totalFadeMod + fadeAdj
+  // Crosswind stability shift.
+  //
+  // Spin direction (set by hand + throw style via `lateralSign`) decides
+  // which side of the disc gets pushed by a given crosswind:
+  //
+  //   - Counterclockwise spin (RHBH, LHFH; lateralSign = -1):
+  //       wind from the right (cross < 0) hits the fade side → more fade.
+  //       wind from the left  (cross > 0) hits the opposite side → more turn.
+  //   - Clockwise spin (LHBH, RHFH; lateralSign = +1): mirrored.
+  //
+  // The product `windCrossMph * lateralSign` is positive when the wind is
+  // pushing the disc TOWARD its natural fade side (more overstable), and
+  // negative when pushing AWAY (more understable). Split evenly so that
+  // effTurn and effFade both shift; the explanation logic reads each.
+  const stabCrossDelta =
+    windCrossMph * lateralSign(hand, style) * MODEL.CROSS_STAB_PER_MPH
+  const crossTurnAdj = stabCrossDelta * 0.5
+  const crossFadeAdj = stabCrossDelta * 0.5
+
+  const effTurn = disc.turn + totalTurnMod + turnAdj + crossTurnAdj
+  const effFade = disc.fade + totalFadeMod + fadeAdj + crossFadeAdj
   const stability = effTurn + effFade
 
-  const ratio = reqSpeed > 0 ? effArmSpeed / reqSpeed : 1
-  const efficiency =
-    ratio >= 1
-      ? Math.min(MODEL.DISTANCE_SURPLUS_CAP, Math.pow(ratio, MODEL.DISTANCE_SURPLUS_EXPONENT))
-      : Math.pow(ratio, MODEL.DISTANCE_DEFICIT_EXPONENT)
+  // Distance: the player's measured per-type baseline already accounts for
+  // their arm speed with that disc class, so we *don't* re-scale by arm-speed
+  // efficiency. Only wind and elevation perturb the baseline. Only the
+  // head/tail component of the wind affects distance — pure crosswinds drift
+  // the disc but don't shorten or lengthen the throw materially.
+  let windDistMult = 1
+  if (windHeadMph > 0) {
+    windDistMult = 1 - windHeadMph * MODEL.HEADWIND_DIST_PER_MPH
+  } else if (windHeadMph < 0) {
+    windDistMult = 1 + -windHeadMph * MODEL.TAILWIND_DIST_PER_MPH
+  }
+  windDistMult = Math.max(
+    MODEL.WIND_DIST_MULT_MIN,
+    Math.min(MODEL.WIND_DIST_MULT_MAX, windDistMult),
+  )
 
-  // Elevation: uphill plays longer (need more distance), downhill plays shorter.
   const elevationFactor =
     hole.elevation === 'uphill'
       ? MODEL.UPHILL_FACTOR
       : hole.elevation === 'downhill'
         ? MODEL.DOWNHILL_FACTOR
         : 1.0
-  const effDistance = Math.round(designDist * efficiency / elevationFactor)
+  const effDistance = Math.round((baselineDistance * windDistMult) / elevationFactor)
 
-  const predictedLateral =
+  // Lateral landing: disc's natural fade/turn behavior PLUS any crosswind
+  // drift. Crosswind drift scales with effective distance (a putter spends
+  // less time in the wind than a driver does).
+  const stabilityLateral =
     stability * MODEL.LATERAL_FT_PER_STABILITY * lateralSign(hand, style)
+  const crossDrift =
+    windCrossMph
+    * MODEL.CROSS_DRIFT_FT_PER_MPH_AT_300
+    * (effDistance / 300)
+  const predictedLateral = stabilityLateral + crossDrift
 
   const distError = Math.abs(effDistance - hole.distance)
   const directionError = Math.abs(
     predictedLateral - TARGET_LATERAL[hole.direction],
   )
 
+  // Tree-coverage penalty: prefer controllable molds when the fairway is
+  // tight. Distance drivers cost more to navigate; very high (or very low)
+  // stability creates unpredictable kicks off trees.
+  const treeCfg = MODEL.TREE_PENALTY[hole.treeCoverage] ?? MODEL.TREE_PENALTY.open
+  let treePenalty = 0
+  if (disc.speed >= 10) treePenalty += treeCfg.driver
+  if (stability > 2)   treePenalty += treeCfg.highStab
+  if (stability < -2)  treePenalty += treeCfg.flippy
+
   const score =
     distError * MODEL.DISTANCE_PENALTY_PER_FT +
-    directionError * MODEL.DIRECTION_PENALTY_PER_FT
+    directionError * MODEL.DIRECTION_PENALTY_PER_FT +
+    treePenalty
 
   return {
     attempt,
@@ -276,14 +444,62 @@ function explain(scored: ScoredAttempt, hole: Hole, hand: Hand): string {
     )
   }
 
-  // Wind clause.
-  if (hole.windDirection === 'Headwind' && hole.windSpeed > 5) {
-    if (stability > 1.5) clauses.push('overstability holds the line into the headwind')
-    else if (stability < -1)
-      clauses.push('warning: understable in a headwind — release low and hyzer or pick a more stable disc')
-  } else if (hole.windDirection === 'Tailwind' && hole.windSpeed > 5) {
-    if (stability > 2)
-      clauses.push('tailwind kills fade — aim with less hyzer than usual')
+  // Wind clauses. Build from the head/cross decomposition so diagonals get
+  // both halves of the description.
+  if (hole.windSpeed > 0 && hole.windDirection !== 'none') {
+    const cmp = WIND_COMPONENTS[hole.windDirection]
+    const headMph = Math.abs(cmp.head * hole.windSpeed)
+    const crossMph = Math.abs(cmp.cross * hole.windSpeed)
+
+    if (cmp.head > 0 && headMph > 5) {
+      if (stability > 1.5) clauses.push('overstability holds the line into the headwind')
+      else if (stability < -1)
+        clauses.push('warning: understable in a headwind — release low and hyzer or pick a more stable disc')
+    } else if (cmp.head < 0 && headMph > 5) {
+      if (stability > 2)
+        clauses.push('tailwind kills fade — aim with less hyzer than usual')
+    }
+
+    if (crossMph > 4) {
+      // Cross-wind direction: positive cross drift = pushed right.
+      const blowingTo: 'left' | 'right' = cmp.cross > 0 ? 'right' : 'left'
+      const blowingFrom: 'left' | 'right' = blowingTo === 'right' ? 'left' : 'right'
+      // Whether the wind helps the disc reach the target laterally or fights it.
+      const targetLateral = TARGET_LATERAL[hole.direction]
+      const drift = cmp.cross * hole.windSpeed
+      const helpsTarget = (drift > 0 && targetLateral > 0) || (drift < 0 && targetLateral < 0)
+      if (hole.direction === 'straight') {
+        clauses.push(
+          `crosswind from the ${blowingFrom} — aim a touch ${blowingFrom} of the basket to let it drift in`,
+        )
+      } else if (helpsTarget) {
+        clauses.push(`crosswind helps push toward the ${blowingTo}-side target`)
+      } else {
+        clauses.push(`crosswind fights the line — needs more disc the other way`)
+      }
+
+      // Stability-shift clause: when the crosswind is strong enough (>6 mph
+      // of cross component), call out the spin-direction interaction so the
+      // player knows *why* the engine is favoring one mold over another.
+      //   reinforces > 0  → wind pushes disc toward its fade side (more stable)
+      //   reinforces < 0  → wind lifts the disc (more understable / flippy)
+      if (crossMph > 6) {
+        const reinforces = drift * fadeSign
+        if (reinforces > 0 && stability > 1) {
+          clauses.push(
+            'crosswind hits the fade side — disc will finish harder than rated',
+          )
+        } else if (reinforces < 0 && stability < 0.5) {
+          clauses.push(
+            'crosswind lifts the disc — understable molds will flip up; lean more stable',
+          )
+        } else if (reinforces < 0 && stability > 2) {
+          clauses.push(
+            'crosswind softens the natural fade — usual hyzer will hold its line longer',
+          )
+        }
+      }
+    }
   }
 
   // Elevation clause.
@@ -291,6 +507,34 @@ function explain(scored: ScoredAttempt, hole: Hole, hand: Hand): string {
     clauses.push('plays uphill — commit to a clean release')
   } else if (hole.elevation === 'downhill') {
     clauses.push('plays downhill — easy power, let glide do the work')
+  }
+
+  // Terrain clause: highlight when the fairway itself is bumpy enough to
+  // affect skip/roll, separate from net elevation change.
+  if (hole.terrain === 'hilly' || hole.terrain === 'mountainous') {
+    clauses.push(
+      'hilly fairway — expect funky skips, plan for a softer landing',
+    )
+  }
+
+  // Tree clauses: density first, then where they sit (so the player knows
+  // *when* in the flight the gap closes).
+  if (hole.treeCoverage === 'wooded' || hole.treeCoverage === 'heavily_wooded') {
+    const tight = hole.treeCoverage === 'heavily_wooded'
+    clauses.push(
+      tight
+        ? 'tight tree gauntlet — predictability beats power'
+        : 'wooded line — a controllable mid usually beats forcing a driver',
+    )
+    if (hole.treeLayout === 'back_half') {
+      clauses.push('trees crowd the back half — pick a disc that lands soft')
+    } else if (hole.treeLayout === 'front_half') {
+      clauses.push('trees up front — open release window, then it clears')
+    } else if (hole.treeLayout === 'canopy') {
+      clauses.push('low canopy — keep it flat and under the ceiling')
+    } else if (hole.treeLayout === 'left' || hole.treeLayout === 'right') {
+      clauses.push(`trees crowd the ${hole.treeLayout} side — bias the other way`)
+    }
   }
 
   // If we still have nothing distinctive, describe the disc.
@@ -331,7 +575,12 @@ function describeDisc(disc: Disc, stability: number): string {
  */
 export function recommend(opts: RecommendOptions): Recommendation[] {
   const hand: Hand = opts.hand ?? 'right'
-  const throwsForehand = opts.throwsForehand ?? false
+  // `primaryThrow === 'forehand'` implies the player throws forehand; treat it
+  // as a soft enable so the recommender still produces FH picks if the
+  // caller forgot to also set `throwsForehand: true`.
+  const primaryThrow: ThrowStyle = opts.primaryThrow ?? 'backhand'
+  const throwsForehand =
+    (opts.throwsForehand ?? false) || primaryThrow === 'forehand'
   const bhArm = armSpeedFromMaxDistance(opts.playerMaxDistance)
   const fhArm = armSpeedFromMaxDistance(
     opts.playerForehandDistance ?? opts.playerMaxDistance,
@@ -341,13 +590,29 @@ export function recommend(opts: RecommendOptions): Recommendation[] {
   for (const bagDisc of opts.bag) {
     const disc = DISC_BY_NAME[bagDisc.discName]
     if (!disc) continue
-    scoredAttempts.push(
-      scoreAttempt({ bagDisc, disc, style: 'backhand' }, opts.hole, hand, bhArm),
+    const bhBaseline = pickBaseline(disc, 'backhand', opts)
+    const bhScored = scoreAttempt(
+      { bagDisc, disc, style: 'backhand', baselineDistance: bhBaseline },
+      opts.hole,
+      hand,
+      bhArm,
     )
+    if (primaryThrow !== 'backhand') {
+      bhScored.score += MODEL.STYLE_PREFERENCE_PENALTY
+    }
+    scoredAttempts.push(bhScored)
     if (throwsForehand) {
-      scoredAttempts.push(
-        scoreAttempt({ bagDisc, disc, style: 'forehand' }, opts.hole, hand, fhArm),
+      const fhBaseline = pickBaseline(disc, 'forehand', opts)
+      const fhScored = scoreAttempt(
+        { bagDisc, disc, style: 'forehand', baselineDistance: fhBaseline },
+        opts.hole,
+        hand,
+        fhArm,
       )
+      if (primaryThrow !== 'forehand') {
+        fhScored.score += MODEL.STYLE_PREFERENCE_PENALTY
+      }
+      scoredAttempts.push(fhScored)
     }
   }
 

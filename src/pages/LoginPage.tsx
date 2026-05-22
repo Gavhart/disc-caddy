@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { signIn, sendPasswordReset } from '../lib/auth'
+import { Logo } from '../components/Logo'
 
 export function LoginPage() {
   const [email, setEmail] = useState('')
@@ -46,7 +47,9 @@ export function LoginPage() {
   return (
     <div className="auth-shell">
       <div className="auth-card">
-        <h1 className="brand">Disc Caddy</h1>
+        <div className="auth-brand">
+          <Logo height={80} />
+        </div>
         <h2>Welcome back</h2>
         <form onSubmit={handleSubmit}>
           <label htmlFor="email">Email</label>
