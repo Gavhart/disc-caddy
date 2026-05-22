@@ -7,6 +7,7 @@ Stack: Vite + React + TypeScript on the front, Supabase (Postgres + Auth + Stora
 ## What's in it
 
 - **Account / login** — email + password, password reset (Supabase Auth)
+- **Player profile at signup** — display name, max distance, dominant hand, primary throw
 - **Multiple bags** — name them ("Tournament bag", "Wooded course bag", etc.), set a default, switch between them
 - **Disc photos** — upload an image per disc so you can spot it in your bag (Pro feature)
 - **Recommendation engine** — picks the right disc from your bag based on arm speed, plastic, weight, wear, wind, and shot shape
@@ -38,7 +39,7 @@ Open http://localhost:5173. If Supabase isn't configured, you'll see a friendly 
    ```
 6. Restart `npm run dev`.
 
-You can now sign up, create bags, add discs, and see recommendations. Stripe is optional below.
+Signups collect player info (name, distance, hand, throw) on the signup form. You can now sign up, create bags, add discs, and see recommendations. Stripe is optional below.
 
 ---
 

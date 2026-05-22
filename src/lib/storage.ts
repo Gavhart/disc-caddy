@@ -31,10 +31,13 @@ function migrateWind(raw: unknown): WindDirection {
   return raw as WindDirection
 }
 
-/** Round-in-progress state: which course is loaded and which hole you're on. */
+/** Round-in-progress state: course, hole, optional active round + local throw cache. */
 export interface RoundState {
   courseId: string | null
   holeNumber: number | null
+  /** Supabase round id when a Pro live round is active. */
+  roundId: string | null
+  active: boolean
 }
 
 function loadJSON<T>(key: string): T | null {
@@ -67,7 +70,16 @@ export const localState = {
     } as Hole
   },
   saveHole: (h: Hole) => saveJSON(KEY_HOLE, h),
-  loadRound: () => loadJSON<RoundState>(KEY_ROUND),
+  loadRound: () => {
+    const raw = loadJSON<Partial<RoundState>>(KEY_ROUND)
+    if (!raw) return null
+    return {
+      courseId: raw.courseId ?? null,
+      holeNumber: raw.holeNumber ?? null,
+      roundId: raw.roundId ?? null,
+      active: raw.active ?? false,
+    } satisfies RoundState
+  },
   saveRound: (r: RoundState) => saveJSON(KEY_ROUND, r),
   clearRound: () => {
     try {

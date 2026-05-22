@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { signOut } from '../lib/auth'
-import { isStripeConfigured, openBillingPortal } from '../lib/subscription'
+import { isStripeConfigured, openBillingPortal, syncSubscription } from '../lib/subscription'
 import { updatePlayer } from '../lib/profile'
 import { Hand, ThrowStyle } from '../types'
 
 export function SettingsPage() {
   const { user, me, refreshMe } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [busy, setBusy] = useState(false)
+  const [syncing, setSyncing] = useState(false)
   const [savingPlayer, setSavingPlayer] = useState(false)
   const [playerError, setPlayerError] = useState<string | null>(null)
   const [hand, setHand] = useState<Hand>('right')
@@ -19,6 +21,19 @@ export function SettingsPage() {
   const [putterDistance, setPutterDistance] = useState<string>('')
   const [midDistance, setMidDistance] = useState<string>('')
   const [fairwayDistance, setFairwayDistance] = useState<string>('')
+
+  // After Stripe Checkout redirects here, pull fresh subscription state.
+  useEffect(() => {
+    if (searchParams.get('upgraded') !== '1') return
+    setSyncing(true)
+    syncSubscription()
+      .then(() => refreshMe())
+      .catch(err => console.error('[settings] subscription sync failed', err))
+      .finally(() => {
+        setSyncing(false)
+        navigate('/settings', { replace: true })
+      })
+  }, [searchParams, refreshMe, navigate])
 
   useEffect(() => {
     if (!me) return
@@ -107,6 +122,18 @@ export function SettingsPage() {
     }
   }
 
+  async function handleSyncSubscription() {
+    setSyncing(true)
+    try {
+      await syncSubscription()
+      await refreshMe()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Could not sync subscription')
+    } finally {
+      setSyncing(false)
+    }
+  }
+
   if (!me) {
     return (
       <div className="container">
@@ -121,6 +148,10 @@ export function SettingsPage() {
     <div className="container">
       <div className="card">
         <h2>Account</h2>
+        <div className="setting-row">
+          <span className="setting-label">Name</span>
+          <span>{me.displayName ?? '—'}</span>
+        </div>
         <div className="setting-row">
           <span className="setting-label">Email</span>
           <span>{me.email}</span>
@@ -345,10 +376,33 @@ export function SettingsPage() {
             </button>
           )
         ) : (
-          <Link to="/upgrade" className="btn-primary">
-            Upgrade to Pro
-          </Link>
+          <>
+            <Link to="/upgrade" className="btn-primary">
+              Upgrade to Pro
+            </Link>
+            {isStripeConfigured && (
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={handleSyncSubscription}
+                disabled={syncing}
+                style={{ marginTop: 10 }}
+              >
+                {syncing ? 'Syncing…' : 'Already subscribed? Sync status'}
+              </button>
+            )}
+          </>
         )}
+      </div>
+
+      <div className="card">
+        <h2>About</h2>
+        <p className="muted small">
+          Release notes and a peek at what's coming next.
+        </p>
+        <Link to="/updates" className="btn-secondary">
+          What's new &amp; roadmap
+        </Link>
       </div>
 
       <div className="card">

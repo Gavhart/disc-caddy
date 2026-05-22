@@ -14,9 +14,11 @@ import { BagsListPage } from './pages/BagsListPage'
 import { CoursesPage } from './pages/CoursesPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { UpgradePage } from './pages/UpgradePage'
+import { WelcomePage } from './pages/WelcomePage'
+import { UpdatesPage } from './pages/UpdatesPage'
 
 function AppShell() {
-  const { session, loading } = useAuth()
+  const { session, me, loading } = useAuth()
   if (loading) {
     return (
       <div className="auth-loading">
@@ -26,7 +28,7 @@ function AppShell() {
   }
   return (
     <>
-      {session && <Navigation />}
+      {session && me?.onboardingComplete && <Navigation />}
       <main className="main">
         <Routes>
           <Route
@@ -38,6 +40,24 @@ function AppShell() {
             element={session ? <Navigate to="/" replace /> : <SignupPage />}
           />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+          <Route
+            path="/welcome"
+            element={
+              <ProtectedRoute requireOnboarding={false} requireUpdates={false}>
+                <WelcomePage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/updates"
+            element={
+              <ProtectedRoute requireUpdates={false}>
+                <UpdatesPage />
+              </ProtectedRoute>
+            }
+          />
 
           <Route
             path="/"

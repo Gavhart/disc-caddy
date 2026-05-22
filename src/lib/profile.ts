@@ -1,6 +1,14 @@
 import { supabase } from './supabase'
 import { Hand, Me, ThrowStyle } from '../types'
 
+/** Player info collected at signup or on the welcome screen. */
+export interface OnboardingInput {
+  displayName: string
+  maxDistance: number
+  dominantHand: Hand
+  primaryThrow: ThrowStyle
+}
+
 /** Fetch the current user's profile via the 'me' SQL view. */
 export async function fetchMe(): Promise<Me | null> {
   const { data, error } = await supabase
@@ -12,6 +20,8 @@ export async function fetchMe(): Promise<Me | null> {
   return {
     id: data.id,
     email: data.email,
+    displayName: data.display_name ?? null,
+    onboardingComplete: Boolean(data.onboarding_complete ?? true),
     maxDistance: data.max_distance,
     putterMaxDistance: data.putter_max_distance ?? Math.round(data.max_distance * 0.5),
     midrangeMaxDistance: data.midrange_max_distance ?? Math.round(data.max_distance * 0.7),
@@ -29,6 +39,24 @@ export async function fetchMe(): Promise<Me | null> {
   }
 }
 
+/** Save signup / welcome profile and mark onboarding complete. */
+export async function completeOnboarding(userId: string, input: OnboardingInput) {
+  const throwsForehand = input.primaryThrow === 'forehand'
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      display_name: input.displayName.trim(),
+      max_distance: input.maxDistance,
+      dominant_hand: input.dominantHand,
+      primary_throw: input.primaryThrow,
+      throws_forehand: throwsForehand,
+      onboarding_complete: true,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', userId)
+  if (error) throw error
+}
+
 /** Update the player's max distance setting. */
 export async function updateMaxDistance(userId: string, maxDistance: number) {
   const { error } = await supabase
@@ -39,6 +67,7 @@ export async function updateMaxDistance(userId: string, maxDistance: number) {
 }
 
 export interface PlayerPatch {
+  displayName?: string | null
   dominantHand?: Hand
   throwsForehand?: boolean
   /** Preferred release. Setting to 'forehand' implicitly enables forehand
@@ -57,6 +86,7 @@ export async function updatePlayer(userId: string, patch: PlayerPatch) {
   const update: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
   }
+  if (patch.displayName !== undefined) update.display_name = patch.displayName
   if (patch.dominantHand !== undefined) update.dominant_hand = patch.dominantHand
   if (patch.throwsForehand !== undefined)
     update.throws_forehand = patch.throwsForehand

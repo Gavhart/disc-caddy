@@ -1443,6 +1443,113 @@ select {
   color: var(--border);
 }
 
+.pick-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.pick-section {
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.pick-section-title {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.pick-section-body {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.pick-actions {
+  margin-top: 14px;
+}
+
+.pick-log-btn {
+  width: 100%;
+}
+
+.pro-gate {
+  margin-top: 10px;
+  padding: 12px;
+  background: var(--surface-2);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+}
+
+.pro-gate-text {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.pro-gate-cta {
+  display: inline-block;
+}
+
+.live-wind-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.live-wind-btn {
+  font-size: 13px;
+}
+
+.live-wind-label {
+  flex: 1;
+  min-width: 120px;
+}
+
+.live-wind-hint {
+  margin: 10px 0 0;
+}
+
+.round-live {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+  padding: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.round-live-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.round-live-pill {
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.round-start-btn,
+.round-end-btn {
+  font-size: 13px;
+}
+
 .alternatives {
   margin-top: 14px;
 }
@@ -1583,6 +1690,36 @@ tr.ranked td:first-child {
   box-shadow: var(--shadow);
   position: relative;
   overflow: hidden;
+}
+
+.auth-card-wide {
+  max-width: 440px;
+}
+
+.auth-intro {
+  text-align: center;
+  margin: -12px 0 20px;
+}
+
+.auth-section-label {
+  margin: 18px 0 4px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.auth-meta {
+  margin: 6px 0 4px;
+}
+
+.auth-setting-row {
+  margin-top: 10px;
+}
+
+.signup-profile-fields {
+  margin-top: 4px;
 }
 
 .auth-card::before {
@@ -1816,6 +1953,116 @@ footer code {
 footer {
   text-align: center;
   padding: 28px 0 0;
+}
+
+/* ---------- Updates / roadmap ---------- */
+.updates-page {
+  max-width: 640px;
+}
+
+.updates-hero {
+  text-align: center;
+  background: linear-gradient(
+    135deg,
+    rgba(56, 189, 248, 0.12),
+    rgba(74, 222, 128, 0.08)
+  );
+}
+
+.updates-hero-badge {
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--accent-soft);
+  color: var(--accent-bright);
+}
+
+.updates-hero h1 {
+  margin: 0 0 8px;
+  font-size: 24px;
+}
+
+.updates-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.updates-release {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.updates-release-new {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+}
+
+.updates-release-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.updates-release-title {
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.updates-items {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.updates-items li::marker {
+  color: var(--accent);
+}
+
+.updates-roadmap-list {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+}
+
+.updates-roadmap-list li::before {
+  content: '→ ';
+  color: var(--sky);
+  font-weight: 700;
+}
+
+.updates-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.updates-back-btn {
+  text-align: center;
+  text-decoration: none;
+}
+
+.updates-settings-link {
+  text-align: center;
+  font-size: 13px;
 }
 
 /* ---------- Bag row mobile tweaks ---------- */

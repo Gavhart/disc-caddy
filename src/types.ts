@@ -161,6 +161,8 @@ export interface CourseHole {
 export interface Me {
   id: string
   email: string | null
+  displayName: string | null
+  onboardingComplete: boolean
   /** Backhand max distance with a driver. The headline number. */
   maxDistance: number
   /** Resolved by the `me` view: explicit value, else 50% of maxDistance. */
@@ -208,4 +210,27 @@ export interface Recommendation {
   pick: 'TOP PICK' | 'Alternative' | 'Backup' | null
   /** Human-readable rationale: "RHBH hyzer — let the natural fade ride the dogleg." */
   explanation: string
+  /** Structured breakdown for the expanded Pro UI. */
+  explanationSections: ExplanationSection[]
+  /** Feet left (negative) or right (positive) of basket to aim. Null when negligible. */
+  aimOffsetFt: number | null
+  release: 'hyzer' | 'flat' | 'anhyzer'
+}
+
+export interface ExplanationSection {
+  title: string
+  body: string
+}
+
+export interface RoundThrow {
+  id: string
+  roundId: string
+  holeNumber: number
+  bagDiscId: string | null
+  discName: string
+  throwStyle: ThrowStyle
+  recommendedRank: number | null
+  usedRecommendation: boolean
+  notes: string | null
+  createdAt: string
 }

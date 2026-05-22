@@ -10,7 +10,22 @@ import { recommend } from '../lib/recommend'
 import { updateMaxDistance, updatePlayer } from '../lib/profile'
 import { localState } from '../lib/storage'
 import { createBag, listBags, listDiscsInBag } from '../lib/bags'
-import { Bag, BagDisc, Course, CourseHole, Hole } from '../types'
+import {
+  endRound,
+  getActiveRound,
+  listThrowsForRound,
+  logThrow,
+  startRound,
+} from '../lib/rounds'
+import {
+  Bag,
+  BagDisc,
+  Course,
+  CourseHole,
+  Hole,
+  Recommendation as Rec,
+  RoundThrow,
+} from '../types'
 
 const DEFAULT_HOLE: Hole = {
   distance: 300,
@@ -25,30 +40,44 @@ const DEFAULT_HOLE: Hole = {
 
 export function HomePage() {
   const { user, me, refreshMe } = useAuth()
+  const savedRound = localState.loadRound()
+
   const [bags, setBags] = useState<Bag[]>([])
   const [activeBagId, setActiveBagId] = useState<string | null>(null)
   const [discs, setDiscs] = useState<BagDisc[]>([])
   const [hole, setHole] = useState<Hole>(() => localState.loadHole() ?? DEFAULT_HOLE)
 
+  const [pickedCourse, setPickedCourse] = useState<Course | null>(null)
   const [pickedCourseId, setPickedCourseId] = useState<string | null>(
-    () => localState.loadRound()?.courseId ?? null,
+    () => savedRound?.courseId ?? null,
   )
   const [pickedHoleNumber, setPickedHoleNumber] = useState<number | null>(
-    () => localState.loadRound()?.holeNumber ?? null,
+    () => savedRound?.holeNumber ?? null,
   )
+
+  const [roundId, setRoundId] = useState<string | null>(
+    () => savedRound?.roundId ?? null,
+  )
+  const [roundActive, setRoundActive] = useState(savedRound?.active ?? false)
+  const [roundThrows, setRoundThrows] = useState<RoundThrow[]>([])
+  const [roundBusy, setRoundBusy] = useState(false)
+
+  const isPro = me?.isPro ?? false
 
   useEffect(() => localState.saveHole(hole), [hole])
 
   useEffect(() => {
-    if (pickedCourseId == null && pickedHoleNumber == null) {
+    if (pickedCourseId == null && pickedHoleNumber == null && !roundActive) {
       localState.clearRound()
       return
     }
     localState.saveRound({
       courseId: pickedCourseId,
       holeNumber: pickedHoleNumber,
+      roundId,
+      active: roundActive,
     })
-  }, [pickedCourseId, pickedHoleNumber])
+  }, [pickedCourseId, pickedHoleNumber, roundId, roundActive])
 
   useEffect(() => {
     let cancelled = false
@@ -81,6 +110,42 @@ export function HomePage() {
       .catch(err => console.error('[home] load discs failed', err))
   }, [activeBagId])
 
+  useEffect(() => {
+    if (!user || !isPro) return
+    let cancelled = false
+    getActiveRound()
+      .then(async active => {
+        if (cancelled || !active) return
+        setRoundId(active.id)
+        setRoundActive(true)
+        if (active.course_id) {
+          setPickedCourseId(active.course_id)
+        }
+        const throws = await listThrowsForRound(active.id)
+        if (!cancelled) setRoundThrows(throws)
+      })
+      .catch(err => console.error('[home] restore active round failed', err))
+    return () => {
+      cancelled = true
+    }
+  }, [user, isPro])
+
+  useEffect(() => {
+    if (!roundId || !roundActive) {
+      setRoundThrows([])
+      return
+    }
+    listThrowsForRound(roundId)
+      .then(setRoundThrows)
+      .catch(err => console.error('[home] load round throws failed', err))
+  }, [roundId, roundActive])
+
+  const loggedHoleNumber = useMemo(() => {
+    if (pickedHoleNumber == null) return null
+    const logged = roundThrows.some(t => t.holeNumber === pickedHoleNumber)
+    return logged ? pickedHoleNumber : null
+  }, [pickedHoleNumber, roundThrows])
+
   const handleMaxDistanceChange = useCallback(
     async (newMax: number) => {
       if (!user) return
@@ -109,6 +174,7 @@ export function HomePage() {
 
   const handlePickCourseHole = useCallback(
     (course: Course | null, ch: CourseHole | null) => {
+      setPickedCourse(course)
       setPickedCourseId(course?.id ?? null)
       setPickedHoleNumber(ch?.number ?? null)
       if (ch) {
@@ -124,6 +190,65 @@ export function HomePage() {
       }
     },
     [],
+  )
+
+  const handleStartRound = useCallback(async () => {
+    if (!pickedCourseId || !activeBagId || !isPro) return
+    setRoundBusy(true)
+    try {
+      const id = await startRound({
+        courseId: pickedCourseId,
+        bagId: activeBagId,
+      })
+      setRoundId(id)
+      setRoundActive(true)
+      setRoundThrows([])
+    } catch (err) {
+      console.error('[home] start round failed', err)
+      alert(err instanceof Error ? err.message : 'Could not start round')
+    } finally {
+      setRoundBusy(false)
+    }
+  }, [pickedCourseId, activeBagId, isPro])
+
+  const handleEndRound = useCallback(async () => {
+    if (!roundId) {
+      setRoundActive(false)
+      return
+    }
+    setRoundBusy(true)
+    try {
+      await endRound(roundId)
+      setRoundId(null)
+      setRoundActive(false)
+      setRoundThrows([])
+    } catch (err) {
+      console.error('[home] end round failed', err)
+      alert(err instanceof Error ? err.message : 'Could not end round')
+    } finally {
+      setRoundBusy(false)
+    }
+  }, [roundId])
+
+  const handleLogThrow = useCallback(
+    async (rec: Rec) => {
+      if (!roundId || pickedHoleNumber == null) return
+      try {
+        const t = await logThrow({
+          roundId,
+          holeNumber: pickedHoleNumber,
+          bagDiscId: rec.bagDisc.id,
+          discName: rec.bagDisc.discName,
+          throwStyle: rec.throwStyle,
+          recommendedRank: rec.rank,
+        })
+        setRoundThrows(prev => [...prev, t])
+      } catch (err) {
+        console.error('[home] log throw failed', err)
+        alert(err instanceof Error ? err.message : 'Could not log throw')
+      }
+    },
+    [roundId, pickedHoleNumber],
   )
 
   const recommendations = useMemo(() => {
@@ -168,9 +293,29 @@ export function HomePage() {
         courseId={pickedCourseId}
         holeNumber={pickedHoleNumber}
         onPickHole={handlePickCourseHole}
+        roundActive={roundActive}
+        throwCount={roundThrows.length}
+        isPro={isPro}
+        roundBusy={roundBusy}
+        onStartRound={handleStartRound}
+        onEndRound={handleEndRound}
       />
-      <HoleInput hole={hole} onChange={setHole} locked={locked} />
-      <Recommendation recommendations={recommendations} />
+      <HoleInput
+        hole={hole}
+        onChange={setHole}
+        locked={locked}
+        courseLat={pickedCourse?.lat ?? null}
+        courseLon={pickedCourse?.lon ?? null}
+        isPro={isPro}
+      />
+      <Recommendation
+        recommendations={recommendations}
+        roundActive={roundActive && pickedCourseId != null}
+        isPro={isPro}
+        loggedHoleNumber={loggedHoleNumber}
+        currentHoleNumber={pickedHoleNumber}
+        onLogThrow={handleLogThrow}
+      />
     </div>
   )
 }

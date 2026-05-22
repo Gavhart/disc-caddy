@@ -2,10 +2,16 @@ import { FormEvent, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { signUp } from '../lib/auth'
 import { Logo } from '../components/Logo'
+import {
+  DEFAULT_PROFILE_FIELDS,
+  ProfileFieldsValue,
+  SignupProfileFields,
+} from '../components/SignupProfileFields'
 
 export function SignupPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [profile, setProfile] = useState<ProfileFieldsValue>(DEFAULT_PROFILE_FIELDS)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
@@ -17,12 +23,24 @@ export function SignupPage() {
       setError('Password must be at least 6 characters.')
       return
     }
+    if (profile.displayName.trim().length < 2) {
+      setError('Please enter a display name (at least 2 characters).')
+      return
+    }
+    if (profile.maxDistance < 100 || profile.maxDistance > 700) {
+      setError('Max distance must be between 100 and 700 ft.')
+      return
+    }
     setBusy(true)
     setError(null)
     try {
-      const { session } = await signUp(email, password)
+      const { session } = await signUp(email, password, {
+        displayName: profile.displayName,
+        maxDistance: profile.maxDistance,
+        dominantHand: profile.dominantHand,
+        primaryThrow: profile.primaryThrow,
+      })
       if (session) {
-        // Auto-signed-in (no email confirmation required in this Supabase project).
         navigate('/', { replace: true })
       } else {
         setSuccess(true)
@@ -56,7 +74,7 @@ export function SignupPage() {
 
   return (
     <div className="auth-shell">
-      <div className="auth-card">
+      <div className="auth-card auth-card-wide">
         <div className="auth-brand">
           <Logo height={80} />
         </div>
@@ -81,6 +99,9 @@ export function SignupPage() {
             value={password}
             onChange={e => setPassword(e.target.value)}
           />
+
+          <SignupProfileFields value={profile} onChange={setProfile} />
+
           {error && <div className="form-error">{error}</div>}
           <button type="submit" className="btn-primary" disabled={busy}>
             {busy ? 'Creating account…' : 'Create account'}

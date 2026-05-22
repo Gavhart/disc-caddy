@@ -55,3 +55,10 @@ export async function openBillingPortal(): Promise<void> {
   if (!data?.url) throw new Error('No portal URL returned')
   window.location.href = data.url
 }
+
+/** Pull subscription state from Stripe into the profile (webhook recovery). */
+export async function syncSubscription(): Promise<void> {
+  const { data, error } = await supabase.functions.invoke('sync-subscription')
+  if (error) throw error
+  if (data?.error) throw new Error(String(data.error))
+}

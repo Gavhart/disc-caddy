@@ -5,6 +5,7 @@ import {
   Hand,
   Hole,
   HoleDirection,
+  ExplanationSection,
   Recommendation,
   ThrowStyle,
   TreeCoverage,
@@ -371,16 +372,18 @@ function scoreAttempt(
   }
 }
 
+interface ExplanationDetail {
+  summary: string
+  sections: ExplanationSection[]
+  aimOffsetFt: number | null
+  release: 'hyzer' | 'flat' | 'anhyzer'
+}
+
 /**
  * Build a human-readable rationale for a single throw. Rule-based and
  * deterministic. Output shape: "<HandStyleLabel> <release> — <clause>; <clause>."
- *
- * Examples:
- *   "RHBH hyzer — natural fade rides the dogleg left into the basket."
- *   "RHFH flat — overstability holds the line into the headwind."
- *   "RHBH anhyzer — release tilted right and fight the natural fade to hold the line."
  */
-function explain(scored: ScoredAttempt, hole: Hole, hand: Hand): string {
+function explain(scored: ScoredAttempt, hole: Hole, hand: Hand): ExplanationDetail {
   const { attempt, stability, distError, directionError, predictedLateral } = scored
   const { style, disc } = attempt
   const handLabel = hand === 'right' ? 'RH' : 'LH'
@@ -552,10 +555,62 @@ function explain(scored: ScoredAttempt, hole: Hole, hand: Hand): string {
   }
 
   const head = `${handLabel}${styleLabel} ${release}`
-  // Capitalize first letter of the first clause for nicer reading.
   const body = clauses.join('; ')
   const bodyCap = body.length > 0 ? body[0].toUpperCase() + body.slice(1) : body
-  return `${head} — ${bodyCap}.`
+  const summary = `${head} — ${bodyCap}.`
+
+  const targetLateral = TARGET_LATERAL[hole.direction]
+  const aimOffsetFt =
+    Math.abs(predictedLateral - targetLateral) > 12
+      ? Math.round(targetLateral - predictedLateral)
+      : null
+
+  const sections: ExplanationSection[] = [
+    {
+      title: 'Release',
+      body: `${handLabel}${styleLabel} ${release} with ${disc.name}. Natural finish trends ${fadeSide}.`,
+    },
+  ]
+
+  if (aimOffsetFt != null && aimOffsetFt !== 0) {
+    sections.push({
+      title: 'Aim point',
+      body: `Aim ~${Math.abs(aimOffsetFt)} ft ${aimOffsetFt < 0 ? 'left' : 'right'} of the basket to account for fade and wind drift.`,
+    })
+  }
+
+  if (scored.effDistance !== hole.distance) {
+    sections.push({
+      title: 'Power',
+      body:
+        distError > 60
+          ? scored.effDistance > hole.distance
+            ? `Expected ~${scored.effDistance} ft — throttle back; the hole is only ${hole.distance} ft.`
+            : `Expected ~${scored.effDistance} ft — max power; you're ${hole.distance - scored.effDistance} ft short of the gap.`
+          : `Expected carry ~${scored.effDistance} ft on a ${hole.distance} ft hole.`,
+    })
+  }
+
+  const conditionNotes = clauses.filter(
+    c =>
+      c.includes('wind') ||
+      c.includes('uphill') ||
+      c.includes('downhill') ||
+      c.includes('tree') ||
+      c.includes('wooded') ||
+      c.includes('canopy') ||
+      c.includes('hilly'),
+  )
+  if (conditionNotes.length > 0) {
+    sections.push({
+      title: 'Conditions',
+      body: conditionNotes.map(c => c[0].toUpperCase() + c.slice(1)).join('. ') + '.',
+    })
+  } else if (bodyCap) {
+    sections.push({ title: 'Notes', body: bodyCap + '.' })
+  }
+
+  return { summary, sections, aimOffsetFt, release }
 }
 
 function describeDisc(disc: Disc, stability: number): string {
@@ -627,20 +682,26 @@ export function recommend(opts: RecommendOptions): Recommendation[] {
     return true
   })
 
-  return deduped.map((s, i): Recommendation => ({
-    bagDisc: s.attempt.bagDisc,
-    disc: s.attempt.disc,
-    throwStyle: s.attempt.style,
-    effTurn: s.effTurn,
-    effFade: s.effFade,
-    stability: s.stability,
-    effDistance: s.effDistance,
-    predictedLateral: s.predictedLateral,
-    distError: s.distError,
-    directionError: s.directionError,
-    score: s.score,
-    rank: i + 1,
-    pick: i === 0 ? 'TOP PICK' : i === 1 ? 'Alternative' : i === 2 ? 'Backup' : null,
-    explanation: explain(s, opts.hole, hand),
-  }))
+  return deduped.map((s, i): Recommendation => {
+    const detail = explain(s, opts.hole, hand)
+    return {
+      bagDisc: s.attempt.bagDisc,
+      disc: s.attempt.disc,
+      throwStyle: s.attempt.style,
+      effTurn: s.effTurn,
+      effFade: s.effFade,
+      stability: s.stability,
+      effDistance: s.effDistance,
+      predictedLateral: s.predictedLateral,
+      distError: s.distError,
+      directionError: s.directionError,
+      score: s.score,
+      rank: i + 1,
+      pick: i === 0 ? 'TOP PICK' : i === 1 ? 'Alternative' : i === 2 ? 'Backup' : null,
+      explanation: detail.summary,
+      explanationSections: detail.sections,
+      aimOffsetFt: detail.aimOffsetFt,
+      release: detail.release,
+    }
+  })
 }

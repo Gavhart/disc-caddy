@@ -18,6 +18,13 @@ interface Props {
    * course has no holes defined yet.
    */
   onPickHole: (course: Course | null, hole: CourseHole | null) => void
+  /** Pro live round tracking. */
+  roundActive?: boolean
+  throwCount?: number
+  isPro?: boolean
+  roundBusy?: boolean
+  onStartRound?: () => void | Promise<void>
+  onEndRound?: () => void | Promise<void>
 }
 
 /**
@@ -30,7 +37,17 @@ interface Props {
  * Hole-state changes flow up through `onPickHole` so the parent can keep its
  * own Hole record in sync and persist the round across refreshes.
  */
-export function CourseSelector({ courseId, holeNumber, onPickHole }: Props) {
+export function CourseSelector({
+  courseId,
+  holeNumber,
+  onPickHole,
+  roundActive = false,
+  throwCount = 0,
+  isPro = false,
+  roundBusy = false,
+  onStartRound,
+  onEndRound,
+}: Props) {
   const [courses, setCourses] = useState<Course[]>([])
   const [holes, setHoles] = useState<CourseHole[]>([])
   const [summaries, setSummaries] = useState<Map<string, CourseSummary>>(
@@ -200,6 +217,12 @@ export function CourseSelector({ courseId, holeNumber, onPickHole }: Props) {
           onStep={step}
           onJump={jumpTo}
           onLeave={leaveCourse}
+          roundActive={roundActive}
+          throwCount={throwCount}
+          isPro={isPro}
+          roundBusy={roundBusy}
+          onStartRound={onStartRound}
+          onEndRound={onEndRound}
         />
       )}
     </section>
@@ -215,6 +238,12 @@ interface RoundViewProps {
   onStep: (delta: number) => void
   onJump: (num: string) => void
   onLeave: () => void
+  roundActive: boolean
+  throwCount: number
+  isPro: boolean
+  roundBusy: boolean
+  onStartRound?: () => void | Promise<void>
+  onEndRound?: () => void | Promise<void>
 }
 
 function RoundView({
@@ -226,6 +255,12 @@ function RoundView({
   onStep,
   onJump,
   onLeave,
+  roundActive,
+  throwCount,
+  isPro,
+  roundBusy,
+  onStartRound,
+  onEndRound,
 }: RoundViewProps) {
   const hasPrev = currentIdx > 0
   const hasNext = currentIdx >= 0 && currentIdx < holes.length - 1
@@ -271,6 +306,43 @@ function RoundView({
         <p className="muted small">No hole selected.</p>
       ) : (
         <>
+          <div className="round-live">
+            {roundActive ? (
+              <>
+                <div className="round-live-status">
+                  <span className="pill small round-live-pill">Live round</span>
+                  <span className="muted small">
+                    {throwCount} throw{throwCount === 1 ? '' : 's'} logged
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="btn-secondary round-end-btn"
+                  onClick={() => onEndRound?.()}
+                  disabled={roundBusy}
+                >
+                  {roundBusy ? 'Ending…' : 'End round'}
+                </button>
+              </>
+            ) : isPro ? (
+              <button
+                type="button"
+                className="btn-primary round-start-btn"
+                onClick={() => onStartRound?.()}
+                disabled={roundBusy}
+              >
+                {roundBusy ? 'Starting…' : 'Start live round'}
+              </button>
+            ) : (
+              <p className="muted small">
+                <Link to="/upgrade" className="link-button">
+                  Upgrade to Pro
+                </Link>{' '}
+                to log throws hole-by-hole during a round.
+              </p>
+            )}
+          </div>
+
           <div className="round-stepper">
             <button
               type="button"

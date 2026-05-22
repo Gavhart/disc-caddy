@@ -2,16 +2,9 @@
 // Receives subscription lifecycle events and updates profiles accordingly.
 //
 // Deploy: supabase functions deploy stripe-webhook --no-verify-jwt
-// (Webhook calls don't carry a JWT, so disable JWT verification on this function.)
 //
-// Secrets required:
-//   STRIPE_SECRET_KEY=sk_test_...
-//   STRIPE_WEBHOOK_SECRET=whsec_...
-//   SUPABASE_SERVICE_ROLE_KEY=...   (auto-provided by Supabase to Edge Functions as SUPABASE_SERVICE_ROLE_KEY)
-//
-// Configure in Stripe: webhook endpoint pointing to
-//   https://<your-project>.supabase.co/functions/v1/stripe-webhook
-// Listening for events:
+// Stripe webhook events to enable:
+//   - checkout.session.completed
 //   - customer.subscription.created
 //   - customer.subscription.updated
 //   - customer.subscription.deleted
@@ -26,11 +19,51 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
 })
 const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET')!
 
-// Service-role client bypasses RLS so we can update any user's profile.
 const supabaseAdmin = createClient(
   Deno.env.get('SUPABASE_URL')!,
   Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
 )
+
+async function resolveUserId(customerId: string): Promise<string | null> {
+  const { data: byCustomer } = await supabaseAdmin
+    .from('profiles')
+    .select('id')
+    .eq('stripe_customer_id', customerId)
+    .maybeSingle()
+  if (byCustomer?.id) return byCustomer.id
+
+  const customer = await stripe.customers.retrieve(customerId)
+  if (customer.deleted) return null
+  return customer.metadata?.supabase_user_id ?? null
+}
+
+async function syncSubscription(sub: Stripe.Subscription) {
+  const customerId = sub.customer as string
+  const status = sub.status
+  const periodEnd = new Date(sub.current_period_end * 1000).toISOString()
+  const tier = status === 'active' || status === 'trialing' ? 'pro' : 'free'
+
+  const patch = {
+    stripe_customer_id: customerId,
+    subscription_status: status,
+    subscription_tier: tier,
+    subscription_period_end: periodEnd,
+    updated_at: new Date().toISOString(),
+  }
+
+  const userId = await resolveUserId(customerId)
+  if (!userId) {
+    console.error('[webhook] no profile for customer', customerId)
+    return
+  }
+
+  const { error } = await supabaseAdmin.from('profiles').update(patch).eq('id', userId)
+  if (error) {
+    console.error('[webhook] profile update failed:', error)
+    throw error
+  }
+  console.log('[webhook] synced subscription for user', userId, '→', tier, status)
+}
 
 serve(async (req) => {
   const signature = req.headers.get('stripe-signature')
@@ -47,32 +80,38 @@ serve(async (req) => {
 
   try {
     switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session
+        if (session.mode !== 'subscription') break
+        const customerId = session.customer as string | null
+        if (!customerId) break
+
+        const userId = await resolveUserId(customerId)
+        if (userId) {
+          await supabaseAdmin
+            .from('profiles')
+            .update({
+              stripe_customer_id: customerId,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', userId)
+        }
+
+        const subscriptionId = session.subscription as string | null
+        if (subscriptionId) {
+          const sub = await stripe.subscriptions.retrieve(subscriptionId)
+          await syncSubscription(sub)
+        }
+        break
+      }
       case 'customer.subscription.created':
       case 'customer.subscription.updated':
       case 'customer.subscription.deleted': {
         const sub = event.data.object as Stripe.Subscription
-        const status = sub.status // 'active' | 'canceled' | 'past_due' | 'trialing' | ...
-        const customerId = sub.customer as string
-        const periodEnd = new Date(sub.current_period_end * 1000).toISOString()
-
-        const tier =
-          status === 'active' || status === 'trialing' ? 'pro' : 'free'
-
-        const { error } = await supabaseAdmin
-          .from('profiles')
-          .update({
-            subscription_status: status,
-            subscription_tier: tier,
-            subscription_period_end: periodEnd,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('stripe_customer_id', customerId)
-
-        if (error) console.error('[webhook] update failed:', error)
+        await syncSubscription(sub)
         break
       }
       default:
-        // Other events ignored for v1.
         break
     }
 

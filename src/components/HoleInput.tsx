@@ -1,3 +1,6 @@
+import { useState } from 'react'
+import { fetchLiveWind } from '../lib/weather'
+import { ProGate } from './ProGate'
 import {
   Elevation,
   Hole,
@@ -68,6 +71,10 @@ interface Props {
   onChange: (hole: Hole) => void
   /** When true, layout fields are locked (driven by a course-hole pick). */
   locked?: boolean
+  /** Pro: fetch live wind when course coordinates are available. */
+  courseLat?: number | null
+  courseLon?: number | null
+  isPro?: boolean
 }
 
 /**
@@ -109,7 +116,24 @@ function ChipGroup<T extends string>({
   )
 }
 
-export function HoleInput({ hole, onChange, locked = false }: Props) {
+export function HoleInput({
+  hole,
+  onChange,
+  locked = false,
+  courseLat = null,
+  courseLon = null,
+  isPro = false,
+}: Props) {
+  const [windLoading, setWindLoading] = useState(false)
+  const [windError, setWindError] = useState<string | null>(null)
+  const [windLabel, setWindLabel] = useState<string | null>(null)
+  const [showProGate, setShowProGate] = useState(false)
+
+  const hasCoords =
+    courseLat != null &&
+    courseLon != null &&
+    Number.isFinite(courseLat) &&
+    Number.isFinite(courseLon)
   // Tree-layout only matters when there are actually trees in play. When the
   // user flips coverage back to "open" we proactively clear the layout so
   // stale "back half" picks don't survive a coverage reset.
@@ -133,6 +157,31 @@ export function HoleInput({ hole, onChange, locked = false }: Props) {
             ? 'throughout'
             : hole.treeLayout,
     })
+  }
+
+  async function handleFetchLiveWind() {
+    if (!hasCoords) return
+    if (!isPro) {
+      setShowProGate(true)
+      return
+    }
+    setWindLoading(true)
+    setWindError(null)
+    setShowProGate(false)
+    try {
+      const live = await fetchLiveWind(courseLat!, courseLon!)
+      onChange({
+        ...hole,
+        windDirection: live.windDirection,
+        windSpeed: live.windSpeed,
+      })
+      setWindLabel(live.label)
+    } catch (err) {
+      setWindError(err instanceof Error ? err.message : 'Could not fetch wind')
+      setWindLabel(null)
+    } finally {
+      setWindLoading(false)
+    }
   }
 
   return (
@@ -233,6 +282,35 @@ export function HoleInput({ hole, onChange, locked = false }: Props) {
             ),
           )}
         </div>
+
+        {hasCoords && (
+          <div className="live-wind-row">
+            <button
+              type="button"
+              className="btn-secondary live-wind-btn"
+              onClick={handleFetchLiveWind}
+              disabled={windLoading}
+            >
+              {windLoading ? 'Fetching wind…' : 'Fetch live wind'}
+            </button>
+            {windLabel && (
+              <span className="muted small live-wind-label">{windLabel}</span>
+            )}
+            {windError && (
+              <span className="form-error small live-wind-error">{windError}</span>
+            )}
+          </div>
+        )}
+        {showProGate && !isPro && (
+          <ProGate feature="Live wind">
+            {' '}Auto-fill wind from Open-Meteo at the course location.
+          </ProGate>
+        )}
+        {!hasCoords && (
+          <p className="muted small live-wind-hint">
+            Pick a course with location data to enable live wind (Pro).
+          </p>
+        )}
       </div>
       {hole.windDirection !== 'none' && (
         <div className="field-row">

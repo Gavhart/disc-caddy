@@ -30,6 +30,10 @@ serve(async (req) => {
         global: { headers: { Authorization: req.headers.get('Authorization')! } },
       },
     )
+    const supabaseAdmin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    )
 
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) {
@@ -55,10 +59,26 @@ serve(async (req) => {
         metadata: { supabase_user_id: user.id },
       })
       customerId = customer.id
-      await supabase
+      const { error: linkErr } = await supabaseAdmin
         .from('profiles')
-        .update({ stripe_customer_id: customerId })
+        .update({
+          stripe_customer_id: customerId,
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', user.id)
+      if (linkErr) {
+        console.error('[checkout] link customer failed:', linkErr)
+        throw linkErr
+      }
+    } else {
+      // Ensure metadata exists so webhooks can resolve the user if the
+      // profile link was ever missing.
+      const customer = await stripe.customers.retrieve(customerId)
+      if (!customer.deleted && !customer.metadata?.supabase_user_id) {
+        await stripe.customers.update(customerId, {
+          metadata: { supabase_user_id: user.id },
+        })
+      }
     }
 
     const session = await stripe.checkout.sessions.create({

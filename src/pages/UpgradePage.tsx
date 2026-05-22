@@ -7,14 +7,15 @@ const FEATURES_FREE = [
   '1 bag',
   'Unlimited discs',
   'Disc photos',
-  'Full arm-speed recommendation engine',
-  'Manual hole input',
+  'Full recommendation engine with detailed explanations',
+  'Course stepper + manual hole input',
 ]
 
 const FEATURES_PRO = [
   'Unlimited bags',
+  'Live wind auto-fill at the course',
+  'Live round mode — log throws hole-by-hole',
   'Sync across devices',
-  'Future: course database, weather, advanced stats',
   'Support the indie dev (you)',
 ]
 
