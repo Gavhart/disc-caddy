@@ -11,7 +11,7 @@ Pro subscriptions are **web-only** (Stripe on your website). The Android app syn
 | Step | Action |
 |------|--------|
 | 1 | [Google Play Console](https://play.google.com/console) — pay **$25** one-time developer fee |
-| 2 | Deploy the **web app** (Vercel, Netlify, etc.) so you have a public URL |
+| 2 | Deploy the web app on **Vercel** — see **[VERCEL.md](./VERCEL.md)** |
 | 3 | Confirm **`https://YOUR-DOMAIN/privacy`** and **`/terms`** load in a browser |
 | 4 | Supabase: apply migrations **003–013**, deploy **`delete-account`** edge function |
 

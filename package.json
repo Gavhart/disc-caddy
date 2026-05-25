@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "build:mobile": "npm run build && npx cap sync",
+    "build:mobile": "VITE_CAPACITOR=true npm run build && npx cap sync",
     "cap:sync": "npx cap sync",
     "cap:ios": "npx cap open ios",
     "cap:android": "npx cap open android",
