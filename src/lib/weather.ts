@@ -7,6 +7,50 @@ export interface LiveWind {
   label: string
 }
 
+export class LocationError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'LocationError'
+  }
+}
+
+/** Current device location (browser or Capacitor WebView). */
+export async function getUserLocation(): Promise<{ lat: number; lon: number }> {
+  if (typeof navigator === 'undefined' || !navigator.geolocation) {
+    throw new LocationError('Location is not available on this device.')
+  }
+
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(
+      pos =>
+        resolve({
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude,
+        }),
+      err => {
+        switch (err.code) {
+          case err.PERMISSION_DENIED:
+            reject(
+              new LocationError(
+                'Location permission denied. Enable location for this site in your browser or device settings.',
+              ),
+            )
+            break
+          case err.POSITION_UNAVAILABLE:
+            reject(new LocationError('Could not determine your location.'))
+            break
+          case err.TIMEOUT:
+            reject(new LocationError('Location request timed out. Try again.'))
+            break
+          default:
+            reject(new LocationError('Could not get your location.'))
+        }
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 120_000 },
+    )
+  })
+}
+
 /**
  * Fetch current surface wind from Open-Meteo (free, no API key).
  * Maps meteorological "wind from" degrees to our hole-relative compass,
@@ -37,6 +81,15 @@ export async function fetchLiveWind(
   const windDirection = mapMeteoToWindDirection(fromDeg, throwBearingDeg)
   const label = `${speed} mph · ${describeWind(windDirection)}`
   return { windDirection, windSpeed: speed, label }
+}
+
+/** GPS location → Open-Meteo wind, mapped for the recommender. */
+export async function fetchLiveWindForUser(
+  throwBearingDeg = 0,
+): Promise<LiveWind & { lat: number; lon: number }> {
+  const { lat, lon } = await getUserLocation()
+  const live = await fetchLiveWind(lat, lon, throwBearingDeg)
+  return { ...live, lat, lon }
 }
 
 /** Wind direction meteorological degrees → Disc Caddy enum (8-way). */

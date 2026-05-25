@@ -45,7 +45,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>UIViewControllerBasedStatusBarAppearance</key>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Disc Caddy uses your location to fetch live wind for disc recommendations.</string>
+    <key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 </dict>
 </plist>

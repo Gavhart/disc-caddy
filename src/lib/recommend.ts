@@ -14,8 +14,8 @@ import {
 import { DISC_BY_NAME } from './discs'
 import {
   PLASTIC_MODS,
-  WEIGHT_MODS,
   WEAR_MODS,
+  weightModsForGrams,
 } from './modifiers'
 import {
   armSpeedFromMaxDistance,
@@ -250,7 +250,7 @@ function scoreAttempt(
   const reqSpeed = requiredArmSpeed(disc.speed)
 
   const pm = PLASTIC_MODS[bagDisc.plastic]
-  const wm = WEIGHT_MODS[bagDisc.weight]
+  const wm = weightModsForGrams(bagDisc.weightGrams)
   const rm = WEAR_MODS[bagDisc.wear]
 
   let totalTurnMod = pm.turn + wm.turn + rm.turn
@@ -613,6 +613,106 @@ function explain(scored: ScoredAttempt, hole: Hole, hand: Hand): ExplanationDeta
   return { summary, sections, aimOffsetFt, release }
 }
 
+function scoredToRecommendation(
+  s: ScoredAttempt,
+  hole: Hole,
+  hand: Hand,
+  meta: { rank: number; pick: Recommendation['pick'] },
+): Recommendation {
+  const detail = explain(s, hole, hand)
+  return {
+    bagDisc: s.attempt.bagDisc,
+    disc: s.attempt.disc,
+    throwStyle: s.attempt.style,
+    effTurn: s.effTurn,
+    effFade: s.effFade,
+    stability: s.stability,
+    effDistance: s.effDistance,
+    predictedLateral: s.predictedLateral,
+    distError: s.distError,
+    directionError: s.directionError,
+    score: s.score,
+    rank: meta.rank,
+    pick: meta.pick,
+    explanation: detail.summary,
+    explanationSections: detail.sections,
+    aimOffsetFt: detail.aimOffsetFt,
+    release: detail.release,
+  }
+}
+
+function scoreDiscAttempt(
+  bagDisc: BagDisc,
+  disc: Disc,
+  style: ThrowStyle,
+  opts: RecommendOptions,
+  hand: Hand,
+): ScoredAttempt {
+  const primaryThrow: ThrowStyle = opts.primaryThrow ?? 'backhand'
+  const arm =
+    style === 'forehand'
+      ? armSpeedFromMaxDistance(
+          opts.playerForehandDistance ?? opts.playerMaxDistance,
+        )
+      : armSpeedFromMaxDistance(opts.playerMaxDistance)
+  const baseline = pickBaseline(disc, style, opts)
+  const scored = scoreAttempt(
+    { bagDisc, disc, style, baselineDistance: baseline },
+    opts.hole,
+    hand,
+    arm,
+  )
+  if (style !== primaryThrow) {
+    scored.score += MODEL.STYLE_PREFERENCE_PENALTY
+  }
+  return scored
+}
+
+/**
+ * Build throw guidance for one bag disc. When `throwStyle` is omitted, picks
+ * the better of backhand vs forehand (when forehand is enabled).
+ */
+export function recommendForDisc(
+  opts: RecommendOptions,
+  bagDiscId: string,
+  throwStyle?: ThrowStyle,
+): Recommendation | null {
+  const bagDisc = opts.bag.find(d => d.id === bagDiscId)
+  if (!bagDisc) return null
+  const disc = DISC_BY_NAME[bagDisc.discName]
+  if (!disc) return null
+
+  const hand: Hand = opts.hand ?? 'right'
+  const primaryThrow: ThrowStyle = opts.primaryThrow ?? 'backhand'
+  const throwsForehand =
+    (opts.throwsForehand ?? false) || primaryThrow === 'forehand'
+
+  let best: ScoredAttempt
+  if (throwStyle === 'backhand') {
+    best = scoreDiscAttempt(bagDisc, disc, 'backhand', opts, hand)
+  } else if (throwStyle === 'forehand') {
+    if (!throwsForehand) return null
+    best = scoreDiscAttempt(bagDisc, disc, 'forehand', opts, hand)
+  } else {
+    const bh = scoreDiscAttempt(bagDisc, disc, 'backhand', opts, hand)
+    if (!throwsForehand) {
+      best = bh
+    } else {
+      const fh = scoreDiscAttempt(bagDisc, disc, 'forehand', opts, hand)
+      best = bh.score <= fh.score ? bh : fh
+    }
+  }
+
+  const all = recommend(opts)
+  const match = all.find(
+    r => r.bagDisc.id === bagDiscId && r.throwStyle === best.attempt.style,
+  )
+  return scoredToRecommendation(best, opts.hole, hand, {
+    rank: match?.rank ?? 0,
+    pick: match?.pick ?? null,
+  })
+}
+
 function describeDisc(disc: Disc, stability: number): string {
   if (stability > 2.5) return `${disc.name} (${disc.brand}) — overstable, predictable finish`
   if (stability > 1.0) return `${disc.name} (${disc.brand}) — stable with a reliable fade`
@@ -683,25 +783,9 @@ export function recommend(opts: RecommendOptions): Recommendation[] {
   })
 
   return deduped.map((s, i): Recommendation => {
-    const detail = explain(s, opts.hole, hand)
-    return {
-      bagDisc: s.attempt.bagDisc,
-      disc: s.attempt.disc,
-      throwStyle: s.attempt.style,
-      effTurn: s.effTurn,
-      effFade: s.effFade,
-      stability: s.stability,
-      effDistance: s.effDistance,
-      predictedLateral: s.predictedLateral,
-      distError: s.distError,
-      directionError: s.directionError,
-      score: s.score,
+    return scoredToRecommendation(s, opts.hole, hand, {
       rank: i + 1,
       pick: i === 0 ? 'TOP PICK' : i === 1 ? 'Alternative' : i === 2 ? 'Backup' : null,
-      explanation: detail.summary,
-      explanationSections: detail.sections,
-      aimOffsetFt: detail.aimOffsetFt,
-      release: detail.release,
-    }
+    })
   })
 }

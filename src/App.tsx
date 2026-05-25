@@ -18,6 +18,7 @@ import { WelcomePage } from './pages/WelcomePage'
 import { UpdatesPage } from './pages/UpdatesPage'
 import { PrivacyPage } from './pages/PrivacyPage'
 import { TermsPage } from './pages/TermsPage'
+import { RoundsPage } from './pages/RoundsPage'
 
 function AppShell() {
   const { session, me, loading } = useAuth()
@@ -84,6 +85,14 @@ function AppShell() {
             element={
               <ProtectedRoute>
                 <CoursesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/rounds/:roundId?"
+            element={
+              <ProtectedRoute>
+                <RoundsPage />
               </ProtectedRoute>
             }
           />

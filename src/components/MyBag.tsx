@@ -1,10 +1,17 @@
 import { useEffect, useState } from 'react'
-import { BagDisc, Plastic, Weight, Wear } from '../types'
+import {
+  BagDisc,
+  Plastic,
+  WEIGHT_GRAMS_DEFAULT,
+  WEIGHT_GRAMS_MAX,
+  WEIGHT_GRAMS_MIN,
+  Wear,
+} from '../types'
+import { clampWeightGrams } from '../lib/modifiers'
 import { DiscPhotoUploader } from './DiscPhotoUploader'
 import { DiscSelect } from './DiscSelect'
 
 const PLASTIC_OPTIONS: Plastic[] = ['Premium', 'Base', 'Glow']
-const WEIGHT_OPTIONS: Weight[] = ['Max', 'Standard', 'Light']
 const WEAR_OPTIONS: Wear[] = ['New', 'Broken In', 'Beat In']
 
 interface Props {
@@ -101,19 +108,33 @@ export function MyBag({
                   </option>
                 ))}
               </select>
-              <select
-                value={d.weight}
-                onChange={e =>
-                  onUpdate(d.id, { weight: e.target.value as Weight })
-                }
-                aria-label="Weight"
-              >
-                {WEIGHT_OPTIONS.map(o => (
-                  <option key={o} value={o}>
-                    {o} wt
-                  </option>
-                ))}
-              </select>
+              <label className="bag-weight-field">
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min={WEIGHT_GRAMS_MIN}
+                  max={WEIGHT_GRAMS_MAX}
+                  step={1}
+                  value={d.weightGrams}
+                  onChange={e => {
+                    const v = e.target.valueAsNumber
+                    if (Number.isFinite(v)) {
+                      onUpdate(d.id, { weightGrams: v })
+                    }
+                  }}
+                  onBlur={e => {
+                    const v = e.target.valueAsNumber
+                    const clamped = Number.isFinite(v)
+                      ? clampWeightGrams(v)
+                      : WEIGHT_GRAMS_DEFAULT
+                    if (clamped !== d.weightGrams) {
+                      onUpdate(d.id, { weightGrams: clamped })
+                    }
+                  }}
+                  aria-label="Weight in grams"
+                />
+                <span className="bag-weight-suffix">g</span>
+              </label>
               <select
                 value={d.wear}
                 onChange={e => onUpdate(d.id, { wear: e.target.value as Wear })}

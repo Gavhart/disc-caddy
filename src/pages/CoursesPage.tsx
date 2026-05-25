@@ -6,6 +6,8 @@ import {
   CourseSummary,
   Elevation,
   HoleDirection,
+  TeeBearing,
+  TEE_BEARING_OPTIONS,
   Terrain,
   TreeCoverage,
   TreeLayout,
@@ -97,6 +99,7 @@ export function CoursesPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [holes, setHoles] = useState<CourseHole[]>([])
   const [holesLoading, setHolesLoading] = useState(false)
+  const [holeError, setHoleError] = useState<string | null>(null)
 
   // Per-course aggregate stats (hole-fill counts, distance totals). Loaded
   // in parallel with the catalog and refreshed whenever holes change in the
@@ -120,6 +123,7 @@ export function CoursesPage() {
   useEffect(() => {
     if (!selectedId) {
       setHoles([])
+      setHoleError(null)
       return
     }
     setHolesLoading(true)
@@ -271,6 +275,11 @@ export function CoursesPage() {
     }
   }
 
+  const nextHoleNumber = useMemo(() => {
+    if (holes.length === 0) return 1
+    return Math.max(...holes.map(h => h.number)) + 1
+  }, [holes])
+
   async function addHole(input: {
     number: number
     distance: number
@@ -280,9 +289,11 @@ export function CoursesPage() {
     terrain: Terrain
     treeCoverage: TreeCoverage
     treeLayout: TreeLayout
+    teeBearing: TeeBearing
     notes: string | null
   }) {
-    if (!selectedId) return
+    if (!selectedId) return false
+    setHoleError(null)
     try {
       const created = await createCourseHole({
         courseId: selectedId,
@@ -294,12 +305,17 @@ export function CoursesPage() {
         terrain: input.terrain,
         treeCoverage: input.treeCoverage,
         treeLayout: input.treeLayout,
+        teeBearing: input.teeBearing,
         notes: input.notes,
       })
       setHoles(prev => [...prev, created].sort((a, b) => a.number - b.number))
       refreshSummaries()
+      return true
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Add hole failed')
+      const message = err instanceof Error ? err.message : 'Add hole failed'
+      setHoleError(message)
+      setError(message)
+      return false
     }
   }
 
@@ -311,6 +327,10 @@ export function CoursesPage() {
         par: patch.par,
         direction: patch.direction,
         elevation: patch.elevation,
+        terrain: patch.terrain,
+        treeCoverage: patch.treeCoverage,
+        treeLayout: patch.treeLayout,
+        teeBearing: patch.teeBearing,
         notes: patch.notes,
       })
       // Only the distance edit affects the badge/totals; cheap enough to
@@ -584,6 +604,7 @@ export function CoursesPage() {
             <p className="muted">Loading holes…</p>
           ) : (
             <>
+              {holeError && <div className="form-error">{holeError}</div>}
               {holes.length === 0 ? (
                 <div className="empty-holes-prompt">
                   <p>
@@ -609,7 +630,7 @@ export function CoursesPage() {
               )}
 
               <AddHoleForm
-                nextNumber={(holes[holes.length - 1]?.number ?? 0) + 1}
+                nextNumber={nextHoleNumber}
                 onAdd={addHole}
               />
             </>
@@ -727,6 +748,19 @@ function HoleEditor({ hole, onChange, onDelete }: HoleEditorProps) {
           </select>
         </label>
         <label>
+          <span>Tee faces</span>
+          <select
+            value={hole.teeBearing}
+            onChange={e => onChange({ teeBearing: e.target.value as TeeBearing })}
+          >
+            {TEE_BEARING_OPTIONS.map(o => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
           <span>Terrain</span>
           <select
             value={hole.terrain}
@@ -805,8 +839,9 @@ interface AddHoleFormProps {
     terrain: Terrain
     treeCoverage: TreeCoverage
     treeLayout: TreeLayout
+    teeBearing: TeeBearing
     notes: string | null
-  }) => void
+  }) => Promise<boolean>
 }
 
 function AddHoleForm({ nextNumber, onAdd }: AddHoleFormProps) {
@@ -818,7 +853,10 @@ function AddHoleForm({ nextNumber, onAdd }: AddHoleFormProps) {
   const [terrain, setTerrain] = useState<Terrain>('flat')
   const [treeCoverage, setTreeCoverage] = useState<TreeCoverage>('open')
   const [treeLayout, setTreeLayout] = useState<TreeLayout>('none')
+  const [teeBearing, setTeeBearing] = useState<TeeBearing>('north')
   const [notes, setNotes] = useState<string>('')
+  const [formError, setFormError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
 
   useEffect(() => {
     setNumber(String(nextNumber))
@@ -835,12 +873,20 @@ function AddHoleForm({ nextNumber, onAdd }: AddHoleFormProps) {
     )
   }
 
-  function submit() {
+  async function submit() {
     const numN = Number(number)
     const distN = Number(distance)
-    if (!Number.isFinite(numN) || numN <= 0) return
-    if (!Number.isFinite(distN) || distN <= 0) return
-    onAdd({
+    if (!Number.isFinite(numN) || numN <= 0) {
+      setFormError('Enter a valid hole number.')
+      return
+    }
+    if (!Number.isFinite(distN) || distN <= 0) {
+      setFormError('Enter a distance in feet.')
+      return
+    }
+    setFormError(null)
+    setBusy(true)
+    const ok = await onAdd({
       number: numN,
       distance: distN,
       par: par.trim() === '' ? null : Number(par),
@@ -849,10 +895,12 @@ function AddHoleForm({ nextNumber, onAdd }: AddHoleFormProps) {
       terrain,
       treeCoverage,
       treeLayout,
+      teeBearing,
       notes: notes.trim() || null,
     })
-    // Keep the layout fields as the user set them so they can quickly add a
-    // sequence of similar holes (e.g. wooded back-half holes 5–9).
+    setBusy(false)
+    if (!ok) return
+    setNumber(String(numN + 1))
     setDistance('')
     setNotes('')
   }
@@ -918,6 +966,19 @@ function AddHoleForm({ nextNumber, onAdd }: AddHoleFormProps) {
           </select>
         </label>
         <label>
+          <span>Tee faces</span>
+          <select
+            value={teeBearing}
+            onChange={e => setTeeBearing(e.target.value as TeeBearing)}
+          >
+            {TEE_BEARING_OPTIONS.map(o => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
           <span>Terrain</span>
           <select
             value={terrain}
@@ -968,13 +1029,14 @@ function AddHoleForm({ nextNumber, onAdd }: AddHoleFormProps) {
           />
         </label>
       </div>
+      {formError && <div className="form-error small">{formError}</div>}
       <button
         type="button"
         className="btn-secondary"
         onClick={submit}
-        disabled={!distance}
+        disabled={!distance.trim() || busy}
       >
-        Add hole
+        {busy ? 'Adding…' : 'Add hole'}
       </button>
     </div>
   )

@@ -119,7 +119,7 @@ export function BagsListPage() {
       const created = await addDiscToBag(selectedBagId, {
         discName: '',
         plastic: 'Premium',
-        weight: 'Standard',
+        weightGrams: 170,
         wear: 'New',
         position: discs.length,
       })

@@ -45,8 +45,7 @@ export function TermsPage() {
           </p>
           <h3>Contact</h3>
           <p>
-            <a href="mailto:support@disccaddy.app">support@disccaddy.app</a> (replace
-            before publishing).
+            <a href="mailto:support@disccaddy.app">support@disccaddy.app</a>.
           </p>
         </div>
         <Link to="/" className="btn-secondary legal-back">

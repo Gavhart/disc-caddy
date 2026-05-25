@@ -10,11 +10,11 @@ const FEATURES_FREE = [
   'Disc photos',
   'Full recommendation engine with detailed explanations',
   'Course stepper + manual hole input',
+  'Live wind from your location (override anytime)',
 ]
 
 const FEATURES_PRO = [
   'Unlimited bags',
-  'Live wind auto-fill at the course',
   'Live round mode — log throws hole-by-hole',
   'Sync across devices',
   'Support the indie dev (you)',

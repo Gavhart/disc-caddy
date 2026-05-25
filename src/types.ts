@@ -15,8 +15,14 @@ export interface Disc {
 }
 
 export type Plastic = 'Premium' | 'Base' | 'Glow'
+/** @deprecated Legacy bag weight buckets — parsed to grams on read. */
 export type Weight = 'Max' | 'Standard' | 'Light'
 export type Wear = 'New' | 'Broken In' | 'Beat In'
+
+/** Typical disc golf mold weight range (grams). */
+export const WEIGHT_GRAMS_MIN = 120
+export const WEIGHT_GRAMS_MAX = 200
+export const WEIGHT_GRAMS_DEFAULT = 170
 
 /**
  * Wind direction expressed as a compass-style relative bearing. The eight
@@ -42,6 +48,40 @@ export type WindDirection =
   | 'tailwind'
   | 'tail_from_left'
   | 'tail_from_right'
+
+/** Which way the tee shot faces toward the basket (compass octant). Used to
+ *  rotate live weather into head/tail/cross relative to the line of play. */
+export type TeeBearing =
+  | 'north'
+  | 'northeast'
+  | 'east'
+  | 'southeast'
+  | 'south'
+  | 'southwest'
+  | 'west'
+  | 'northwest'
+
+export const TEE_BEARING_DEG: Record<TeeBearing, number> = {
+  north: 0,
+  northeast: 45,
+  east: 90,
+  southeast: 135,
+  south: 180,
+  southwest: 225,
+  west: 270,
+  northwest: 315,
+}
+
+export const TEE_BEARING_OPTIONS: { value: TeeBearing; label: string }[] = [
+  { value: 'north', label: 'N' },
+  { value: 'northeast', label: 'NE' },
+  { value: 'east', label: 'E' },
+  { value: 'southeast', label: 'SE' },
+  { value: 'south', label: 'S' },
+  { value: 'southwest', label: 'SW' },
+  { value: 'west', label: 'W' },
+  { value: 'northwest', label: 'NW' },
+]
 
 /** Hole bend, signed (left/right) with severity. */
 export type HoleDirection =
@@ -79,7 +119,8 @@ export interface BagDisc {
   bagId: string
   discName: string
   plastic: Plastic
-  weight: Weight
+  /** Mold weight in grams (typically 150–180). */
+  weightGrams: number
   wear: Wear
   /** Supabase Storage path. Resolve to a URL with getDiscPhotoUrl(). */
   photoPath: string | null
@@ -107,6 +148,8 @@ export interface Hole {
   terrain: Terrain
   treeCoverage: TreeCoverage
   treeLayout: TreeLayout
+  /** Compass direction the tee faces toward the basket (live wind mapping). */
+  teeBearing: TeeBearing
   windDirection: WindDirection
   windSpeed: number
 }
@@ -153,6 +196,8 @@ export interface CourseHole {
   terrain: Terrain
   treeCoverage: TreeCoverage
   treeLayout: TreeLayout
+  /** Compass direction tee faces toward basket (live wind mapping). */
+  teeBearing: TeeBearing
   notes: string | null
   createdBy: string | null
 }
@@ -233,4 +278,67 @@ export interface RoundThrow {
   usedRecommendation: boolean
   notes: string | null
   createdAt: string
+}
+
+export interface RoundPlayer {
+  id: string
+  roundId: string
+  userId: string | null
+  displayName: string
+  isHost: boolean
+  sortOrder: number
+  createdAt: string
+}
+
+export interface RoundScore {
+  id: string
+  roundId: string
+  roundPlayerId: string
+  holeNumber: number
+  strokes: number
+  putts: number | null
+  par: number | null
+  updatedAt: string
+}
+
+export interface RoundSummary {
+  id: string
+  courseId: string | null
+  courseName: string | null
+  courseLocality: string | null
+  bagId: string | null
+  status: 'active' | 'completed'
+  startedAt: string
+  endedAt: string | null
+  hostUserId: string
+  holesScored: number
+  totalStrokes: number
+  totalPar: number
+  scoreToPar: number
+  playerCount: number
+}
+
+export interface RoundDetail extends RoundSummary {
+  players: RoundPlayer[]
+  scores: RoundScore[]
+  throws: RoundThrow[]
+}
+
+export interface PlayerSearchResult {
+  userId: string
+  displayName: string
+  email: string
+}
+
+export interface LeaderboardEntry {
+  rank: number
+  roundPlayerId: string
+  roundId: string
+  userId: string | null
+  displayName: string
+  strokes: number
+  par: number | null
+  scoreToPar: number
+  holesScored: number
+  playedAt: string
 }

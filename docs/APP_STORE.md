@@ -1,5 +1,7 @@
 # App Store & Google Play — publish checklist
 
+**Android first:** see **[GOOGLE_PLAY.md](./GOOGLE_PLAY.md)** for the full step-by-step Play Store walkthrough.
+
 Disc Caddy ships as a **Capacitor** app: your existing Vite + React web app wrapped in native iOS/Android shells. The free tier works fully in the stores; Pro billing stays on the **website** (required by Apple/Google for digital subscriptions unless you implement In-App Purchase).
 
 ---
@@ -24,7 +26,7 @@ Disc Caddy ships as a **Capacitor** app: your existing Vite + React web app wrap
 ### 1. Deploy backend pieces
 
 ```bash
-# Apply any pending SQL migrations (003–011) in Supabase SQL Editor
+# Apply any pending SQL migrations (003–013) in Supabase SQL Editor
 
 # Deploy account deletion (required for Apple)
 supabase functions deploy delete-account
@@ -179,7 +181,7 @@ This matches common indie patterns and passes review when you **don't** link to 
 
 ## Pre-submission checklist
 
-- [ ] Migrations 003–011 applied in Supabase
+- [ ] Migrations 003–**013** applied in Supabase
 - [ ] `delete-account` edge function deployed
 - [ ] Support email updated in Privacy/Terms pages
 - [ ] Privacy policy hosted at public HTTPS URL

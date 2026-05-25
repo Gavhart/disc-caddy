@@ -15,6 +15,7 @@ const HOLE_DEFAULTS = {
   terrain: 'flat' as const,
   treeCoverage: 'open' as const,
   treeLayout: 'none' as const,
+  teeBearing: 'north' as const,
   windDirection: 'none' as const,
 }
 

@@ -1,5 +1,13 @@
 import { supabase } from './supabase'
-import { Bag, BagDisc, BagWithDiscs, Plastic, Weight, Wear } from '../types'
+import { parseWeightGrams } from './modifiers'
+import {
+  Bag,
+  BagDisc,
+  BagWithDiscs,
+  Plastic,
+  WEIGHT_GRAMS_DEFAULT,
+  Wear,
+} from '../types'
 
 // ---------- Mappers ----------
 
@@ -38,7 +46,7 @@ function rowToBagDisc(r: BagDiscRow): BagDisc {
     bagId: r.bag_id,
     discName: r.disc_name,
     plastic: r.plastic as Plastic,
-    weight: r.weight as Weight,
+    weightGrams: parseWeightGrams(r.weight),
     wear: r.wear as Wear,
     photoPath: r.photo_path,
     position: r.position,
@@ -129,18 +137,19 @@ export async function addDiscToBag(
   patch: {
     discName: string
     plastic: Plastic
-    weight: Weight
+    weightGrams?: number
     wear: Wear
     position?: number
   },
 ): Promise<BagDisc> {
+  const weightGrams = patch.weightGrams ?? WEIGHT_GRAMS_DEFAULT
   const { data, error } = await supabase
     .from('bag_discs')
     .insert({
       bag_id: bagId,
       disc_name: patch.discName,
       plastic: patch.plastic,
-      weight: patch.weight,
+      weight: String(weightGrams),
       wear: patch.wear,
       position: patch.position ?? 0,
     })
@@ -155,7 +164,7 @@ export async function updateBagDisc(
   patch: Partial<{
     discName: string
     plastic: Plastic
-    weight: Weight
+    weightGrams: number
     wear: Wear
     photoPath: string | null
     position: number
@@ -164,7 +173,7 @@ export async function updateBagDisc(
   const update: Record<string, unknown> = {}
   if (patch.discName !== undefined) update.disc_name = patch.discName
   if (patch.plastic !== undefined) update.plastic = patch.plastic
-  if (patch.weight !== undefined) update.weight = patch.weight
+  if (patch.weightGrams !== undefined) update.weight = String(patch.weightGrams)
   if (patch.wear !== undefined) update.wear = patch.wear
   if (patch.photoPath !== undefined) update.photo_path = patch.photoPath
   if (patch.position !== undefined) update.position = patch.position

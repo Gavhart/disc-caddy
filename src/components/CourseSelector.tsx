@@ -23,6 +23,9 @@ interface Props {
   throwCount?: number
   isPro?: boolean
   roundBusy?: boolean
+  roundError?: string | null
+  /** False when no bag is selected — start round needs a bag id. */
+  activeBagReady?: boolean
   onStartRound?: () => void | Promise<void>
   onEndRound?: () => void | Promise<void>
 }
@@ -45,6 +48,8 @@ export function CourseSelector({
   throwCount = 0,
   isPro = false,
   roundBusy = false,
+  roundError = null,
+  activeBagReady = true,
   onStartRound,
   onEndRound,
 }: Props) {
@@ -221,6 +226,8 @@ export function CourseSelector({
           throwCount={throwCount}
           isPro={isPro}
           roundBusy={roundBusy}
+          roundError={roundError}
+          activeBagReady={activeBagReady}
           onStartRound={onStartRound}
           onEndRound={onEndRound}
         />
@@ -242,6 +249,8 @@ interface RoundViewProps {
   throwCount: number
   isPro: boolean
   roundBusy: boolean
+  roundError?: string | null
+  activeBagReady?: boolean
   onStartRound?: () => void | Promise<void>
   onEndRound?: () => void | Promise<void>
 }
@@ -259,6 +268,8 @@ function RoundView({
   throwCount,
   isPro,
   roundBusy,
+  roundError = null,
+  activeBagReady = true,
   onStartRound,
   onEndRound,
 }: RoundViewProps) {
@@ -307,6 +318,9 @@ function RoundView({
       ) : (
         <>
           <div className="round-live">
+            {roundError && !roundActive && (
+              <div className="form-error small round-live-error">{roundError}</div>
+            )}
             {roundActive ? (
               <>
                 <div className="round-live-status">
@@ -325,20 +339,27 @@ function RoundView({
                 </button>
               </>
             ) : isPro ? (
-              <button
-                type="button"
-                className="btn-primary round-start-btn"
-                onClick={() => onStartRound?.()}
-                disabled={roundBusy}
-              >
-                {roundBusy ? 'Starting…' : 'Start live round'}
-              </button>
+              <>
+                <button
+                  type="button"
+                  className="btn-primary round-start-btn"
+                  onClick={() => void onStartRound?.()}
+                  disabled={roundBusy}
+                >
+                  {roundBusy ? 'Starting…' : 'Start live round'}
+                </button>
+                {!activeBagReady && (
+                  <p className="muted small">
+                    Select a bag at the top of the page to enable live rounds.
+                  </p>
+                )}
+              </>
             ) : (
               <p className="muted small">
                 <Link to="/upgrade" className="link-button">
                   Upgrade to Pro
                 </Link>{' '}
-                to log throws hole-by-hole during a round.
+                to log throws and keep score hole-by-hole during a round.
               </p>
             )}
           </div>

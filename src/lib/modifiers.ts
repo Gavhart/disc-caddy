@@ -1,4 +1,11 @@
-import { Plastic, Weight, Wear } from '../types'
+import {
+  Plastic,
+  WEIGHT_GRAMS_DEFAULT,
+  WEIGHT_GRAMS_MAX,
+  WEIGHT_GRAMS_MIN,
+  Weight,
+  Wear,
+} from '../types'
 
 interface FlightMod {
   turn: number
@@ -17,14 +24,37 @@ export const PLASTIC_MODS: Record<Plastic, FlightMod> = {
   Glow:    { turn:  0.2, fade:  0.2 },
 }
 
+const LEGACY_WEIGHT_GRAMS: Record<Weight, number> = {
+  Max: 175,
+  Standard: 170,
+  Light: 160,
+}
+
+/** Parse stored bag_discs.weight (grams or legacy bucket label). */
+export function parseWeightGrams(raw: string): number {
+  const trimmed = raw.trim()
+  const n = Number(trimmed)
+  if (Number.isFinite(n) && n >= 100 && n <= 250) {
+    return clampWeightGrams(Math.round(n))
+  }
+  if (trimmed in LEGACY_WEIGHT_GRAMS) {
+    return LEGACY_WEIGHT_GRAMS[trimmed as Weight]
+  }
+  return WEIGHT_GRAMS_DEFAULT
+}
+
+export function clampWeightGrams(grams: number): number {
+  return Math.min(WEIGHT_GRAMS_MAX, Math.max(WEIGHT_GRAMS_MIN, Math.round(grams)))
+}
+
 /**
- * Weight modifier. Heavier discs fight wind better and are more overstable.
- * Standard = 167-172g, Max = 173-175g, Light = under 165g.
+ * Weight modifier from grams. Heavier discs fight wind better and are more
+ * overstable. Thresholds match the old Max / Standard / Light buckets.
  */
-export const WEIGHT_MODS: Record<Weight, FlightMod> = {
-  Max:      { turn:  0.3, fade:  0.3 },
-  Standard: { turn:  0.0, fade:  0.0 },
-  Light:    { turn: -0.5, fade: -0.3 },
+export function weightModsForGrams(grams: number): FlightMod {
+  if (grams < 165) return { turn: -0.5, fade: -0.3 }
+  if (grams >= 173) return { turn: 0.3, fade: 0.3 }
+  return { turn: 0.0, fade: 0.0 }
 }
 
 /**
@@ -36,4 +66,3 @@ export const WEAR_MODS: Record<Wear, FlightMod> = {
   'Broken In': { turn: -0.5, fade: -0.3 },
   'Beat In':   { turn: -1.5, fade: -0.8 },
 }
-

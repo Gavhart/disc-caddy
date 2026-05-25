@@ -1,8 +1,14 @@
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Recommendation as Rec } from '../types'
+import { Recommendation as Rec, ThrowStyle } from '../types'
 
 interface Props {
   recommendations: Rec[]
+  throwsForehand?: boolean
+  getDiscRecommendation?: (
+    bagDiscId: string,
+    throwStyle?: ThrowStyle,
+  ) => Rec | null
   roundActive?: boolean
   isPro?: boolean
   loggedHoleNumber?: number | null
@@ -14,15 +20,43 @@ function styleLabel(style: Rec['throwStyle']): string {
   return style === 'forehand' ? 'Forehand' : 'Backhand'
 }
 
+function releaseLabel(release: Rec['release']): string {
+  if (release === 'hyzer') return 'Hyzer'
+  if (release === 'anhyzer') return 'Anhyzer'
+  return 'Flat'
+}
+
 export function Recommendation({
   recommendations,
+  throwsForehand = false,
+  getDiscRecommendation,
   roundActive = false,
   isPro = false,
   loggedHoleNumber = null,
   currentHoleNumber = null,
   onLogThrow,
 }: Props) {
-  if (recommendations.length === 0) {
+  const top = recommendations[0]
+  const [selectedBagDiscId, setSelectedBagDiscId] = useState<string | null>(null)
+  const [throwStyleOverride, setThrowStyleOverride] = useState<ThrowStyle | null>(
+    null,
+  )
+
+  useEffect(() => {
+    setSelectedBagDiscId(null)
+    setThrowStyleOverride(null)
+  }, [top?.bagDisc.id, top?.throwStyle, top?.explanation])
+
+  const displayed = useMemo(() => {
+    if (!top) return null
+    if (!selectedBagDiscId || !getDiscRecommendation) return top
+    return (
+      getDiscRecommendation(selectedBagDiscId, throwStyleOverride ?? undefined) ??
+      top
+    )
+  }, [top, selectedBagDiscId, throwStyleOverride, getDiscRecommendation])
+
+  if (!top || !displayed) {
     return (
       <section className="card">
         <h2>Recommendation</h2>
@@ -31,29 +65,111 @@ export function Recommendation({
     )
   }
 
-  const top = recommendations[0]
+  const usingTopPick =
+    selectedBagDiscId == null ||
+    (selectedBagDiscId === top.bagDisc.id &&
+      throwStyleOverride == null &&
+      displayed.throwStyle === top.throwStyle)
+
   const alreadyLogged =
     loggedHoleNumber != null &&
     currentHoleNumber != null &&
     loggedHoleNumber === currentHoleNumber
 
+  const pickLabel = usingTopPick
+    ? top.pick ?? 'TOP PICK'
+    : displayed.rank > 0
+      ? `#${displayed.rank} in your bag`
+      : 'YOUR PICK'
+
+  function selectDisc(bagDiscId: string) {
+    setSelectedBagDiscId(bagDiscId)
+    setThrowStyleOverride(null)
+  }
+
+  function selectThrowStyle(style: ThrowStyle) {
+    if (!displayed) return
+    if (!selectedBagDiscId) {
+      setSelectedBagDiscId(displayed.bagDisc.id)
+    }
+    setThrowStyleOverride(style)
+  }
+
   return (
     <section className="card recommendation">
       <h2>Recommendation</h2>
+
+      <div className="pick-chooser">
+        <label className="pick-chooser-field">
+          <span>Using disc</span>
+          <select
+            value={selectedBagDiscId ?? top.bagDisc.id}
+            onChange={e => {
+              const id = e.target.value
+              if (id === top.bagDisc.id) {
+                setSelectedBagDiscId(null)
+                setThrowStyleOverride(null)
+              } else {
+                selectDisc(id)
+              }
+            }}
+          >
+            {recommendations.map(r => (
+              <option key={r.bagDisc.id} value={r.bagDisc.id}>
+                {r.bagDisc.discName}
+                {r.rank === 1 ? ' (top pick)' : ''}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {throwsForehand && getDiscRecommendation && (
+          <div className="pick-chooser-field">
+            <span>Throw</span>
+            <div className="segmented">
+              <button
+                type="button"
+                className={
+                  displayed.throwStyle === 'backhand' ? 'segmented-on' : undefined
+                }
+                onClick={() => selectThrowStyle('backhand')}
+              >
+                Backhand
+              </button>
+              <button
+                type="button"
+                className={
+                  displayed.throwStyle === 'forehand' ? 'segmented-on' : undefined
+                }
+                onClick={() => selectThrowStyle('forehand')}
+              >
+                Forehand
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="top-pick">
-        <div className="pick-label">★ TOP PICK</div>
+        <div className="pick-label">{pickLabel.toUpperCase()}</div>
         <div className="pick-disc">
-          {top.bagDisc.discName}
-          <span className="pill small pick-throw">{styleLabel(top.throwStyle)}</span>
+          {displayed.bagDisc.discName}
+          <span className="pill small pick-throw">
+            {styleLabel(displayed.throwStyle)}
+          </span>
+          <span className="pill small pick-release">
+            {releaseLabel(displayed.release)}
+          </span>
         </div>
         <div className="pick-detail">
-          {top.bagDisc.plastic} · {top.bagDisc.weight} wt · {top.bagDisc.wear}
+          {displayed.bagDisc.plastic} · {displayed.bagDisc.weightGrams}g ·{' '}
+          {displayed.bagDisc.wear}
         </div>
-        <div className="pick-rationale">{top.explanation}</div>
+        <div className="pick-rationale">{displayed.explanation}</div>
 
-        {top.explanationSections.length > 0 && (
+        {displayed.explanationSections.length > 0 && (
           <div className="pick-sections">
-            {top.explanationSections.map(section => (
+            {displayed.explanationSections.map(section => (
               <div key={section.title} className="pick-section">
                 <div className="pick-section-title">{section.title}</div>
                 <div className="pick-section-body">{section.body}</div>
@@ -63,22 +179,38 @@ export function Recommendation({
         )}
 
         <div className="pick-flight">
-          Eff flight: <strong>{top.effTurn.toFixed(1)}</strong> /{' '}
-          <strong>{top.effFade.toFixed(1)}</strong>
+          Eff flight: <strong>{displayed.effTurn.toFixed(1)}</strong> /{' '}
+          <strong>{displayed.effFade.toFixed(1)}</strong>
           <span className="dot">·</span>
-          Stability <strong>{top.stability.toFixed(1)}</strong>
+          Stability <strong>{displayed.stability.toFixed(1)}</strong>
           <span className="dot">·</span>
-          Distance <strong>{top.effDistance} ft</strong>
-          {top.aimOffsetFt != null && top.aimOffsetFt !== 0 && (
+          Distance <strong>{displayed.effDistance} ft</strong>
+          {displayed.aimOffsetFt != null && displayed.aimOffsetFt !== 0 && (
             <>
               <span className="dot">·</span>
               Aim{' '}
               <strong>
-                {Math.abs(top.aimOffsetFt)} ft {top.aimOffsetFt < 0 ? 'left' : 'right'}
+                {Math.abs(displayed.aimOffsetFt)} ft{' '}
+                {displayed.aimOffsetFt < 0 ? 'left' : 'right'}
               </strong>
             </>
           )}
         </div>
+
+        {!usingTopPick && (
+          <p className="muted small pick-reset">
+            <button
+              type="button"
+              className="link-button"
+              onClick={() => {
+                setSelectedBagDiscId(null)
+                setThrowStyleOverride(null)
+              }}
+            >
+              Back to top pick
+            </button>
+          </p>
+        )}
 
         {roundActive && onLogThrow && (
           <div className="pick-actions">
@@ -89,7 +221,7 @@ export function Recommendation({
                 <button
                   type="button"
                   className="btn-primary pick-log-btn"
-                  onClick={() => onLogThrow(top)}
+                  onClick={() => onLogThrow(displayed)}
                 >
                   Log this throw
                 </button>
@@ -120,21 +252,35 @@ export function Recommendation({
               </tr>
             </thead>
             <tbody>
-              {recommendations.map(r => (
-                <tr key={r.bagDisc.id} className={r.rank <= 3 ? 'ranked' : ''}>
-                  <td>{r.rank}</td>
-                  <td>
-                    <div>{r.bagDisc.discName}</div>
-                    <div className="muted small">
-                      {r.bagDisc.plastic} · {r.bagDisc.wear}
-                    </div>
-                  </td>
-                  <td>{styleLabel(r.throwStyle)}</td>
-                  <td>{r.stability.toFixed(2)}</td>
-                  <td>{r.effDistance}</td>
-                  <td>{r.pick ?? ''}</td>
-                </tr>
-              ))}
+              {recommendations.map(r => {
+                const selected =
+                  displayed.bagDisc.id === r.bagDisc.id &&
+                  displayed.throwStyle === r.throwStyle
+                return (
+                  <tr
+                    key={`${r.bagDisc.id}-${r.throwStyle}`}
+                    className={`${r.rank <= 3 ? 'ranked' : ''}${selected ? ' pick-row-selected' : ''}`}
+                  >
+                    <td>{r.rank}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="link-button pick-row-btn"
+                        onClick={() => selectDisc(r.bagDisc.id)}
+                      >
+                        <div>{r.bagDisc.discName}</div>
+                        <div className="muted small">
+                          {r.bagDisc.plastic} · {r.bagDisc.wear}
+                        </div>
+                      </button>
+                    </td>
+                    <td>{styleLabel(r.throwStyle)}</td>
+                    <td>{r.stability.toFixed(2)}</td>
+                    <td>{r.effDistance}</td>
+                    <td>{r.pick ?? ''}</td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </details>

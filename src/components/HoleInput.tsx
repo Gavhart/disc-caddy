@@ -1,10 +1,12 @@
 import { useState } from 'react'
-import { fetchLiveWind } from '../lib/weather'
-import { ProGate } from './ProGate'
+import { fetchLiveWind, getUserLocation } from '../lib/weather'
 import {
   Elevation,
   Hole,
   HoleDirection,
+  TeeBearing,
+  TEE_BEARING_DEG,
+  TEE_BEARING_OPTIONS,
   Terrain,
   TreeCoverage,
   TreeLayout,
@@ -48,12 +50,6 @@ const TREE_LAYOUT_OPTIONS: { value: TreeLayout; label: string }[] = [
   { value: 'canopy', label: 'Canopy' },
 ]
 
-/**
- * Compass-rose layout for the wind picker. Positions correspond to where the
- * wind is coming *from*, mirroring how a player looks at the tee shot
- * (basket is "up"). `null` cells render an empty grid slot so the rose keeps
- * its 3×3 shape.
- */
 const WIND_ROSE: ({ value: WindDirection; label: string; sub: string } | null)[] = [
   { value: 'head_from_left',  label: '↘',  sub: 'Head/L'  },
   { value: 'headwind',         label: '↓',  sub: 'Head'    },
@@ -66,22 +62,20 @@ const WIND_ROSE: ({ value: WindDirection; label: string; sub: string } | null)[]
   { value: 'tail_from_right', label: '↖',  sub: 'Tail/R'  },
 ]
 
+type WindSource = 'live' | 'manual'
+
 interface Props {
   hole: Hole
   onChange: (hole: Hole) => void
   /** When true, layout fields are locked (driven by a course-hole pick). */
   locked?: boolean
-  /** Pro: fetch live wind when course coordinates are available. */
+  /** Fallback weather coordinates when GPS is unavailable. */
   courseLat?: number | null
   courseLon?: number | null
-  isPro?: boolean
+  /** When set, tee bearing changes are saved back to this course hole. */
+  onPersistTeeBearing?: (bearing: TeeBearing) => void | Promise<void>
 }
 
-/**
- * Single-select chip group. Renders the options as buttons with
- * `aria-pressed` toggled. Wraps to multiple lines on narrow screens; pairs
- * naturally with `.chip-row` styling.
- */
 function ChipGroup<T extends string>({
   label,
   value,
@@ -122,34 +116,56 @@ export function HoleInput({
   locked = false,
   courseLat = null,
   courseLon = null,
-  isPro = false,
+  onPersistTeeBearing,
 }: Props) {
   const [windLoading, setWindLoading] = useState(false)
   const [windError, setWindError] = useState<string | null>(null)
   const [windLabel, setWindLabel] = useState<string | null>(null)
-  const [showProGate, setShowProGate] = useState(false)
+  const [windSource, setWindSource] = useState<WindSource | null>(null)
+  const [lastWindCoords, setLastWindCoords] = useState<{
+    lat: number
+    lon: number
+  } | null>(null)
 
-  const hasCoords =
+  const throwBearingDeg = TEE_BEARING_DEG[hole.teeBearing ?? 'north']
+
+  const hasCourseCoords =
     courseLat != null &&
     courseLon != null &&
     Number.isFinite(courseLat) &&
     Number.isFinite(courseLon)
-  // Tree-layout only matters when there are actually trees in play. When the
-  // user flips coverage back to "open" we proactively clear the layout so
-  // stale "back half" picks don't survive a coverage reset.
+
   const showTreeLayout = hole.treeCoverage !== 'open'
 
   function setHole<K extends keyof Hole>(key: K, value: Hole[K]) {
     onChange({ ...hole, [key]: value })
   }
 
+  function markManualWind() {
+    setWindSource('manual')
+    setWindLabel(null)
+    setWindError(null)
+  }
+
+  function applyLiveWind(
+    live: { windDirection: WindDirection; windSpeed: number; label: string },
+    labelSuffix = '',
+    base: Hole = hole,
+  ) {
+    onChange({
+      ...base,
+      windDirection: live.windDirection,
+      windSpeed: live.windSpeed,
+    })
+    setWindSource('live')
+    setWindLabel(labelSuffix ? `${live.label} ${labelSuffix}` : live.label)
+    setWindError(null)
+  }
+
   function setTreeCoverage(value: TreeCoverage) {
     onChange({
       ...hole,
       treeCoverage: value,
-      // Reset to 'none' when we go back to open fairway; default to
-      // 'throughout' when leaving open (so the chip group has a sensible
-      // initial selection); otherwise preserve the user's existing pick.
       treeLayout:
         value === 'open'
           ? 'none'
@@ -159,28 +175,72 @@ export function HoleInput({
     })
   }
 
-  async function handleFetchLiveWind() {
-    if (!hasCoords) return
-    if (!isPro) {
-      setShowProGate(true)
-      return
-    }
+  async function applyWindFromCoords(
+    lat: number,
+    lon: number,
+    labelSuffix = '',
+  ) {
+    const live = await fetchLiveWind(lat, lon, throwBearingDeg)
+    applyLiveWind(live, labelSuffix)
+    setLastWindCoords({ lat, lon })
+  }
+
+  async function handleUseMyLocation() {
     setWindLoading(true)
     setWindError(null)
-    setShowProGate(false)
     try {
-      const live = await fetchLiveWind(courseLat!, courseLon!)
-      onChange({
-        ...hole,
-        windDirection: live.windDirection,
-        windSpeed: live.windSpeed,
-      })
-      setWindLabel(live.label)
+      const { lat, lon } = await getUserLocation()
+      await applyWindFromCoords(lat, lon)
     } catch (err) {
       setWindError(err instanceof Error ? err.message : 'Could not fetch wind')
       setWindLabel(null)
     } finally {
       setWindLoading(false)
+    }
+  }
+
+  async function handleUseCourseLocation() {
+    if (!hasCourseCoords) return
+    setWindLoading(true)
+    setWindError(null)
+    try {
+      await applyWindFromCoords(courseLat!, courseLon!, '(course)')
+    } catch (err) {
+      setWindError(err instanceof Error ? err.message : 'Could not fetch wind')
+      setWindLabel(null)
+    } finally {
+      setWindLoading(false)
+    }
+  }
+
+  async function setTeeBearing(bearing: TeeBearing) {
+    const nextHole = { ...hole, teeBearing: bearing }
+    onChange(nextHole)
+    onPersistTeeBearing?.(bearing)
+    if (windSource !== 'live' || !lastWindCoords) return
+    setWindLoading(true)
+    setWindError(null)
+    try {
+      const live = await fetchLiveWind(
+        lastWindCoords.lat,
+        lastWindCoords.lon,
+        TEE_BEARING_DEG[bearing],
+      )
+      applyLiveWind(live, '', nextHole)
+    } catch (err) {
+      setWindError(err instanceof Error ? err.message : 'Could not update wind')
+    } finally {
+      setWindLoading(false)
+    }
+  }
+
+  function handleWindRosePick(cell: (typeof WIND_ROSE)[number]) {
+    if (!cell) return
+    markManualWind()
+    if (cell.value === 'none') {
+      onChange({ ...hole, windDirection: 'none', windSpeed: 0 })
+    } else {
+      onChange({ ...hole, windDirection: cell.value })
     }
   }
 
@@ -248,10 +308,62 @@ export function HoleInput({
       )}
 
       <div className="wind-section">
-        <span className="chip-group-label">Wind</span>
+        <ChipGroup
+          label="Tee faces (toward basket)"
+          value={hole.teeBearing ?? 'north'}
+          options={TEE_BEARING_OPTIONS}
+          onChange={v => void setTeeBearing(v)}
+        />
+        <p className="muted small wind-hint">
+          Pick which way you&apos;re throwing so live weather maps to head/tail
+          wind correctly. Then tap <strong>Use my location</strong> — override
+          on the rose if it feels different on the tee.
+        </p>
+
+        <div className="live-wind-row">
+          <button
+            type="button"
+            className="btn-primary live-wind-btn"
+            onClick={handleUseMyLocation}
+            disabled={windLoading}
+          >
+            {windLoading ? 'Fetching wind…' : 'Use my location'}
+          </button>
+          {hasCourseCoords && (
+            <button
+              type="button"
+              className="btn-secondary live-wind-btn"
+              onClick={handleUseCourseLocation}
+              disabled={windLoading}
+            >
+              Course weather
+            </button>
+          )}
+        </div>
+
+        {windSource === 'live' && windLabel && (
+          <div className="wind-status wind-status-live">
+            <span className="pill small">Live weather</span>
+            <span className="muted small">{windLabel}</span>
+          </div>
+        )}
+        {windSource === 'manual' && (
+          <div className="wind-status wind-status-manual">
+            <span className="pill small">Custom wind</span>
+            <span className="muted small">
+              You overrode live weather — recommendations use your pick below.
+            </span>
+          </div>
+        )}
+        {windError && (
+          <span className="form-error small live-wind-error">{windError}</span>
+        )}
+
+        <span className="chip-group-label">Wind direction</span>
         <p className="muted small wind-hint">
           Tap where the wind is coming <em>from</em>. Center = no wind.
         </p>
+
         <div className="wind-rose" role="radiogroup" aria-label="Wind direction">
           {WIND_ROSE.map((cell, i) =>
             cell ? (
@@ -264,15 +376,7 @@ export function HoleInput({
                 className={`wind-cell ${
                   hole.windDirection === cell.value ? 'wind-cell-on' : ''
                 } ${cell.value === 'none' ? 'wind-cell-none' : ''}`}
-                onClick={() => {
-                  // Clearing the wind also zeros the speed so the saved state
-                  // stays consistent ("none" + 0 mph).
-                  if (cell.value === 'none') {
-                    onChange({ ...hole, windDirection: 'none', windSpeed: 0 })
-                  } else {
-                    setHole('windDirection', cell.value)
-                  }
-                }}
+                onClick={() => handleWindRosePick(cell)}
               >
                 <span className="wind-cell-arrow">{cell.label}</span>
                 <span className="wind-cell-sub">{cell.sub}</span>
@@ -282,35 +386,6 @@ export function HoleInput({
             ),
           )}
         </div>
-
-        {hasCoords && (
-          <div className="live-wind-row">
-            <button
-              type="button"
-              className="btn-secondary live-wind-btn"
-              onClick={handleFetchLiveWind}
-              disabled={windLoading}
-            >
-              {windLoading ? 'Fetching wind…' : 'Fetch live wind'}
-            </button>
-            {windLabel && (
-              <span className="muted small live-wind-label">{windLabel}</span>
-            )}
-            {windError && (
-              <span className="form-error small live-wind-error">{windError}</span>
-            )}
-          </div>
-        )}
-        {showProGate && !isPro && (
-          <ProGate feature="Live wind">
-            {' '}Auto-fill wind from Open-Meteo at the course location.
-          </ProGate>
-        )}
-        {!hasCoords && (
-          <p className="muted small live-wind-hint">
-            Pick a course with location data to enable live wind (Pro).
-          </p>
-        )}
       </div>
       {hole.windDirection !== 'none' && (
         <div className="field-row">
@@ -323,7 +398,10 @@ export function HoleInput({
               max={50}
               step={1}
               value={hole.windSpeed}
-              onChange={e => setHole('windSpeed', Number(e.target.value) || 0)}
+              onChange={e => {
+                markManualWind()
+                setHole('windSpeed', Number(e.target.value) || 0)
+              }}
             />
             <span className="suffix">mph</span>
           </div>

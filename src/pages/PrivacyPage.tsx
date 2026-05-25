@@ -67,8 +67,8 @@ export function PrivacyPage() {
           <strong>Stripe</strong> — subscription billing on the web (optional).
         </li>
         <li>
-          <strong>Open-Meteo</strong> — live wind data when you use that Pro
-          feature (course coordinates only; no account data sent).
+          <strong>Open-Meteo</strong> — live wind at your location when you choose
+          &quot;Use my location&quot; (no account data sent).
         </li>
       </ul>
       <h3>Your choices</h3>
@@ -79,8 +79,7 @@ export function PrivacyPage() {
       <h3>Contact</h3>
       <p>
         Questions? Email{' '}
-        <a href="mailto:support@disccaddy.app">support@disccaddy.app</a> (replace
-        with your support address before publishing).
+        <a href="mailto:support@disccaddy.app">support@disccaddy.app</a>.
       </p>
     </LegalShell>
   )

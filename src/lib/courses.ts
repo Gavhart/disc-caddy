@@ -5,6 +5,7 @@ import {
   CourseSummary,
   Elevation,
   HoleDirection,
+  TeeBearing,
   Terrain,
   TreeCoverage,
   TreeLayout,
@@ -36,6 +37,7 @@ interface CourseHoleRow {
   terrain: Terrain | null
   tree_coverage: TreeCoverage | null
   tree_layout: TreeLayout | null
+  tee_bearing: TeeBearing | null
   notes: string | null
   created_by: string | null
 }
@@ -72,9 +74,38 @@ function rowToHole(r: CourseHoleRow): CourseHole {
     terrain: r.terrain ?? 'flat',
     treeCoverage: r.tree_coverage ?? 'open',
     treeLayout: r.tree_layout ?? 'none',
+    teeBearing: r.tee_bearing ?? 'north',
     notes: r.notes,
     createdBy: r.created_by,
   }
+}
+
+/** True when PostgREST/Postgres rejects an unknown column in the payload. */
+function isMissingColumnError(error: { code?: string; message?: string }): boolean {
+  if (error.code === 'PGRST204') return true
+  const msg = error.message?.toLowerCase() ?? ''
+  return msg.includes('column') && msg.includes('does not exist')
+}
+
+async function insertCourseHoleRow(
+  payloads: Record<string, unknown>[],
+): Promise<CourseHoleRow> {
+  let lastError: { code?: string; message?: string } | null = null
+  for (const payload of payloads) {
+    const { data, error } = await supabase
+      .from('course_holes')
+      .insert(payload)
+      .select('*')
+      .single()
+    if (!error) return data as CourseHoleRow
+    lastError = error
+    if (!isMissingColumnError(error)) break
+  }
+  throw new Error(
+    lastError?.code === '23505'
+      ? 'That hole number already exists on this course.'
+      : lastError?.message ?? 'Could not add hole',
+  )
 }
 
 // ---------- Courses ----------
@@ -199,6 +230,7 @@ export interface NewCourseHoleInput {
   terrain?: Terrain
   treeCoverage?: TreeCoverage
   treeLayout?: TreeLayout
+  teeBearing?: TeeBearing
   notes?: string | null
 }
 
@@ -207,24 +239,30 @@ export async function createCourseHole(input: NewCourseHoleInput): Promise<Cours
   const user = userData.user
   if (!user) throw new Error('Not signed in')
 
-  const { data, error } = await supabase
-    .from('course_holes')
-    .insert({
-      course_id: input.courseId,
-      number: input.number,
-      distance: input.distance,
-      par: input.par ?? null,
-      direction: input.direction ?? 'straight',
-      elevation: input.elevation ?? 'flat',
-      terrain: input.terrain ?? 'flat',
-      tree_coverage: input.treeCoverage ?? 'open',
-      tree_layout: input.treeLayout ?? 'none',
-      notes: input.notes ?? null,
-      created_by: user.id,
-    })
-    .select('*')
-    .single()
-  if (error) throw error
+  const base = {
+    course_id: input.courseId,
+    number: input.number,
+    distance: input.distance,
+    par: input.par ?? null,
+    direction: input.direction ?? 'straight',
+    elevation: input.elevation ?? 'flat',
+    notes: input.notes ?? null,
+    created_by: user.id,
+  }
+
+  const withLayout = {
+    ...base,
+    terrain: input.terrain ?? 'flat',
+    tree_coverage: input.treeCoverage ?? 'open',
+    tree_layout: input.treeLayout ?? 'none',
+  }
+
+  const full = {
+    ...withLayout,
+    tee_bearing: input.teeBearing ?? 'north',
+  }
+
+  const data = await insertCourseHoleRow([full, withLayout, base])
   return rowToHole(data)
 }
 
@@ -238,6 +276,7 @@ export async function updateCourseHole(
     terrain: Terrain
     treeCoverage: TreeCoverage
     treeLayout: TreeLayout
+    teeBearing: TeeBearing
     notes: string | null
   }>,
 ): Promise<void> {
@@ -251,12 +290,17 @@ export async function updateCourseHole(
   if (patch.terrain !== undefined) update.terrain = patch.terrain
   if (patch.treeCoverage !== undefined) update.tree_coverage = patch.treeCoverage
   if (patch.treeLayout !== undefined) update.tree_layout = patch.treeLayout
+  if (patch.teeBearing !== undefined) update.tee_bearing = patch.teeBearing
   if (patch.notes !== undefined) update.notes = patch.notes
 
-  const { error } = await supabase
-    .from('course_holes')
-    .update(update)
-    .eq('id', holeId)
+  let { error } = await supabase.from('course_holes').update(update).eq('id', holeId)
+  if (error && isMissingColumnError(error)) {
+    delete update.tee_bearing
+    delete update.terrain
+    delete update.tree_coverage
+    delete update.tree_layout
+    ;({ error } = await supabase.from('course_holes').update(update).eq('id', holeId))
+  }
   if (error) throw error
 }
 
