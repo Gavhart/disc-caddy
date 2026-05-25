@@ -1,17 +1,37 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-const url = import.meta.env.VITE_SUPABASE_URL
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+function normalizeEnv(value: string | undefined): string | undefined {
+  const trimmed = value?.trim()
+  return trimmed || undefined
+}
 
-if (!url || !anonKey) {
-  // Don't throw — let the app boot and show a friendly setup screen instead.
+function isValidSupabaseUrl(value: string): boolean {
+  try {
+    const parsed = new URL(value)
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+const url = normalizeEnv(import.meta.env.VITE_SUPABASE_URL)
+const anonKey = normalizeEnv(import.meta.env.VITE_SUPABASE_ANON_KEY)
+
+/** True when env vars are present and the URL is valid. Shows setup screen otherwise. */
+export const isSupabaseConfigured = Boolean(
+  url && anonKey && isValidSupabaseUrl(url),
+)
+
+if (!isSupabaseConfigured) {
   console.warn(
-    '[disc-caddy] Missing VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY. ' +
-      'Copy .env.example to .env.local and fill in your Supabase credentials.',
+    '[disc-caddy] Missing or invalid VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY. ' +
+      'Copy .env.example to .env.local (or set them in Vercel → Environment Variables) ' +
+      'and redeploy.',
   )
 }
 
-export const supabase = createClient(url ?? 'http://localhost', anonKey ?? 'anon')
+// Never pass an empty/invalid URL to createClient — it throws and blanks the whole app.
+const clientUrl = isSupabaseConfigured ? url! : 'http://127.0.0.1'
+const clientKey = isSupabaseConfigured ? anonKey! : 'anon'
 
-/** True when env vars are present. The app shows a setup screen otherwise. */
-export const isSupabaseConfigured = Boolean(url && anonKey)
+export const supabase: SupabaseClient = createClient(clientUrl, clientKey)

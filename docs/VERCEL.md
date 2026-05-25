@@ -35,7 +35,16 @@ In Vercel → **Project → Settings → Environment Variables**, add for **Prod
 
 **Do not** add Stripe secret keys or webhook secrets here — those stay in Supabase Edge Function secrets only.
 
-Redeploy after adding env vars (**Deployments → … → Redeploy**).
+Redeploy after adding env vars (**Deployments → … → Redeploy**). Vite bakes `VITE_*` values in at **build** time — changing env vars without redeploying does nothing.
+
+**Common mistakes (blank green screen + console: `Invalid supabaseUrl`):**
+
+| Mistake | Fix |
+|---------|-----|
+| Wrong name (`SUPABASE_URL` instead of `VITE_SUPABASE_URL`) | Names must match exactly, including the `VITE_` prefix |
+| Empty value or extra spaces | Paste the full URL: `https://YOUR-REF.supabase.co` |
+| Quotes around the value | Vercel values should **not** include `"` characters |
+| Env vars added after first deploy | **Redeploy** so the build picks them up |
 
 ### 4. Supabase Auth URLs
 
