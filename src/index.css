@@ -2007,6 +2007,53 @@ tr.ranked td:first-child {
   margin-top: 6px;
 }
 
+.home-screen-tip {
+  margin: 0 0 20px;
+  padding: 14px 14px 12px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--pro) 45%, var(--border));
+  background: linear-gradient(
+    135deg,
+    var(--pro-soft) 0%,
+    color-mix(in srgb, var(--surface-2) 88%, transparent) 100%
+  );
+}
+
+.home-screen-tip-label {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pro);
+}
+
+.home-screen-tip-title {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.home-screen-tip-body {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.home-screen-tip-steps {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.home-screen-tip-steps li + li {
+  margin-top: 4px;
+}
+
 .form-error.small {
   font-size: 11px;
   padding: 4px 6px;

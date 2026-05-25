@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { signIn, sendPasswordReset } from '../lib/auth'
+import { AddToHomeScreenNote } from '../components/AddToHomeScreenNote'
 import { Logo } from '../components/Logo'
 
 export function LoginPage() {
@@ -51,6 +52,7 @@ export function LoginPage() {
           <Logo height={80} />
         </div>
         <h2>Welcome back</h2>
+        <AddToHomeScreenNote />
         <form onSubmit={handleSubmit}>
           <label htmlFor="email">Email</label>
           <input
