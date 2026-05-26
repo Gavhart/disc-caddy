@@ -1,4 +1,8 @@
 import { geocodeCityPlace, normalizeHomeCityFields } from './geocode'
+import {
+  importNearbyCoursesFromDiscGolfApi,
+  type NearbyCourseImportResult,
+} from './nearbyCourseImport'
 import { supabase } from './supabase'
 import { sendNotificationEmail } from './notifications'
 import { CommunityMember, CommunityMessage, CommunityThread, HomeCity } from '../types'
@@ -121,7 +125,10 @@ export async function saveHomeCities(
   communityVisible: boolean,
   lookingForPlayers: boolean,
   searchRadiusMiles: number,
-): Promise<HomeCity[]> {
+): Promise<{
+  cities: HomeCity[]
+  courseImport: NearbyCourseImportResult | null
+}> {
   if (cities.length > 3) {
     throw new Error('At most 3 home cities allowed')
   }
@@ -164,7 +171,19 @@ export async function saveHomeCities(
   })
   if (error) throw error
 
-  return withCoords
+  let courseImport: NearbyCourseImportResult | null = null
+  if (withCoords.some(c => c.latitude != null && c.longitude != null)) {
+    try {
+      courseImport = await importNearbyCoursesFromDiscGolfApi(
+        withCoords,
+        searchRadiusMiles,
+      )
+    } catch (err) {
+      console.error('[community] nearby course import failed', err)
+    }
+  }
+
+  return { cities: withCoords, courseImport }
 }
 
 export async function fetchCommunityMembers(): Promise<CommunityMember[]> {

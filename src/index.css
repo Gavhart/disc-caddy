@@ -873,6 +873,11 @@ body.nav-menu-open .main {
   line-height: 1.5;
 }
 
+.community-import-note {
+  margin: 8px 0 0;
+  line-height: 1.45;
+}
+
 .community-settings-card .section-title {
   margin-bottom: 8px;
 }

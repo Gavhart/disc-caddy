@@ -28,8 +28,9 @@ export function CourseDiscoveryPanel() {
       <div className="card course-discovery">
         <h2>Courses near you</h2>
         <p className="muted small">
-          Add a GPS home area on{' '}
-          <Link to="/community">Community</Link> to see nearby courses on the map.
+          Save your home area on{' '}
+          <Link to="/community">Community</Link> — nearby courses import automatically
+          from DiscGolfAPI.
         </p>
       </div>
     )

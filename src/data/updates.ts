@@ -1,5 +1,5 @@
 /** Bump when you ship a release users should see on next sign-in. */
-export const APP_VERSION = '0.6.4'
+export const APP_VERSION = '0.6.5'
 
 export interface ReleaseNote {
   version: string
@@ -19,6 +19,16 @@ export const ROADMAP: string[] = [
 ]
 
 export const RELEASES: ReleaseNote[] = [
+  {
+    version: '0.6.5',
+    date: '2026-05-21',
+    title: 'Nearby course auto-import',
+    items: [
+      'Saving your home area on Community automatically imports nearby courses from DiscGolfAPI',
+      'Courses within your search radius appear on the Library map and in Events without manual search',
+      'Pro pricing — $2.99/mo or $24.99/yr with a billing toggle on Upgrade',
+    ],
+  },
   {
     version: '0.6.4',
     date: '2026-05-21',

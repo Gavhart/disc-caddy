@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import type { DgApiCourse } from './discgolfapi'
 import {
   Course,
   CourseHole,
@@ -175,6 +176,49 @@ export async function createCourse(input: NewCourseInput): Promise<Course> {
     .single()
   if (error) throw error
   return rowToCourse(data)
+}
+
+/** All DiscGolfAPI source ids already in the shared catalog. */
+export async function listDiscGolfApiSourceIds(): Promise<Set<string>> {
+  const { data, error } = await supabase
+    .from('courses')
+    .select('source_id')
+    .eq('source', 'discgolfapi')
+    .not('source_id', 'is', null)
+  if (error) throw error
+  return new Set(
+    ((data as { source_id: string | null }[]) ?? [])
+      .map(r => r.source_id)
+      .filter((id): id is string => Boolean(id)),
+  )
+}
+
+/** Import multiple DiscGolfAPI courses in one round-trip. */
+export async function bulkImportDiscGolfApiCourses(
+  dgCourses: DgApiCourse[],
+): Promise<number> {
+  if (dgCourses.length === 0) return 0
+
+  const { data: userData } = await supabase.auth.getUser()
+  const user = userData.user
+  if (!user) throw new Error('Not signed in')
+
+  const rows = dgCourses.map(c => ({
+    name: c.name.trim(),
+    locality: c.locality,
+    region_code: c.region_code,
+    country_code: c.country_code,
+    lat: c.lat,
+    lon: c.lon,
+    total_holes: c.holes ?? c.primary_layout?.holes ?? null,
+    source: 'discgolfapi' as const,
+    source_id: c.id,
+    created_by: user.id,
+  }))
+
+  const { error } = await supabase.from('courses').insert(rows)
+  if (error) throw error
+  return rows.length
 }
 
 // ---------- Course summaries ----------

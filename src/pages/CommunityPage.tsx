@@ -14,6 +14,7 @@ import {
   saveHomeCities,
   sendCommunityMessage,
 } from '../lib/community'
+import { DGAPI_ATTRIBUTION } from '../lib/discgolfapi'
 import { getActiveRound } from '../lib/rounds'
 import { invitePlayerToRound } from '../lib/roundInvites'
 import { LocationError, resolveCurrentLocationPlace } from '../lib/geocode'
@@ -53,6 +54,7 @@ export function CommunityPage() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saveOk, setSaveOk] = useState(false)
+  const [courseImportNote, setCourseImportNote] = useState<string | null>(null)
 
   const [courseQuery, setCourseQuery] = useState('')
   const [courseHits, setCourseHits] = useState<Course[]>([])
@@ -233,6 +235,7 @@ export function CommunityPage() {
     setSaving(true)
     setError(null)
     setSaveOk(false)
+    setCourseImportNote(null)
     try {
       let working = cities
       if (useLocationOnSave) {
@@ -277,7 +280,12 @@ export function CommunityPage() {
 
       const effectiveLooking = communityVisible && lookingForPlayers
 
-      await saveHomeCities(cleaned, communityVisible, effectiveLooking, searchRadiusMiles)
+      const { courseImport } = await saveHomeCities(
+        cleaned,
+        communityVisible,
+        effectiveLooking,
+        searchRadiusMiles,
+      )
       await refreshMe()
       const [reloadedCities, reloadedStatus] = await Promise.all([
         fetchMyHomeCities(),
@@ -288,6 +296,17 @@ export function CommunityPage() {
       setSetupStatus(reloadedStatus)
       if (!communityVisible) setLookingForPlayers(false)
       setSaveOk(true)
+      if (courseImport && courseImport.imported > 0) {
+        const more =
+          courseImport.skipped > 0
+            ? ` (${courseImport.skipped} more nearby courses will import on a later save)`
+            : ''
+        setCourseImportNote(
+          `Added ${courseImport.imported} nearby course${courseImport.imported === 1 ? '' : 's'} within ${courseImport.radiusMiles} mi to the catalog${more}. ${DGAPI_ATTRIBUTION}.`,
+        )
+      } else {
+        setCourseImportNote(null)
+      }
 
       if (communityVisible && cleaned.length > 0) {
         const [loadedMembers, loadedStatus] = await Promise.all([
@@ -594,7 +613,14 @@ export function CommunityPage() {
             won&apos;t see you.
           </div>
         )}
-        {saveOk && <div className="form-success">Community settings saved.</div>}
+        {saveOk && (
+          <div className="form-success">
+            Community settings saved.
+            {courseImportNote && (
+              <p className="muted small community-import-note">{courseImportNote}</p>
+            )}
+          </div>
+        )}
 
         <button type="submit" className="btn-primary" disabled={saving || loading}>
           {saving ? 'Saving…' : 'Save settings'}
