@@ -1,5 +1,5 @@
 /** Bump when you ship a release users should see on next sign-in. */
-export const APP_VERSION = '0.6.1'
+export const APP_VERSION = '0.6.2'
 
 export interface ReleaseNote {
   version: string
@@ -19,6 +19,19 @@ export const ROADMAP: string[] = [
 ]
 
 export const RELEASES: ReleaseNote[] = [
+  {
+    version: '0.6.2',
+    date: '2026-05-21',
+    title: 'Community events & pickup rounds',
+    items: [
+      'Events page — post tournaments, league nights, or group outings',
+      'Pickup rounds — say when and where you want people to play with you',
+      '75-mile radius — only nearby players see posts based on home areas',
+      'RSVP with attendance counts; hosts view who is going or maybe',
+      'Host notifications when someone joins your event',
+      'League admins can edit season dates, name, format, or delete a league',
+    ],
+  },
   {
     version: '0.6.1',
     date: '2026-05-21',

@@ -27,7 +27,7 @@ import { InvitePage } from './pages/InvitePage'
 import { StatsPage } from './pages/StatsPage'
 import { CoursePlaybookPage } from './pages/CoursePlaybookPage'
 import { LeaguesPage } from './pages/LeaguesPage'
-import { ScheduledRoundsPage } from './pages/ScheduledRoundsPage'
+import { EventsPage } from './pages/EventsPage'
 
 function AppShell() {
   const { session, me, loading } = useAuth()
@@ -169,12 +169,16 @@ function AppShell() {
             }
           />
           <Route
-            path="/community/scheduled"
+            path="/community/events"
             element={
               <ProtectedRoute>
-                <ScheduledRoundsPage />
+                <EventsPage />
               </ProtectedRoute>
             }
+          />
+          <Route
+            path="/community/scheduled"
+            element={<Navigate to="/community/events" replace />}
           />
           <Route
             path="/settings"

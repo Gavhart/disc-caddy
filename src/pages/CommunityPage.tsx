@@ -746,12 +746,13 @@ export function CommunityPage() {
         )}
       </div>
 
-      <Link to="/community/scheduled" className="card community-messages-link">
+      <Link to="/community/events" className="card community-messages-link">
         <div className="community-messages-link-row">
-          <h2>Scheduled rounds</h2>
+          <h2>Events &amp; pickup rounds</h2>
         </div>
         <p className="muted">
-          Post a tee time, RSVP, and pull players onto your live scorecard.
+          Create events or post that you want people to play with you — players within 75 miles
+          can join.
         </p>
       </Link>
 

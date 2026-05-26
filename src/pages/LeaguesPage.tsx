@@ -1,14 +1,22 @@
 import { FormEvent, useEffect, useState } from 'react'
 import {
   createLeague,
+  deleteLeague,
   fetchLeagueStandings,
   joinLeague,
   listMyLeagues,
   submitRoundToLeague,
+  updateLeague,
 } from '../lib/leagues'
 import { listMyRounds } from '../lib/rounds'
 import { formatScoreToPar } from '../lib/rounds'
 import { League, LeagueStanding, RoundSummary } from '../types'
+
+function defaultSeasonEnd(): string {
+  const end = new Date()
+  end.setMonth(end.getMonth() + 3)
+  return end.toISOString().slice(0, 10)
+}
 
 export function LeaguesPage() {
   const [leagues, setLeagues] = useState<League[]>([])
@@ -16,7 +24,14 @@ export function LeaguesPage() {
   const [standings, setStandings] = useState<LeagueStanding[]>([])
   const [rounds, setRounds] = useState<RoundSummary[]>([])
   const [name, setName] = useState('')
+  const [seasonStart, setSeasonStart] = useState(() => new Date().toISOString().slice(0, 10))
+  const [seasonEnd, setSeasonEnd] = useState(defaultSeasonEnd)
   const [inviteCode, setInviteCode] = useState('')
+  const [editName, setEditName] = useState('')
+  const [editSeasonStart, setEditSeasonStart] = useState('')
+  const [editSeasonEnd, setEditSeasonEnd] = useState('')
+  const [editFormat, setEditFormat] = useState<'stroke' | 'stableford'>('stroke')
+  const [showEdit, setShowEdit] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -36,6 +51,7 @@ export function LeaguesPage() {
   useEffect(() => {
     if (!selectedId) {
       setStandings([])
+      setShowEdit(false)
       return
     }
     fetchLeagueStandings(selectedId)
@@ -43,18 +59,29 @@ export function LeaguesPage() {
       .catch(() => setStandings([]))
   }, [selectedId])
 
+  const selected = leagues.find(l => l.id === selectedId)
+  const completedRounds = rounds.filter(r => r.status === 'completed')
+
+  useEffect(() => {
+    if (!selected) {
+      setShowEdit(false)
+      return
+    }
+    setEditName(selected.name)
+    setEditSeasonStart(selected.seasonStart)
+    setEditSeasonEnd(selected.seasonEnd)
+    setEditFormat(selected.format === 'stableford' ? 'stableford' : 'stroke')
+  }, [selected])
+
   async function handleCreate(e: FormEvent) {
     e.preventDefault()
     setBusy(true)
     setError(null)
     try {
-      const now = new Date()
-      const end = new Date(now)
-      end.setMonth(end.getMonth() + 3)
       const { id } = await createLeague({
         name: name.trim(),
-        seasonStart: now.toISOString().slice(0, 10),
-        seasonEnd: end.toISOString().slice(0, 10),
+        seasonStart,
+        seasonEnd,
       })
       setName('')
       reload()
@@ -95,8 +122,48 @@ export function LeaguesPage() {
     }
   }
 
-  const selected = leagues.find(l => l.id === selectedId)
-  const completedRounds = rounds.filter(r => r.status === 'completed')
+  async function handleSaveEdit(e: FormEvent) {
+    e.preventDefault()
+    if (!selectedId || !selected?.isAdmin) return
+    setBusy(true)
+    setError(null)
+    try {
+      await updateLeague(selectedId, {
+        name: editName.trim(),
+        seasonStart: editSeasonStart,
+        seasonEnd: editSeasonEnd,
+        format: editFormat,
+      })
+      reload()
+      setShowEdit(false)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not update league')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!selectedId || !selected?.isAdmin) return
+    if (
+      !window.confirm(
+        `Delete "${selected.name}"? This removes all members, standings, and submitted rounds. This cannot be undone.`,
+      )
+    ) {
+      return
+    }
+    setBusy(true)
+    setError(null)
+    try {
+      await deleteLeague(selectedId)
+      setSelectedId(null)
+      reload()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not delete league')
+    } finally {
+      setBusy(false)
+    }
+  }
 
   return (
     <div className="container leagues-page">
@@ -108,16 +175,38 @@ export function LeaguesPage() {
         </p>
         {error && <div className="form-error">{error}</div>}
 
-        <form onSubmit={handleCreate} className="league-form-row">
-          <input
-            value={name}
-            onChange={e => setName(e.target.value)}
-            placeholder="League name"
-            required
-          />
-          <button type="submit" className="btn-primary" disabled={busy}>
-            Create league
-          </button>
+        <form onSubmit={handleCreate} className="league-create-form">
+          <div className="league-form-row">
+            <input
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="League name"
+              required
+            />
+            <button type="submit" className="btn-primary" disabled={busy}>
+              Create league
+            </button>
+          </div>
+          <div className="league-form-row league-form-dates">
+            <label>
+              Season start
+              <input
+                type="date"
+                value={seasonStart}
+                onChange={e => setSeasonStart(e.target.value)}
+                required
+              />
+            </label>
+            <label>
+              Season end
+              <input
+                type="date"
+                value={seasonEnd}
+                onChange={e => setSeasonEnd(e.target.value)}
+                required
+              />
+            </label>
+          </div>
         </form>
 
         <form onSubmit={handleJoin} className="league-form-row">
@@ -145,6 +234,7 @@ export function LeaguesPage() {
                   onClick={() => setSelectedId(l.id)}
                 >
                   {l.name} · {l.memberCount} players
+                  {l.isAdmin && <span className="league-admin-tag"> · Admin</span>}
                 </button>
               </li>
             ))}
@@ -154,10 +244,79 @@ export function LeaguesPage() {
 
       {selected && (
         <div className="card">
-          <h3>{selected.name} standings</h3>
+          <div className="league-detail-head">
+            <h3>{selected.name} standings</h3>
+            {selected.isAdmin && (
+              <div className="league-admin-actions">
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  disabled={busy}
+                  onClick={() => setShowEdit(v => !v)}
+                >
+                  {showEdit ? 'Cancel edit' : 'Edit league'}
+                </button>
+                <button
+                  type="button"
+                  className="btn-danger"
+                  disabled={busy}
+                  onClick={handleDelete}
+                >
+                  Delete league
+                </button>
+              </div>
+            )}
+          </div>
+
+          {showEdit && selected.isAdmin && (
+            <form onSubmit={handleSaveEdit} className="league-edit-form">
+              <label>
+                Name
+                <input
+                  value={editName}
+                  onChange={e => setEditName(e.target.value)}
+                  required
+                />
+              </label>
+              <div className="league-form-row league-form-dates">
+                <label>
+                  Season start
+                  <input
+                    type="date"
+                    value={editSeasonStart}
+                    onChange={e => setEditSeasonStart(e.target.value)}
+                    required
+                  />
+                </label>
+                <label>
+                  Season end
+                  <input
+                    type="date"
+                    value={editSeasonEnd}
+                    onChange={e => setEditSeasonEnd(e.target.value)}
+                    required
+                  />
+                </label>
+              </div>
+              <label>
+                Format
+                <select
+                  value={editFormat}
+                  onChange={e => setEditFormat(e.target.value as 'stroke' | 'stableford')}
+                >
+                  <option value="stroke">Stroke</option>
+                  <option value="stableford">Stableford</option>
+                </select>
+              </label>
+              <button type="submit" className="btn-primary" disabled={busy}>
+                Save changes
+              </button>
+            </form>
+          )}
+
           <p className="muted small">
             Invite code: <code>{selected.inviteCode}</code> · Season{' '}
-            {selected.seasonStart} → {selected.seasonEnd}
+            {selected.seasonStart} → {selected.seasonEnd} · {selected.format}
           </p>
           {standings.length === 0 ? (
             <p className="muted">No submitted rounds yet.</p>

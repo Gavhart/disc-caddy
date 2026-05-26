@@ -430,6 +430,11 @@ export interface Challenge {
   completedAt: string | null
 }
 
+export type CommunityEventPostType = 'event' | 'pickup'
+
+/** Events and pickup posts visible within ~75mi of home areas. */
+export const COMMUNITY_EVENT_RADIUS_MILES = 75
+
 export interface ScheduledRound {
   id: string
   hostId: string
@@ -443,8 +448,17 @@ export interface ScheduledRound {
   status: string
   notes: string | null
   roundId: string | null
+  postType: CommunityEventPostType
+  distanceMiles: number | null
   goingCount: number
   myRsvp: string | null
+}
+
+export interface ScheduledRoundAttendee {
+  userId: string
+  displayName: string
+  status: 'going' | 'maybe'
+  createdAt: string
 }
 
 export interface League {
@@ -455,6 +469,9 @@ export interface League {
   format: RoundFormat
   inviteCode: string
   memberCount: number
+  createdBy: string
+  myRole: 'admin' | 'member'
+  isAdmin: boolean
 }
 
 export interface LeagueStanding {

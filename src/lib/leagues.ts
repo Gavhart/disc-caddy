@@ -38,6 +38,8 @@ export async function listMyLeagues(): Promise<League[]> {
       format: RoundFormat
       invite_code: string
       member_count: number
+      created_by: string
+      my_role: 'admin' | 'member'
     }[]) ?? []
   ).map(l => ({
     id: l.id,
@@ -47,7 +49,36 @@ export async function listMyLeagues(): Promise<League[]> {
     format: l.format,
     inviteCode: l.invite_code,
     memberCount: l.member_count,
+    createdBy: l.created_by,
+    myRole: l.my_role ?? 'member',
+    isAdmin: l.my_role === 'admin',
   }))
+}
+
+export async function updateLeague(
+  leagueId: string,
+  patch: {
+    name?: string
+    seasonStart?: string
+    seasonEnd?: string
+    format?: 'stroke' | 'stableford'
+  },
+): Promise<void> {
+  const { error } = await supabase.rpc('update_league', {
+    p_league_id: leagueId,
+    p_name: patch.name ?? null,
+    p_season_start: patch.seasonStart ?? null,
+    p_season_end: patch.seasonEnd ?? null,
+    p_format: patch.format ?? null,
+  })
+  if (error) throw error
+}
+
+export async function deleteLeague(leagueId: string): Promise<void> {
+  const { error } = await supabase.rpc('delete_league', {
+    p_league_id: leagueId,
+  })
+  if (error) throw error
 }
 
 export async function fetchLeagueStandings(leagueId: string): Promise<LeagueStanding[]> {
