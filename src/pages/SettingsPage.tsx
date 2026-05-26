@@ -165,7 +165,10 @@ export function SettingsPage() {
 
   return (
     <div className="container">
-      <div className="card">
+      <p className="settings-back">
+        <Link to="/profile">← Back to profile</Link>
+      </p>
+      <div className="card settings-section" id="account">
         <h2>Account</h2>
         <div className="setting-row">
           <span className="setting-label">Name</span>
@@ -183,7 +186,7 @@ export function SettingsPage() {
         </div>
       </div>
 
-      <div className="card">
+      <div className="card settings-section" id="player">
         <h2>Player</h2>
         <p className="muted small">
           The recommender uses these to choose between backhand and forehand,
@@ -358,7 +361,7 @@ export function SettingsPage() {
         </button>
       </div>
 
-      <div className="card">
+      <div className="card settings-section" id="subscription">
         <h2>Subscription</h2>
         {isNativeApp() && (
           <p className="muted small native-billing-note">

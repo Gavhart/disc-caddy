@@ -20,6 +20,7 @@ import { PrivacyPage } from './pages/PrivacyPage'
 import { TermsPage } from './pages/TermsPage'
 import { RoundsPage } from './pages/RoundsPage'
 import { CommunityPage } from './pages/CommunityPage'
+import { ProfilePage } from './pages/ProfilePage'
 
 function AppShell() {
   const { session, me, loading } = useAuth()
@@ -102,6 +103,14 @@ function AppShell() {
             element={
               <ProtectedRoute>
                 <CommunityPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
               </ProtectedRoute>
             }
           />
