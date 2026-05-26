@@ -22,6 +22,8 @@ interface Props {
   roundActive?: boolean
   throwCount?: number
   isPro?: boolean
+  /** When false during a live round, hide end-round (group card guest). */
+  isRoundHost?: boolean
   roundBusy?: boolean
   roundError?: string | null
   /** False when no bag is selected — start round needs a bag id. */
@@ -47,6 +49,7 @@ export function CourseSelector({
   roundActive = false,
   throwCount = 0,
   isPro = false,
+  isRoundHost = true,
   roundBusy = false,
   roundError = null,
   activeBagReady = true,
@@ -225,6 +228,7 @@ export function CourseSelector({
           roundActive={roundActive}
           throwCount={throwCount}
           isPro={isPro}
+          isRoundHost={isRoundHost}
           roundBusy={roundBusy}
           roundError={roundError}
           activeBagReady={activeBagReady}
@@ -248,6 +252,7 @@ interface RoundViewProps {
   roundActive: boolean
   throwCount: number
   isPro: boolean
+  isRoundHost: boolean
   roundBusy: boolean
   roundError?: string | null
   activeBagReady?: boolean
@@ -267,6 +272,7 @@ function RoundView({
   roundActive,
   throwCount,
   isPro,
+  isRoundHost,
   roundBusy,
   roundError = null,
   activeBagReady = true,
@@ -326,17 +332,26 @@ function RoundView({
                 <div className="round-live-status">
                   <span className="pill small round-live-pill">Live round</span>
                   <span className="muted small">
-                    {throwCount} throw{throwCount === 1 ? '' : 's'} logged
+                    {isRoundHost
+                      ? `${throwCount} throw${throwCount === 1 ? '' : 's'} logged`
+                      : 'Group scorecard — scores sync live'}
                   </span>
                 </div>
-                <button
-                  type="button"
-                  className="btn-secondary round-end-btn"
-                  onClick={() => onEndRound?.()}
-                  disabled={roundBusy}
-                >
-                  {roundBusy ? 'Ending…' : 'End round'}
-                </button>
+                {isRoundHost ? (
+                  <button
+                    type="button"
+                    className="btn-secondary round-end-btn"
+                    onClick={() => onEndRound?.()}
+                    disabled={roundBusy}
+                  >
+                    {roundBusy ? 'Ending…' : 'End round'}
+                  </button>
+                ) : (
+                  <p className="muted small">
+                    Only the host can end this round. Keep entering your scores
+                    on the card below.
+                  </p>
+                )}
               </>
             ) : isPro ? (
               <>

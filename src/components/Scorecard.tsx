@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { CourseHole, RoundPlayer, RoundScore } from '../types'
 import {
   addRoundPlayer,
@@ -9,6 +9,8 @@ import {
   searchPlayers,
   upsertHoleScore,
 } from '../lib/rounds'
+import { listFriends } from '../lib/friends'
+import { Friend } from '../types'
 
 interface Props {
   roundId: string
@@ -39,6 +41,7 @@ export function Scorecard({
   const [searchResults, setSearchResults] = useState<
     Awaited<ReturnType<typeof searchPlayers>>
   >([])
+  const [friends, setFriends] = useState<Friend[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -59,6 +62,21 @@ export function Scorecard({
     () => [...holes].sort((a, b) => a.number - b.number),
     [holes],
   )
+
+  const availableFriends = useMemo(
+    () =>
+      friends.filter(
+        f => !players.some(p => p.userId === f.userId),
+      ),
+    [friends, players],
+  )
+
+  useEffect(() => {
+    if (!addOpen || !isHost) return
+    listFriends()
+      .then(setFriends)
+      .catch(err => console.error('[scorecard] friends load failed', err))
+  }, [addOpen, isHost])
 
   function canEditPlayer(player: RoundPlayer): boolean {
     return isHost || player.userId === currentUserId
@@ -154,6 +172,9 @@ export function Scorecard({
     <section className="card scorecard">
       <div className="card-header">
         <h2>Scorecard</h2>
+        {!isHost && (
+          <span className="pill small scorecard-guest-pill">Group card</span>
+        )}
         {isHost && (
           <button
             type="button"
@@ -170,6 +191,26 @@ export function Scorecard({
 
       {addOpen && isHost && (
         <div className="scorecard-add-panel">
+          {availableFriends.length > 0 && (
+            <div className="scorecard-friends-quick">
+              <span className="muted small">Add a friend</span>
+              <div className="scorecard-friends-chips">
+                {availableFriends.map(friend => (
+                  <button
+                    key={friend.userId}
+                    type="button"
+                    className="btn-secondary scorecard-friend-chip"
+                    disabled={busy}
+                    onClick={() =>
+                      handleAddRegistered(friend.userId, friend.displayName)
+                    }
+                  >
+                    + {friend.displayName.split(' ')[0]}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <label>
             <span className="muted small">Find a Disc Caddy user (email or name)</span>
             <input

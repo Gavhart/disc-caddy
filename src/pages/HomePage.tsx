@@ -19,13 +19,15 @@ import { createBag, listBags, listDiscsInBag } from '../lib/bags'
 import {
   endRound,
   getActiveRound,
+  getRoundStatus,
   listPlayersForRound,
   listScoresForRound,
   listThrowsForRound,
   logThrow,
   startRound,
 } from '../lib/rounds'
-import { updateCourseHole, listHolesForCourse } from '../lib/courses'
+import { subscribeRoundUpdates } from '../lib/roundRealtime'
+import { updateCourseHole, listCourses, listHolesForCourse } from '../lib/courses'
 import { Scorecard } from '../components/Scorecard'
 import {
   Bag,
@@ -190,7 +192,7 @@ export function HomePage() {
   }, [])
 
   useEffect(() => {
-    if (!user || !isPro) return
+    if (!user) return
     let cancelled = false
     getActiveRound()
       .then(async active => {
@@ -200,6 +202,14 @@ export function HomePage() {
         setRoundHostId(active.user_id)
         if (active.course_id) {
           setPickedCourseId(active.course_id)
+          try {
+            const courses = await listCourses()
+            if (!cancelled) {
+              setPickedCourse(courses.find(c => c.id === active.course_id) ?? null)
+            }
+          } catch (err) {
+            console.warn('[home] load course for group round failed', err)
+          }
         }
         if (!cancelled) await refreshRoundData(active.id)
       })
@@ -207,7 +217,7 @@ export function HomePage() {
     return () => {
       cancelled = true
     }
-  }, [user, isPro, refreshRoundData])
+  }, [user, refreshRoundData])
 
   useEffect(() => {
     if (!roundId || !roundActive) {
@@ -217,9 +227,27 @@ export function HomePage() {
       if (!roundActive) setRoundHostId(null)
       return
     }
+
     refreshRoundData(roundId).catch(err =>
       console.error('[home] load round data failed', err),
     )
+
+    return subscribeRoundUpdates(roundId, () => {
+      getRoundStatus(roundId)
+        .then(status => {
+          if (status === 'completed') {
+            setRoundActive(false)
+            setRoundId(null)
+            setRoundHostId(null)
+            setRoundThrows([])
+            setRoundPlayers([])
+            setRoundScores([])
+            return
+          }
+          return refreshRoundData(roundId)
+        })
+        .catch(err => console.error('[home] live round refresh failed', err))
+    })
   }, [roundId, roundActive, refreshRoundData])
 
   const loggedHoleNumber = useMemo(() => {
@@ -423,9 +451,21 @@ export function HomePage() {
   const activeBag = bags.find(b => b.id === activeBagId) ?? null
   const locked = pickedHoleNumber !== null
   const isRoundHost = roundHostId != null && user?.id === roundHostId
+  const hostPlayer = roundPlayers.find(p => p.isHost)
+  const isGroupParticipant = roundActive && !isRoundHost && roundPlayers.length > 0
 
   return (
     <div className="container">
+      {isGroupParticipant && (
+        <div className="card group-round-banner">
+          <strong>Group scorecard</strong>
+          <p className="muted small">
+            You&apos;re playing with{' '}
+            {hostPlayer?.displayName ?? 'the host'}. Scores sync live — enter
+            yours below. This round will appear in your history when it ends.
+          </p>
+        </div>
+      )}
       <div className="card bag-picker-card">
         <BagPicker
           bags={bags}
@@ -450,6 +490,7 @@ export function HomePage() {
         roundActive={roundActive}
         throwCount={roundThrows.length}
         isPro={isPro}
+        isRoundHost={isRoundHost}
         roundBusy={roundBusy}
         roundError={roundError}
         activeBagReady={activeBagId != null}

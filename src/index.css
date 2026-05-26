@@ -3756,6 +3756,79 @@ footer {
   border-radius: 10px;
 }
 
+.scorecard-friends-quick {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.scorecard-friends-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.scorecard-friend-chip {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+.scorecard-guest-pill {
+  margin-left: auto;
+}
+
+.group-round-banner {
+  margin-bottom: 16px;
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+}
+
+.group-round-banner p {
+  margin: 6px 0 0;
+}
+
+.friends-section {
+  margin-bottom: 16px;
+}
+
+.friends-subheading {
+  margin: 16px 0 8px;
+  font-size: 14px;
+}
+
+.friends-search {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.friends-search-results,
+.friends-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.friends-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.friends-row-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .scorecard-add-panel label {
   display: flex;
   flex-direction: column;

@@ -71,7 +71,8 @@ function RoundListView() {
         ) : rounds.length === 0 ? (
           <p className="muted">
             No completed rounds yet. Start a live round from the Recommend page
-            while playing a course.
+            while playing a course, or join a friend&apos;s group scorecard when
+            they add you.
           </p>
         ) : (
           <ul className="round-history-list">

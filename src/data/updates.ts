@@ -1,5 +1,5 @@
 /** Bump when you ship a release users should see on next sign-in. */
-export const APP_VERSION = '0.3.3'
+export const APP_VERSION = '0.3.4'
 
 export interface ReleaseNote {
   version: string
@@ -14,13 +14,25 @@ export const ROADMAP: string[] = [
   'Pro checkout — Stripe billing live on the Upgrade page',
   'Hole memory refinements — more history per hole and smarter tie-ins to your bag',
   'Community notifications when someone messages you',
+  'Push notification when a friend adds you to a live scorecard',
   'iOS & Android apps in the App Store and Google Play',
   'Share a bag or round recap with friends',
   'Offline mode for course stepping on spotty signal',
-  'Push invites when someone adds you to a group card',
 ]
 
 export const RELEASES: ReleaseNote[] = [
+  {
+    version: '0.3.4',
+    date: '2026-05-21',
+    title: 'Friends & live group scorecards',
+    items: [
+      'Friends on Profile — send requests, accept invites, and build a friends list',
+      'One-tap add friends to your scorecard from the + Player panel',
+      'Live group scorecards — everyone on the card sees score updates in real time',
+      'Each player enters their own scores; friends can join without Pro',
+      'Completed group rounds show up in Round history for every player at that course',
+    ],
+  },
   {
     version: '0.3.3',
     date: '2026-05-21',

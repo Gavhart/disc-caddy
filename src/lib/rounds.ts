@@ -408,6 +408,18 @@ async function hydrateRoundSummaries(
   )
 }
 
+export async function getRoundStatus(
+  roundId: string,
+): Promise<'active' | 'completed' | null> {
+  const { data, error } = await supabase
+    .from('rounds')
+    .select('status')
+    .eq('id', roundId)
+    .maybeSingle()
+  if (error) throw error
+  return (data?.status as 'active' | 'completed' | undefined) ?? null
+}
+
 export async function listMyRounds(limit = 40): Promise<RoundSummary[]> {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return []
@@ -416,6 +428,7 @@ export async function listMyRounds(limit = 40): Promise<RoundSummary[]> {
     .from('round_player_totals')
     .select('*')
     .eq('user_id', user.id)
+    .eq('round_status', 'completed')
     .order('started_at', { ascending: false })
     .limit(limit * 2)
   if (error) throw error

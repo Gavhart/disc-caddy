@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { signOut } from '../lib/auth'
 import { ProfileNameEditor } from '../components/ProfileNameEditor'
 import { ProfilePhotoUploader } from '../components/ProfilePhotoUploader'
+import { FriendsSection } from '../components/FriendsSection'
 import { fetchMyHomeCities, formatCityLabel } from '../lib/community'
 import { isWebCheckoutAvailable } from '../lib/platform'
 import { HomeCity } from '../types'
@@ -108,6 +109,8 @@ export function ProfilePage() {
           </Link>
         </div>
       )}
+
+      <FriendsSection />
 
       <div className="profile-menu">
         <h2 className="profile-menu-heading">Settings &amp; account</h2>

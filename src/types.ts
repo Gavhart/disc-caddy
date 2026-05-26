@@ -398,6 +398,20 @@ export interface PlayerSearchResult {
   email: string
 }
 
+export interface Friend {
+  userId: string
+  displayName: string
+  email: string
+}
+
+export interface FriendRequest {
+  id: string
+  fromUserId: string
+  displayName: string
+  email: string
+  createdAt: string
+}
+
 export interface LeaderboardEntry {
   rank: number
   roundPlayerId: string
