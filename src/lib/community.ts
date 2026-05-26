@@ -1,5 +1,6 @@
 import { geocodeCityPlace, normalizeHomeCityFields } from './geocode'
 import { supabase } from './supabase'
+import { sendNotificationEmail } from './notifications'
 import { CommunityMember, CommunityMessage, CommunityThread, HomeCity } from '../types'
 
 interface HomeCityRow {
@@ -195,6 +196,13 @@ export async function sendCommunityMessage(
     p_body: body.trim(),
   })
   if (error) throw error
+
+  sendNotificationEmail({
+    userId: recipientId,
+    title: 'New Community message on Disc Caddy',
+    body: body.trim().slice(0, 120),
+    linkPath: '/community/messages',
+  })
 }
 
 export async function fetchCommunityMessages(): Promise<CommunityMessage[]> {

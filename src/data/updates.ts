@@ -1,5 +1,5 @@
 /** Bump when you ship a release users should see on next sign-in. */
-export const APP_VERSION = '0.5.0'
+export const APP_VERSION = '0.6.0'
 
 export interface ReleaseNote {
   version: string
@@ -11,14 +11,33 @@ export interface ReleaseNote {
 
 /** Planned features — edit anytime; shown on the updates page. */
 export const ROADMAP: string[] = [
-  'Push notifications (mobile) for scorecard invites and messages',
-  'iOS & Android apps in the App Store and Google Play',
-  'Richer round recap images for social sharing',
-  'Smarter hole memory — wind/conditions tied to past throws',
-  'Course map overlays for hole notes',
+  'Native iOS & Android apps with push notifications',
+  'League commissioner tools — schedule weeks, assign pairings',
+  'Course map overlays tied to hole notes',
+  'AI bag tuning from your stats and course playbook',
+  'Tournament bracket mode for larger groups',
 ]
 
 export const RELEASES: ReleaseNote[] = [
+  {
+    version: '0.6.0',
+    date: '2026-05-21',
+    title: 'Stats, formats, leagues & the full power-user stack',
+    items: [
+      'Player stats dashboard (Pro) — averages, birdies, trends, and disc performance',
+      'Round formats — stroke, Stableford, skins, and best ball with live standings',
+      'Course playbook — per-hole strategy, notes, and your last 3 scores',
+      'Weekly challenges on Profile — birdies, rounds played, squad goals',
+      'Scheduled rounds on Community — post tee times and RSVP',
+      'Leagues — season standings; submit completed rounds with invite codes',
+      'Friend head-to-head — compare stats and shared courses',
+      'Courses near you — discovery map from your home areas',
+      'Bag insights — top thrown discs and swap candidates',
+      'Rich recap share images — download a PNG for social',
+      'Browser push notification setup in Settings (requires VAPID keys)',
+      'Community message emails when notify email is on',
+    ],
+  },
   {
     version: '0.5.0',
     date: '2026-05-21',

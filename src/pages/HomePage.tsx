@@ -28,6 +28,7 @@ import {
   upsertHoleScore,
 } from '../lib/rounds'
 import { subscribeRoundUpdates } from '../lib/roundRealtime'
+import { supabase } from '../lib/supabase'
 import {
   cacheCourseHoles,
   isOnline,
@@ -39,6 +40,7 @@ import {
   notifyFriendsRoundCompleted,
 } from '../lib/roundInvites'
 import { createRoundShareLink, roundShareUrl } from '../lib/roundShare'
+import { refreshChallengeProgress } from '../lib/challenges'
 import { updateCourseHole, listCourses, listHolesForCourse } from '../lib/courses'
 import { Scorecard } from '../components/Scorecard'
 import { RoundInviteBanner } from '../components/RoundInviteBanner'
@@ -55,6 +57,7 @@ import {
   RoundPlayer,
   RoundScore,
   RoundInvite,
+  RoundFormat,
   TeeBearing,
   ThrowStyle,
 } from '../types'
@@ -106,6 +109,7 @@ export function HomePage() {
   const [pendingInvites, setPendingInvites] = useState<RoundInvite[]>([])
   const [shareUrl, setShareUrl] = useState<string | null>(null)
   const [offlineHint, setOfflineHint] = useState<string | null>(null)
+  const [roundFormat, setRoundFormat] = useState<RoundFormat>('stroke')
 
   const isPro = me?.isPro ?? false
 
@@ -210,10 +214,11 @@ export function HomePage() {
   }, [isPro, pickedCourseId, pickedHoleNumber, holeMemoryVersion])
 
   const refreshRoundData = useCallback(async (id: string) => {
-    const [playersRes, scoresRes, throwsRes] = await Promise.allSettled([
+    const [playersRes, scoresRes, throwsRes, roundRes] = await Promise.allSettled([
       listPlayersForRound(id),
       listScoresForRound(id),
       listThrowsForRound(id),
+      supabase.from('rounds').select('format').eq('id', id).maybeSingle(),
     ])
     if (playersRes.status === 'fulfilled') {
       setRoundPlayers(playersRes.value)
@@ -232,6 +237,9 @@ export function HomePage() {
     } else {
       console.warn('[home] load round throws failed', throwsRes.reason)
       setRoundThrows([])
+    }
+    if (roundRes.status === 'fulfilled' && roundRes.value.data?.format) {
+      setRoundFormat(roundRes.value.data.format as RoundFormat)
     }
   }, [])
 
@@ -477,6 +485,7 @@ export function HomePage() {
       await endRound(endingRoundId)
       if (wasHost) {
         notifyFriendsRoundCompleted(endingRoundId).catch(() => {})
+        refreshChallengeProgress().catch(() => {})
         try {
           const token = await createRoundShareLink(endingRoundId)
           setShareUrl(roundShareUrl(token))
@@ -671,6 +680,8 @@ export function HomePage() {
           onPlayersChange={() => refreshRoundData(roundId)}
           onScoresChange={() => refreshRoundData(roundId)}
           onOptimisticScore={handleOptimisticScore}
+          roundFormat={roundFormat}
+          onFormatChange={() => refreshRoundData(roundId)}
         />
       )}
       <HoleNoteEditor courseId={pickedCourseId} holeNumber={pickedHoleNumber} />

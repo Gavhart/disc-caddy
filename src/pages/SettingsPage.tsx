@@ -8,6 +8,7 @@ import { isNativeApp, isWebCheckoutAvailable } from '../lib/platform'
 import { ProfileNameEditor } from '../components/ProfileNameEditor'
 import { ProfilePhotoUploader } from '../components/ProfilePhotoUploader'
 import { setNotifyEmail } from '../lib/notifications'
+import { isPushSupported, registerForPushNotifications } from '../lib/pushNotifications'
 import { updatePlayer } from '../lib/profile'
 import { Hand, ThrowStyle } from '../types'
 
@@ -29,6 +30,7 @@ export function SettingsPage() {
   const [fairwayDistance, setFairwayDistance] = useState<string>('')
   const [notifyEmail, setNotifyEmailState] = useState(true)
   const [savingNotify, setSavingNotify] = useState(false)
+  const [pushBusy, setPushBusy] = useState(false)
 
   // After Stripe Checkout redirects here, pull fresh subscription state.
   useEffect(() => {
@@ -112,6 +114,20 @@ export function SettingsPage() {
       setPlayerError(err instanceof Error ? err.message : 'Save failed')
     } finally {
       setSavingPlayer(false)
+    }
+  }
+
+  async function handleEnablePush() {
+    setPushBusy(true)
+    try {
+      const ok = await registerForPushNotifications()
+      if (!ok) {
+        alert('Could not enable push — check browser permission and VITE_VAPID_PUBLIC_KEY.')
+      }
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Push setup failed')
+    } finally {
+      setPushBusy(false)
     }
   }
 
@@ -405,6 +421,17 @@ export function SettingsPage() {
             onChange={e => handleNotifyEmailToggle(e.target.checked)}
           />
         </div>
+        {isPushSupported() && (
+          <button
+            type="button"
+            className="btn-secondary"
+            disabled={pushBusy}
+            onClick={handleEnablePush}
+            style={{ marginTop: 10 }}
+          >
+            {pushBusy ? 'Enabling…' : 'Enable browser push notifications'}
+          </button>
+        )}
       </div>
 
       <div className="card settings-section" id="subscription">

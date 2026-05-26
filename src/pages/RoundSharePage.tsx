@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { fetchPublicRoundRecap } from '../lib/roundShare'
+import { downloadRecapImage } from '../lib/recapImage'
 import { formatScoreToPar } from '../lib/rounds'
 import { PublicRoundRecap } from '../types'
 import { Logo } from '../components/Logo'
@@ -10,6 +11,7 @@ export function RoundSharePage() {
   const [recap, setRecap] = useState<PublicRoundRecap | null | undefined>(
     undefined,
   )
+  const [downloading, setDownloading] = useState(false)
 
   useEffect(() => {
     if (!token) {
@@ -96,6 +98,21 @@ export function RoundSharePage() {
             </tbody>
           </table>
         )}
+        <button
+          type="button"
+          className="btn-primary"
+          disabled={downloading}
+          onClick={async () => {
+            setDownloading(true)
+            try {
+              await downloadRecapImage(recap)
+            } finally {
+              setDownloading(false)
+            }
+          }}
+        >
+          {downloading ? 'Creating…' : 'Download share image'}
+        </button>
       </div>
     </div>
   )

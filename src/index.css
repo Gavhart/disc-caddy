@@ -4207,3 +4207,153 @@ footer {
   border-bottom: 1px solid var(--border);
   text-align: left;
 }
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.stats-recent-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.stats-recent-list li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.challenge-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.challenge-progress-bar {
+  height: 8px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  margin: 8px 0 4px;
+}
+
+.challenge-progress-fill {
+  height: 100%;
+  background: var(--accent);
+}
+
+.challenge-done {
+  opacity: 0.85;
+}
+
+.h2h-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 12px 0;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  padding: 16px;
+}
+
+.modal-panel {
+  max-width: 480px;
+  width: 100%;
+}
+
+.league-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.league-form-row input {
+  flex: 1;
+  min-width: 160px;
+}
+
+.scheduled-form label {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.scheduled-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.scheduled-item {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.scheduled-rsvp {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.course-discovery-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.course-discovery-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.bag-insights-top {
+  margin: 8px 0;
+  padding-left: 18px;
+}
+
+.bag-insights-unused {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.scorecard-format-pick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.scorecard-format-pick select {
+  min-width: 140px;
+}
+
+.playbook-hole-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.playbook-edit textarea,
+.playbook-edit input {
+  width: 100%;
+  margin: 8px 0;
+}

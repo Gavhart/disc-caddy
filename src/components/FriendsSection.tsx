@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { FriendHeadToHeadModal } from './FriendHeadToHeadModal'
 import {
   listFriends,
   listIncomingFriendRequests,
@@ -20,6 +21,7 @@ export function FriendsSection() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [ok, setOk] = useState<string | null>(null)
+  const [h2hFriend, setH2hFriend] = useState<Friend | null>(null)
 
   const reload = useCallback(async () => {
     setError(null)
@@ -195,17 +197,34 @@ export function FriendsSection() {
                 <strong>{friend.displayName}</strong>
                 <span className="muted small"> · {friend.email}</span>
               </div>
-              <button
-                type="button"
-                className="link-button danger"
-                disabled={busy}
-                onClick={() => handleRemove(friend)}
-              >
-                Remove
-              </button>
+              <div className="friends-row-actions">
+                <button
+                  type="button"
+                  className="link-button"
+                  disabled={busy}
+                  onClick={() => setH2hFriend(friend)}
+                >
+                  Compare stats
+                </button>
+                <button
+                  type="button"
+                  className="link-button danger"
+                  disabled={busy}
+                  onClick={() => handleRemove(friend)}
+                >
+                  Remove
+                </button>
+              </div>
             </li>
           ))}
         </ul>
+      )}
+      {h2hFriend && (
+        <FriendHeadToHeadModal
+          friendUserId={h2hFriend.userId}
+          friendName={h2hFriend.displayName}
+          onClose={() => setH2hFriend(null)}
+        />
       )}
     </div>
   )

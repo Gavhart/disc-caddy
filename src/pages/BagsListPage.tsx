@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { MyBag } from '../components/MyBag'
+import { BagInsightsPanel } from '../components/BagInsightsPanel'
 import {
   addDiscToBag,
   createBag,
@@ -305,7 +306,9 @@ export function BagsListPage() {
       </div>
 
       {selectedBag && (
-        <MyBag
+        <>
+          <BagInsightsPanel bagId={selectedBag.id} />
+          <MyBag
           title={selectedBag.name}
           discs={discs}
           busy={discBusy}
@@ -314,6 +317,7 @@ export function BagsListPage() {
           onRemove={handleRemoveDisc}
           onPhotoChange={handlePhotoChange}
         />
+        </>
       )}
     </div>
   )

@@ -10,9 +10,11 @@ import { Logo } from './Logo'
 
 const NAV_ITEMS = [
   { to: '/', end: true, label: 'Recommend', icon: '🎯' },
+  { to: '/stats', label: 'Stats', icon: '📈' },
   { to: '/bags', label: 'Bags', icon: '🎒' },
   { to: '/courses', label: 'Courses', icon: '🗺️' },
   { to: '/rounds', label: 'Rounds', icon: '📋' },
+  { to: '/leagues', label: 'Leagues', icon: '🏆' },
   { to: '/community', label: 'Community', icon: '👥' },
   { to: '/profile', label: 'Profile', icon: '👤' },
 ] as const

@@ -6,6 +6,7 @@ import { ProfileNameEditor } from '../components/ProfileNameEditor'
 import { ProfilePhotoUploader } from '../components/ProfilePhotoUploader'
 import { FriendsSection } from '../components/FriendsSection'
 import { FriendActivityFeed } from '../components/FriendActivityFeed'
+import { WeeklyChallengesPanel } from '../components/WeeklyChallengesPanel'
 import { fetchMyHomeCities, formatCityLabel } from '../lib/community'
 import { isWebCheckoutAvailable } from '../lib/platform'
 import { HomeCity } from '../types'
@@ -114,6 +115,48 @@ export function ProfilePage() {
       <FriendsSection />
 
       <FriendActivityFeed />
+
+      <WeeklyChallengesPanel />
+
+      <div className="profile-menu">
+        <h2 className="profile-menu-heading">Play &amp; improve</h2>
+        <Link to="/stats" className="profile-menu-item card">
+          <span className="profile-menu-icon" aria-hidden>
+            📈
+          </span>
+          <span className="profile-menu-copy">
+            <strong>Player stats</strong>
+            <span className="muted small">Trends, birdies, and disc performance (Pro)</span>
+          </span>
+          <span className="profile-menu-chevron" aria-hidden>
+            ›
+          </span>
+        </Link>
+        <Link to="/playbook" className="profile-menu-item card">
+          <span className="profile-menu-icon" aria-hidden>
+            📖
+          </span>
+          <span className="profile-menu-copy">
+            <strong>Course playbook</strong>
+            <span className="muted small">Hole strategy and your scoring history</span>
+          </span>
+          <span className="profile-menu-chevron" aria-hidden>
+            ›
+          </span>
+        </Link>
+        <Link to="/leagues" className="profile-menu-item card">
+          <span className="profile-menu-icon" aria-hidden>
+            🏆
+          </span>
+          <span className="profile-menu-copy">
+            <strong>Leagues</strong>
+            <span className="muted small">Season standings with your group</span>
+          </span>
+          <span className="profile-menu-chevron" aria-hidden>
+            ›
+          </span>
+        </Link>
+      </div>
 
       <div className="profile-menu">
         <h2 className="profile-menu-heading">Settings &amp; account</h2>

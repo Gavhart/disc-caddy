@@ -28,6 +28,7 @@ import {
   DgApiCourse,
   loadAllForCountry,
 } from '../lib/discgolfapi'
+import { CourseDiscoveryPanel } from '../components/CourseDiscoveryPanel'
 
 const DIRECTION_OPTIONS: { value: HoleDirection; label: string }[] = [
   { value: 'hard_left', label: 'Hard left' },
@@ -354,6 +355,8 @@ export function CoursesPage() {
 
   return (
     <div className="container">
+      <CourseDiscoveryPanel />
+
       <div className="card community-callout">
         <h2>Help us map every course</h2>
         <p>

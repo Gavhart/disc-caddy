@@ -23,6 +23,10 @@ import { CommunityPage } from './pages/CommunityPage'
 import { CommunityMessagesPage } from './pages/CommunityMessagesPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { RoundSharePage } from './pages/RoundSharePage'
+import { StatsPage } from './pages/StatsPage'
+import { CoursePlaybookPage } from './pages/CoursePlaybookPage'
+import { LeaguesPage } from './pages/LeaguesPage'
+import { ScheduledRoundsPage } from './pages/ScheduledRoundsPage'
 
 function AppShell() {
   const { session, me, loading } = useAuth()
@@ -132,6 +136,38 @@ function AppShell() {
             element={
               <ProtectedRoute>
                 <ProfilePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/stats"
+            element={
+              <ProtectedRoute>
+                <StatsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/playbook"
+            element={
+              <ProtectedRoute>
+                <CoursePlaybookPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/leagues"
+            element={
+              <ProtectedRoute>
+                <LeaguesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/community/scheduled"
+            element={
+              <ProtectedRoute>
+                <ScheduledRoundsPage />
               </ProtectedRoute>
             }
           />

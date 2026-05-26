@@ -355,6 +355,144 @@ export type AppNotificationKind =
   | 'community_message'
   | 'friend_activity'
   | 'round_invite'
+  | 'scheduled_round'
+  | 'challenge_complete'
+  | 'league_update'
+
+export type RoundFormat = 'stroke' | 'stableford' | 'skins' | 'best_ball'
+
+export interface FormatStanding {
+  playerId?: string
+  teamId?: string
+  displayName: string
+  rank: number
+  displayScore: number
+  unit: string
+  scoreToPar?: number
+  stablefordPoints?: number
+  skinsWon?: number
+}
+
+export interface FormatStandings {
+  format: RoundFormat
+  standings: FormatStanding[]
+}
+
+export interface PlayerStatsDashboard {
+  roundsPlayed: number
+  avgScoreToPar: number | null
+  bestScoreToPar: number | null
+  worstScoreToPar: number | null
+  totalBirdies: number
+  avgPutts: number | null
+  roundsLast30d: number
+  recentRounds: {
+    roundId: string
+    scoreToPar: number
+    totalStrokes: number
+    holesScored: number
+    playedAt: string | null
+    courseName: string | null
+  }[]
+}
+
+export interface DiscPerformanceStat {
+  discName: string
+  throwStyle: ThrowStyle
+  throws: number
+  avgStrokes: number | null
+  avgToPar: number | null
+}
+
+export interface PlaybookHole {
+  holeNumber: number
+  par: number | null
+  distance: number | null
+  bagDiscId: string | null
+  throwStyle: ThrowStyle | null
+  aimNotes: string | null
+  windNotes: string | null
+  strategy: string | null
+  holeNote: string | null
+  recentScores: { strokes: number; par: number | null; playedAt: string | null }[]
+}
+
+export interface Challenge {
+  id: string
+  slug: string
+  title: string
+  description: string
+  kind: string
+  targetValue: number
+  startsAt: string
+  endsAt: string
+  progress: number
+  completedAt: string | null
+}
+
+export interface ScheduledRound {
+  id: string
+  hostId: string
+  hostName: string
+  courseId: string | null
+  courseName: string | null
+  courseLocality: string | null
+  scheduledAt: string
+  maxPlayers: number
+  visibility: 'friends' | 'community'
+  status: string
+  notes: string | null
+  roundId: string | null
+  goingCount: number
+  myRsvp: string | null
+}
+
+export interface League {
+  id: string
+  name: string
+  seasonStart: string
+  seasonEnd: string
+  format: RoundFormat
+  inviteCode: string
+  memberCount: number
+}
+
+export interface LeagueStanding {
+  userId: string
+  displayName: string
+  roundsSubmitted: number
+  avgScoreToPar: number | null
+  bestScoreToPar: number | null
+  rank: number
+}
+
+export interface FriendHeadToHead {
+  you: { rounds: number; avgScoreToPar: number | null; bestScoreToPar: number | null }
+  friend: { rounds: number; avgScoreToPar: number | null; bestScoreToPar: number | null }
+  sharedCourses: {
+    courseId: string
+    courseName: string
+    yourAvg: number | null
+    friendAvg: number | null
+  }[]
+}
+
+export interface NearbyCourse {
+  id: string
+  name: string
+  locality: string | null
+  regionCode: string | null
+  lat: number | null
+  lon: number | null
+  distanceMiles: number | null
+  roundsLogged: number
+}
+
+export interface BagInsights {
+  unusedDiscs: { id: string; discName: string }[]
+  topDiscs: { discName: string; throws: number }[]
+  discCount: number
+}
 
 export interface AppNotification {
   id: string
@@ -429,6 +567,7 @@ export interface RoundSummary {
   courseLocality: string | null
   bagId: string | null
   status: 'active' | 'completed'
+  format: RoundFormat
   startedAt: string
   endedAt: string | null
   hostUserId: string

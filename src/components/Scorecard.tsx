@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { CourseHole, RoundPlayer, RoundScore } from '../types'
+import { CourseHole, RoundFormat, RoundPlayer, RoundScore } from '../types'
 import {
   addRoundPlayer,
   computePlayerTotals,
@@ -15,6 +15,13 @@ import {
   invitePlayerToRound,
   setRoundHostScoringOnly,
 } from '../lib/roundInvites'
+import {
+  FORMAT_LABELS,
+  setRoundFormat,
+  createRoundTeam,
+  assignPlayerTeam,
+} from '../lib/roundFormats'
+import { FormatStandingsPanel } from './FormatStandingsPanel'
 import {
   isOnline,
   queueOfflineScore,
@@ -38,6 +45,8 @@ interface Props {
     putts: number | null
     par: number | null
   }) => void
+  roundFormat?: RoundFormat
+  onFormatChange?: () => void | Promise<void>
 }
 
 export function Scorecard({
@@ -51,6 +60,8 @@ export function Scorecard({
   onPlayersChange,
   onScoresChange,
   onOptimisticScore,
+  roundFormat = 'stroke',
+  onFormatChange,
 }: Props) {
   const [addOpen, setAddOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -291,6 +302,27 @@ export function Scorecard({
     }
   }
 
+  async function handleFormatChange(format: RoundFormat) {
+    if (!isHost) return
+    setBusy(true)
+    try {
+      await setRoundFormat(roundId, format)
+      if (format === 'best_ball' && players.length >= 2) {
+        const teamId = await createRoundTeam(roundId, 'Team 1')
+        await assignPlayerTeam(players[0].id, teamId)
+        if (players[1]) {
+          const team2 = await createRoundTeam(roundId, 'Team 2')
+          await assignPlayerTeam(players[1].id, team2)
+        }
+      }
+      await onFormatChange?.()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not set format')
+    } finally {
+      setBusy(false)
+    }
+  }
+
   if (currentHoleNumber == null) return null
 
   return (
@@ -329,6 +361,25 @@ export function Scorecard({
           <span>Host enters all scores (one phone)</span>
         </label>
       )}
+
+      {isHost && (
+        <label className="scorecard-format-pick">
+          <span className="muted small">Format</span>
+          <select
+            value={roundFormat}
+            disabled={busy}
+            onChange={e => handleFormatChange(e.target.value as RoundFormat)}
+          >
+            {(Object.keys(FORMAT_LABELS) as RoundFormat[]).map(f => (
+              <option key={f} value={f}>
+                {FORMAT_LABELS[f]}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      <FormatStandingsPanel roundId={roundId} format={roundFormat} />
 
       {error && <div className="form-error small">{error}</div>}
       {info && <div className="form-success small">{info}</div>}

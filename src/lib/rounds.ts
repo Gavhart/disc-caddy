@@ -3,6 +3,7 @@ import {
   LeaderboardEntry,
   PlayerSearchResult,
   RoundDetail,
+  RoundFormat,
   RoundPlayer,
   RoundScore,
   RoundSummary,
@@ -18,6 +19,7 @@ interface RoundRow {
   started_at: string
   ended_at: string | null
   status: 'active' | 'completed'
+  format?: RoundFormat
 }
 
 interface RoundPlayerRow {
@@ -381,20 +383,41 @@ async function hydrateRoundSummaries(
     byRound.set(t.round_id, list)
   }
 
+  const roundIds = [...byRound.keys()]
+  const roundMetaMap = new Map<
+    string,
+    { format: RoundFormat; bagId: string | null; hostUserId: string }
+  >()
+  if (roundIds.length > 0) {
+    const { data: roundRows } = await supabase
+      .from('rounds')
+      .select('id, format, bag_id, user_id')
+      .in('id', roundIds)
+    for (const r of roundRows ?? []) {
+      roundMetaMap.set(r.id, {
+        format: (r.format ?? 'stroke') as RoundFormat,
+        bagId: r.bag_id,
+        hostUserId: r.user_id,
+      })
+    }
+  }
+
   const out: RoundSummary[] = []
   for (const [roundId, players] of byRound) {
     const row = players.find(p => p.is_host) ?? players[0]
     const course = row.course_id ? courseMap.get(row.course_id) : null
+    const meta = roundMetaMap.get(roundId)
     out.push({
       id: roundId,
       courseId: row.course_id,
       courseName: course?.name ?? null,
       courseLocality: course?.locality ?? null,
-      bagId: null,
+      bagId: meta?.bagId ?? null,
       status: row.round_status as 'active' | 'completed',
+      format: meta?.format ?? 'stroke',
       startedAt: row.started_at,
       endedAt: row.ended_at,
-      hostUserId: row.user_id ?? '',
+      hostUserId: meta?.hostUserId ?? row.user_id ?? '',
       holesScored: row.holes_scored,
       totalStrokes: row.total_strokes,
       totalPar: row.total_par,
@@ -481,6 +504,7 @@ export async function getRoundDetail(roundId: string): Promise<RoundDetail | nul
     courseLocality,
     bagId: round.bag_id,
     status: round.status,
+    format: (round.format ?? 'stroke') as RoundFormat,
     startedAt: round.started_at,
     endedAt: round.ended_at,
     hostUserId: round.user_id,
