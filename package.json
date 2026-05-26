@@ -11,7 +11,8 @@
     "cap:ios": "npx cap open ios",
     "cap:android": "npx cap open android",
     "preview": "vite preview",
-    "import-discs": "node scripts/import-discs.mjs"
+    "import-discs": "node scripts/import-discs.mjs",
+    "icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.4",
@@ -30,6 +31,7 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
+    "sharp": "^0.34.5",
     "typescript": "^5.6.3",
     "vite": "^5.4.11"
   }
