@@ -30,6 +30,8 @@ export const RELEASES: ReleaseNote[] = [
       'RSVP with attendance counts; hosts view who is going or maybe',
       'Host notifications when someone joins your event',
       'League admins can edit season dates, name, format, or delete a league',
+      'Leagues page shows season status, stats, leader, and invite codes at a glance',
+      'Community checkboxes now show a clear checked state',
     ],
   },
   {

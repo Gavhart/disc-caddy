@@ -18,11 +18,32 @@ function defaultSeasonEnd(): string {
   return end.toISOString().slice(0, 10)
 }
 
+function formatSeasonRange(start: string, end: string): string {
+  const fmt = (d: string) =>
+    new Date(d + 'T12:00:00').toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    })
+  return `${fmt(start)} – ${fmt(end)}`
+}
+
+function seasonStatusLabel(status: League['seasonStatus']): string {
+  if (status === 'upcoming') return 'Upcoming'
+  if (status === 'ended') return 'Season ended'
+  return 'In season'
+}
+
+function formatLabel(format: string): string {
+  return format === 'stableford' ? 'Stableford' : 'Stroke'
+}
+
 export function LeaguesPage() {
   const [leagues, setLeagues] = useState<League[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [standings, setStandings] = useState<LeagueStanding[]>([])
   const [rounds, setRounds] = useState<RoundSummary[]>([])
+  const [showCreate, setShowCreate] = useState(false)
   const [name, setName] = useState('')
   const [seasonStart, setSeasonStart] = useState(() => new Date().toISOString().slice(0, 10))
   const [seasonEnd, setSeasonEnd] = useState(defaultSeasonEnd)
@@ -32,12 +53,16 @@ export function LeaguesPage() {
   const [editSeasonEnd, setEditSeasonEnd] = useState('')
   const [editFormat, setEditFormat] = useState<'stroke' | 'stableford'>('stroke')
   const [showEdit, setShowEdit] = useState(false)
+  const [copiedCode, setCopiedCode] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   function reload() {
     listMyLeagues()
-      .then(setLeagues)
+      .then(rows => {
+        setLeagues(rows)
+        if (rows.length > 0 && !selectedId) setSelectedId(rows[0].id)
+      })
       .catch(() => setLeagues([]))
   }
 
@@ -73,6 +98,16 @@ export function LeaguesPage() {
     setEditFormat(selected.format === 'stableford' ? 'stableford' : 'stroke')
   }, [selected])
 
+  async function copyInviteCode(code: string) {
+    try {
+      await navigator.clipboard.writeText(code)
+      setCopiedCode(code)
+      window.setTimeout(() => setCopiedCode(null), 2000)
+    } catch {
+      setError('Could not copy invite code')
+    }
+  }
+
   async function handleCreate(e: FormEvent) {
     e.preventDefault()
     setBusy(true)
@@ -84,6 +119,7 @@ export function LeaguesPage() {
         seasonEnd,
       })
       setName('')
+      setShowCreate(false)
       reload()
       setSelectedId(id)
     } catch (err) {
@@ -115,6 +151,7 @@ export function LeaguesPage() {
     try {
       await submitRoundToLeague(selectedId, roundId)
       setStandings(await fetchLeagueStandings(selectedId))
+      reload()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not submit round')
     } finally {
@@ -167,85 +204,111 @@ export function LeaguesPage() {
 
   return (
     <div className="container leagues-page">
-      <div className="card">
-        <h2>Leagues</h2>
-        <p className="muted small">
-          Season standings with friends — completed rounds (9+ holes) in season
-          auto-submit when you end a round. Manual submit still available below.
+      <header className="leagues-header">
+        <h1>Leagues</h1>
+        <p className="muted">
+          Season standings with your group. Completed rounds (9+ holes) in season auto-submit
+          when you end a round.
         </p>
-        {error && <div className="form-error">{error}</div>}
+      </header>
 
-        <form onSubmit={handleCreate} className="league-create-form">
-          <div className="league-form-row">
-            <input
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="League name"
-              required
-            />
-            <button type="submit" className="btn-primary" disabled={busy}>
-              Create league
-            </button>
-          </div>
-          <div className="league-form-row league-form-dates">
-            <label>
-              Season start
-              <input
-                type="date"
-                value={seasonStart}
-                onChange={e => setSeasonStart(e.target.value)}
-                required
-              />
-            </label>
-            <label>
-              Season end
-              <input
-                type="date"
-                value={seasonEnd}
-                onChange={e => setSeasonEnd(e.target.value)}
-                required
-              />
-            </label>
-          </div>
-        </form>
+      {error && <div className="form-error">{error}</div>}
 
-        <form onSubmit={handleJoin} className="league-form-row">
-          <input
-            value={inviteCode}
-            onChange={e => setInviteCode(e.target.value)}
-            placeholder="Invite code"
-            required
-          />
-          <button type="submit" className="btn-secondary" disabled={busy}>
-            Join
-          </button>
-        </form>
-      </div>
+      <section className="card">
+        <div className="leagues-section-head">
+          <h2>Your leagues</h2>
+          <span className="muted small">{leagues.length} total</span>
+        </div>
 
-      {leagues.length > 0 && (
-        <div className="card">
-          <h3>Your leagues</h3>
-          <ul className="league-list">
+        {leagues.length === 0 ? (
+          <p className="muted">
+            No leagues yet — create one for your group or join with an invite code below.
+          </p>
+        ) : (
+          <ul className="league-card-grid">
             {leagues.map(l => (
               <li key={l.id}>
                 <button
                   type="button"
-                  className={`link-button${selectedId === l.id ? ' active' : ''}`}
+                  className={'league-card' + (selectedId === l.id ? ' league-card-selected' : '')}
                   onClick={() => setSelectedId(l.id)}
                 >
-                  {l.name} · {l.memberCount} players
-                  {l.isAdmin && <span className="league-admin-tag"> · Admin</span>}
+                  <div className="league-card-top">
+                    <h3>{l.name}</h3>
+                    <div className="league-card-badges">
+                      <span className={'league-season-badge league-season-' + l.seasonStatus}>
+                        {seasonStatusLabel(l.seasonStatus)}
+                      </span>
+                      <span className="league-format-badge">{formatLabel(l.format)}</span>
+                      {l.isAdmin && <span className="league-admin-badge">Admin</span>}
+                    </div>
+                  </div>
+
+                  <p className="league-card-season muted small">
+                    {formatSeasonRange(l.seasonStart, l.seasonEnd)}
+                  </p>
+
+                  <dl className="league-card-stats">
+                    <div>
+                      <dt>Members</dt>
+                      <dd>{l.memberCount}</dd>
+                    </div>
+                    <div>
+                      <dt>Rounds logged</dt>
+                      <dd>{l.roundsSubmitted}</dd>
+                    </div>
+                    <div>
+                      <dt>Your rounds</dt>
+                      <dd>{l.myRoundsSubmitted}</dd>
+                    </div>
+                  </dl>
+
+                  {l.leaderName && l.roundsSubmitted > 0 && (
+                    <p className="league-card-leader small">
+                      Leader: <strong>{l.leaderName}</strong>
+                    </p>
+                  )}
+
+                  <div className="league-card-invite">
+                    <span className="muted small">Invite</span>
+                    <code>{l.inviteCode}</code>
+                    <span
+                      role="button"
+                      tabIndex={0}
+                      className="league-copy-btn"
+                      onClick={e => {
+                        e.stopPropagation()
+                        copyInviteCode(l.inviteCode)
+                      }}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          e.stopPropagation()
+                          copyInviteCode(l.inviteCode)
+                        }
+                      }}
+                    >
+                      {copiedCode === l.inviteCode ? 'Copied' : 'Copy'}
+                    </span>
+                  </div>
                 </button>
               </li>
             ))}
           </ul>
-        </div>
-      )}
+        )}
+      </section>
 
       {selected && (
-        <div className="card">
+        <section className="card league-detail-card">
           <div className="league-detail-head">
-            <h3>{selected.name} standings</h3>
+            <div>
+              <h2>{selected.name}</h2>
+              <p className="muted small league-detail-meta">
+                {formatSeasonRange(selected.seasonStart, selected.seasonEnd)} ·{' '}
+                {formatLabel(selected.format)} · {selected.memberCount} members ·{' '}
+                {selected.playersWithRounds} playing · {selected.roundsSubmitted} rounds logged
+              </p>
+            </div>
             {selected.isAdmin && (
               <div className="league-admin-actions">
                 <button
@@ -314,12 +377,9 @@ export function LeaguesPage() {
             </form>
           )}
 
-          <p className="muted small">
-            Invite code: <code>{selected.inviteCode}</code> · Season{' '}
-            {selected.seasonStart} → {selected.seasonEnd} · {selected.format}
-          </p>
+          <h3>Standings</h3>
           {standings.length === 0 ? (
-            <p className="muted">No submitted rounds yet.</p>
+            <p className="muted">No submitted rounds yet — play a round and submit it below.</p>
           ) : (
             <table className="leaderboard-table">
               <thead>
@@ -369,8 +429,77 @@ export function LeaguesPage() {
               </ul>
             </>
           )}
-        </div>
+        </section>
       )}
+
+      <section className="card">
+        <div className="leagues-section-head">
+          <h2>Join or create</h2>
+        </div>
+
+        <form onSubmit={handleJoin} className="league-form-row">
+          <input
+            value={inviteCode}
+            onChange={e => setInviteCode(e.target.value)}
+            placeholder="Paste invite code to join"
+            required
+          />
+          <button type="submit" className="btn-secondary" disabled={busy}>
+            Join league
+          </button>
+        </form>
+
+        {!showCreate ? (
+          <button
+            type="button"
+            className="btn-secondary league-create-toggle"
+            onClick={() => setShowCreate(true)}
+          >
+            + Create a new league
+          </button>
+        ) : (
+          <form onSubmit={handleCreate} className="league-create-form">
+            <div className="league-form-row">
+              <input
+                value={name}
+                onChange={e => setName(e.target.value)}
+                placeholder="League name"
+                required
+              />
+              <button type="submit" className="btn-primary" disabled={busy}>
+                Create
+              </button>
+            </div>
+            <div className="league-form-row league-form-dates">
+              <label>
+                Season start
+                <input
+                  type="date"
+                  value={seasonStart}
+                  onChange={e => setSeasonStart(e.target.value)}
+                  required
+                />
+              </label>
+              <label>
+                Season end
+                <input
+                  type="date"
+                  value={seasonEnd}
+                  onChange={e => setSeasonEnd(e.target.value)}
+                  required
+                />
+              </label>
+            </div>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => setShowCreate(false)}
+            >
+              Cancel
+            </button>
+          </form>
+        )}
+      </section>
     </div>
   )
 }

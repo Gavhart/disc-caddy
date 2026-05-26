@@ -1,6 +1,13 @@
 import { supabase } from './supabase'
 import { League, LeagueStanding, RoundFormat } from '../types'
 
+function seasonStatus(start: string, end: string): League['seasonStatus'] {
+  const today = new Date().toISOString().slice(0, 10)
+  if (today < start) return 'upcoming'
+  if (today > end) return 'ended'
+  return 'active'
+}
+
 export async function createLeague(input: {
   name: string
   seasonStart: string
@@ -39,7 +46,12 @@ export async function listMyLeagues(): Promise<League[]> {
       invite_code: string
       member_count: number
       created_by: string
+      created_at: string
       my_role: 'admin' | 'member'
+      rounds_submitted: number
+      players_with_rounds: number
+      my_rounds_submitted: number
+      leader_name: string | null
     }[]) ?? []
   ).map(l => ({
     id: l.id,
@@ -50,8 +62,14 @@ export async function listMyLeagues(): Promise<League[]> {
     inviteCode: l.invite_code,
     memberCount: l.member_count,
     createdBy: l.created_by,
+    createdAt: l.created_at,
     myRole: l.my_role ?? 'member',
     isAdmin: l.my_role === 'admin',
+    roundsSubmitted: Number(l.rounds_submitted ?? 0),
+    playersWithRounds: Number(l.players_with_rounds ?? 0),
+    myRoundsSubmitted: Number(l.my_rounds_submitted ?? 0),
+    leaderName: l.leader_name ?? null,
+    seasonStatus: seasonStatus(l.season_start, l.season_end),
   }))
 }
 

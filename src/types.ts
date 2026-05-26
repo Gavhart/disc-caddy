@@ -470,8 +470,14 @@ export interface League {
   inviteCode: string
   memberCount: number
   createdBy: string
+  createdAt: string
   myRole: 'admin' | 'member'
   isAdmin: boolean
+  roundsSubmitted: number
+  playersWithRounds: number
+  myRoundsSubmitted: number
+  leaderName: string | null
+  seasonStatus: 'upcoming' | 'active' | 'ended'
 }
 
 export interface LeagueStanding {
