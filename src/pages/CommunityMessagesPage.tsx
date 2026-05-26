@@ -1,8 +1,11 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { ActivityNotificationsPanel } from '../components/ActivityNotificationsPanel'
 import { ProGate } from '../components/ProGate'
 import { PageHeader } from '../components/PageHeader'
 import { useAuth } from '../contexts/AuthContext'
+import { useAppNotifications } from '../hooks/useAppNotifications'
+import { markCommunityMessageNotificationsRead } from '../lib/notifications'
 import {
   buildCommunityThreads,
   countUnreadCommunityMessages,
@@ -18,6 +21,7 @@ export function CommunityMessagesPage() {
   const { me } = useAuth()
   const navigate = useNavigate()
   const { partnerId } = useParams<{ partnerId?: string }>()
+  const { refresh: refreshBadges } = useAppNotifications(Boolean(me))
   const [messages, setMessages] = useState<CommunityMessage[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -39,7 +43,10 @@ export function CommunityMessagesPage() {
 
   useEffect(() => {
     void loadMessages()
-  }, [loadMessages])
+    void markCommunityMessageNotificationsRead()
+      .then(() => refreshBadges())
+      .catch(() => {})
+  }, [loadMessages, refreshBadges])
 
   const threads = useMemo(
     () => (me ? buildCommunityThreads(messages, me.id) : []),
@@ -59,6 +66,8 @@ export function CommunityMessagesPage() {
     void (async () => {
       try {
         await Promise.all(unread.map(m => markCommunityMessageRead(m.id)))
+        await markCommunityMessageNotificationsRead().catch(() => {})
+        refreshBadges()
         setMessages(prev =>
           prev.map(m =>
             unread.some(u => u.id === m.id)
@@ -70,7 +79,7 @@ export function CommunityMessagesPage() {
         // non-fatal
       }
     })()
-  }, [activeThread, me])
+  }, [activeThread, me, refreshBadges])
 
   async function handleSendReply(e: FormEvent) {
     e.preventDefault()
@@ -216,6 +225,8 @@ export function CommunityMessagesPage() {
         backLabel="Social"
       />
 
+      <ActivityNotificationsPanel title="Updates (not DMs)" onChange={refreshBadges} />
+
       {unreadTotal > 0 && (
         <p className="community-messages-unread-line muted small">
           <span className="community-messages-unread-badge">{unreadTotal} new</span>
@@ -236,16 +247,18 @@ export function CommunityMessagesPage() {
         </div>
       ) : threads.length === 0 ? (
         <div className="card">
-          <p className="muted">No messages yet.</p>
+          <p className="muted">No direct messages yet.</p>
           <p className="muted small">
             {me.isPro ? (
               <>
-                Find players on the{' '}
-                <Link to="/community">Community page</Link> and send your first message.
+                Event alerts and friend activity show in <strong>Updates</strong> above.
+                To start a chat, find players on the{' '}
+                <Link to="/community">Community page</Link>.
               </>
             ) : (
               <>
-                When a Pro player messages you, it will show up here.{' '}
+                When a Pro player messages you, it will show up here. Alerts about events
+                and friends appear in <strong>Updates</strong> above.{' '}
                 <Link to="/upgrade">Upgrade to Pro</Link> to start conversations.
               </>
             )}

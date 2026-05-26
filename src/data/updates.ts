@@ -1,5 +1,5 @@
 /** Bump when you ship a release users should see on next sign-in. */
-export const APP_VERSION = '0.6.3'
+export const APP_VERSION = '0.6.4'
 
 export interface ReleaseNote {
   version: string
@@ -20,6 +20,16 @@ export const ROADMAP: string[] = [
 
 export const RELEASES: ReleaseNote[] = [
   {
+    version: '0.6.4',
+    date: '2026-05-21',
+    title: 'Notifications bell',
+    items: [
+      'Bell icon in the header when you have unread messages or activity',
+      'Notifications page — recent updates plus quick links to Messages and Events',
+      'Nearby players get notified when someone posts an event or pickup in your area',
+    ],
+  },
+  {
     version: '0.6.3',
     date: '2026-05-21',
     title: 'Clearer app structure',
@@ -29,6 +39,7 @@ export const RELEASES: ReleaseNote[] = [
       'Library hub — bags, courses, round history, stats, and playbook',
       'Consistent page headers and back navigation across sub-pages',
       'Profile simplified — account settings without duplicate feature links',
+      'Message badge fix — DMs and event/friend alerts counted separately; Updates panel on Social',
     ],
   },
   {

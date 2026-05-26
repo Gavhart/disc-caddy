@@ -28,6 +28,7 @@ import { StatsPage } from './pages/StatsPage'
 import { CoursePlaybookPage } from './pages/CoursePlaybookPage'
 import { LeaguesPage } from './pages/LeaguesPage'
 import { EventsPage } from './pages/EventsPage'
+import { NotificationsPage } from './pages/NotificationsPage'
 import { SocialHubPage } from './pages/SocialHubPage'
 import { LibraryHubPage } from './pages/LibraryHubPage'
 
@@ -111,6 +112,14 @@ function AppShell() {
             element={
               <ProtectedRoute>
                 <RoundsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/notifications"
+            element={
+              <ProtectedRoute>
+                <NotificationsPage />
               </ProtectedRoute>
             }
           />

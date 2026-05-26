@@ -157,6 +157,80 @@ body {
   backdrop-filter: blur(12px);
 }
 
+.nav-top-inner {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  gap: 8px;
+}
+
+.nav-top-spacer {
+  width: 44px;
+  grid-column: 3;
+}
+
+.nav-top .nav-bell:not(.nav-bell-desktop) {
+  grid-column: 1;
+}
+
+.nav-top .nav-brand {
+  grid-column: 2;
+  justify-self: center;
+}
+
+.nav-bell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text);
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+
+.nav-bell:hover,
+.nav-bell.active {
+  border-color: var(--accent-bright);
+  color: var(--accent-bright);
+  background: color-mix(in srgb, var(--accent-soft) 50%, var(--surface-2));
+}
+
+.nav-bell-icon {
+  width: 22px;
+  height: 22px;
+}
+
+.nav-bell-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--warm);
+  color: #1a1208;
+  font-size: 10px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--surface);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.nav-bell-desktop {
+  display: none;
+}
+
 .nav-tabbar {
   display: flex;
   position: fixed;
@@ -589,6 +663,34 @@ body.nav-menu-open .main {
 }
 
 @media (min-width: 900px) {
+  .nav-top-inner {
+    max-width: none;
+    grid-template-columns: auto 1fr auto;
+    gap: 16px;
+  }
+
+  .nav-top .nav-bell:not(.nav-bell-desktop) {
+    display: none;
+  }
+
+  .nav-bell-desktop {
+    display: flex;
+  }
+
+  .nav-top-spacer {
+    display: none;
+  }
+
+  .nav-top .nav-brand {
+    grid-column: 1;
+    justify-self: start;
+  }
+
+  .nav-links-desktop {
+    grid-column: 2;
+    justify-self: end;
+  }
+
   .nav-top {
     justify-content: space-between;
     padding-left: max(24px, env(safe-area-inset-left));
@@ -734,6 +836,18 @@ body.nav-menu-open .main {
   flex-shrink: 0;
 }
 
+.notifications-page {
+  padding-bottom: 24px;
+}
+
+.notifications-quick-links {
+  margin-top: 8px;
+}
+
+.notifications-quick-links .section-title {
+  margin-bottom: 10px;
+}
+
 .hub-footnote {
   margin-top: 16px;
   text-align: center;
@@ -761,6 +875,68 @@ body.nav-menu-open .main {
 
 .community-settings-card .section-title {
   margin-bottom: 8px;
+}
+
+.community-settings-card .section-title {
+  margin-bottom: 8px;
+}
+
+.activity-notifications-hint {
+  margin: 12px 0 0;
+}
+
+.activity-notifications-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.activity-notifications-head .section-title {
+  margin: 0;
+}
+
+.activity-notifications-clear {
+  font-size: 13px;
+}
+
+.activity-notifications-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.activity-notification-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 12px 0;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.activity-notification-item:last-child {
+  border-bottom: 0;
+}
+
+.activity-notification-title {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.activity-notification-body {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.activity-notification-time {
+  display: block;
 }
 
 .community-callout {
@@ -3821,6 +3997,57 @@ tr.ranked td:first-child {
 .upgrade-status-notice p {
   margin: 0;
   line-height: 1.45;
+}
+
+.billing-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin: 10px 0 4px;
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+}
+
+.billing-toggle-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.billing-toggle-btn:hover {
+  color: var(--text);
+}
+
+.billing-toggle-active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+}
+
+.billing-toggle-save {
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--pro);
+  letter-spacing: 0.02em;
+}
+
+.plan-price-note {
+  margin: -8px 0 12px;
+  line-height: 1.4;
 }
 
 .plan h3 {

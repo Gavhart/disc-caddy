@@ -8,6 +8,7 @@ import {
   isYouRoute,
 } from '../lib/navRoutes'
 import { useAppNotifications } from '../hooks/useAppNotifications'
+import { NotificationsBell } from './NotificationsBell'
 import { ProfileAvatar } from './ProfileAvatar'
 import { Logo } from './Logo'
 
@@ -26,34 +27,36 @@ export function Navigation() {
   return (
     <>
       <nav className="nav nav-top" aria-label="Main">
-        <NavLink to="/" end className="nav-brand">
-          <Logo height={36} />
-        </NavLink>
+        <div className="nav-top-inner">
+          <NotificationsBell count={communityBadgeCount} />
 
-        <div className="nav-links-desktop">
-          {PRIMARY_TABS.map(tab => (
-            <NavLink
-              key={tab.to}
-              to={tab.to}
-              end={'end' in tab ? tab.end : undefined}
-              className={({ isActive }) => {
-                const active = tab.match(location.pathname) || isActive
-                return active ? 'active' : ''
-              }}
-            >
-              {tab.label}
-              {tab.to === '/social' && communityBadgeCount > 0 && (
-                <span className="nav-badge nav-badge-desktop" aria-label={`${communityBadgeCount} unread`}>
-                  {communityBadgeCount > 99 ? '99+' : communityBadgeCount}
-                </span>
-              )}
-            </NavLink>
-          ))}
-          {me && !me.isPro && isWebCheckoutAvailable() && (
-            <NavLink to="/upgrade" className="nav-upgrade">
-              Upgrade
-            </NavLink>
-          )}
+          <NavLink to="/" end className="nav-brand">
+            <Logo height={36} />
+          </NavLink>
+
+          <div className="nav-top-spacer" aria-hidden />
+
+          <div className="nav-links-desktop">
+            {PRIMARY_TABS.map(tab => (
+              <NavLink
+                key={tab.to}
+                to={tab.to}
+                end={'end' in tab ? tab.end : undefined}
+                className={({ isActive }) => {
+                  const active = tab.match(location.pathname) || isActive
+                  return active ? 'active' : ''
+                }}
+              >
+                {tab.label}
+              </NavLink>
+            ))}
+            <NotificationsBell count={communityBadgeCount} className="nav-bell-desktop" />
+            {me && !me.isPro && isWebCheckoutAvailable() && (
+              <NavLink to="/upgrade" className="nav-upgrade">
+                Upgrade
+              </NavLink>
+            )}
+          </div>
         </div>
       </nav>
 
@@ -81,9 +84,6 @@ export function Navigation() {
               </span>
             )}
             <span className="nav-tab-label">{tab.label}</span>
-            {tab.to === '/social' && communityBadgeCount > 0 && (
-              <span className="nav-tab-badge">{communityBadgeCount > 99 ? '99+' : communityBadgeCount}</span>
-            )}
           </NavLink>
         ))}
       </nav>

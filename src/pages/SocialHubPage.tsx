@@ -1,11 +1,12 @@
 import { PageHeader } from '../components/PageHeader'
 import { HubCard } from '../components/HubCard'
+import { ActivityNotificationsPanel } from '../components/ActivityNotificationsPanel'
 import { useAuth } from '../contexts/AuthContext'
 import { useAppNotifications } from '../hooks/useAppNotifications'
 
 export function SocialHubPage() {
   const { session, me } = useAuth()
-  const { communityBadgeCount } = useAppNotifications(Boolean(session && me))
+  const { messageCount, refresh } = useAppNotifications(Boolean(session && me))
 
   return (
     <div className="container hub-page">
@@ -13,6 +14,8 @@ export function SocialHubPage() {
         title="Social"
         description="Find players, join events, message your group, and compete in leagues."
       />
+
+      <ActivityNotificationsPanel onChange={refresh} />
 
       <div className="hub-grid">
         <HubCard
@@ -32,7 +35,7 @@ export function SocialHubPage() {
           icon="💬"
           title="Messages"
           description="Inbox for conversations with players in your area."
-          badge={communityBadgeCount}
+          badge={messageCount}
         />
         <HubCard
           to="/leagues"

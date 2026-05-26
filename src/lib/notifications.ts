@@ -2,9 +2,14 @@ import { supabase } from './supabase'
 import { AppNotification } from '../types'
 
 export async function fetchUnreadNotificationCount(): Promise<number> {
-  const { data, error } = await supabase.rpc('unread_notification_count')
-  if (error) throw error
-  return Number(data ?? 0)
+  try {
+    const items = await fetchUnreadActivityNotifications()
+    return items.length
+  } catch {
+    const { data, error } = await supabase.rpc('unread_notification_count')
+    if (error) return 0
+    return Number(data ?? 0)
+  }
 }
 
 export async function fetchNotifications(limit = 30): Promise<AppNotification[]> {
@@ -45,6 +50,24 @@ export async function markNotificationRead(notificationId: string): Promise<void
 export async function markAllNotificationsRead(): Promise<void> {
   const { error } = await supabase.rpc('mark_all_notifications_read')
   if (error) throw error
+}
+
+/** Clear in-app alerts for DMs — actual read state lives on community_messages. */
+export async function markCommunityMessageNotificationsRead(): Promise<void> {
+  const { error } = await supabase.rpc('mark_community_message_notifications_read')
+  if (!error) return
+
+  const items = await fetchNotifications(100)
+  await Promise.all(
+    items
+      .filter(n => !n.readAt && n.kind === 'community_message')
+      .map(n => markNotificationRead(n.id)),
+  )
+}
+
+export async function fetchUnreadActivityNotifications(): Promise<AppNotification[]> {
+  const all = await fetchNotifications(50)
+  return all.filter(n => !n.readAt && n.kind !== 'community_message')
 }
 
 export async function setNotifyEmail(enabled: boolean): Promise<void> {

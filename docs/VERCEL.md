@@ -31,7 +31,8 @@ In Vercel → **Project → Settings → Environment Variables**, add for **Prod
 |------|--------|
 | `VITE_SUPABASE_URL` | `https://cjozidvlqwifqascgihc.supabase.co` (your project URL) |
 | `VITE_SUPABASE_ANON_KEY` | Supabase Dashboard → Settings → API → `anon` `public` key |
-| `VITE_STRIPE_PRICE_ID` | Stripe Dashboard → Products → Pro → Price ID (`price_...`) |
+| `VITE_STRIPE_PRICE_ID_MONTHLY` | Stripe → Products → Pro → **$2.99/mo** price ID |
+| `VITE_STRIPE_PRICE_ID_ANNUAL` | Stripe → Products → Pro → **$24.99/yr** price ID |
 
 **Do not** add Stripe secret keys or webhook secrets here — those stay in Supabase Edge Function secrets only.
 
@@ -115,7 +116,7 @@ Do **not** use the Capacitor build for Vercel — use the normal `npm run build`
 | Blank page, 404 on refresh | `vercel.json` rewrites should be committed; redeploy |
 | “Missing VITE_SUPABASE…” | Add env vars in Vercel; redeploy |
 | Login works locally, not on Vercel | Add Vercel URL to Supabase **Redirect URLs** |
-| Stripe checkout fails | Deploy edge functions; set `STRIPE_SECRET_KEY` in Supabase secrets; `VITE_STRIPE_PRICE_ID` in Vercel |
+| Stripe checkout fails | Deploy edge functions; set `STRIPE_SECRET_KEY` in Supabase secrets; both `VITE_STRIPE_PRICE_ID_*` vars in Vercel |
 | Wrong asset paths / broken CSS | Ensure you did **not** set `VITE_CAPACITOR=true` on Vercel |
 
 ---

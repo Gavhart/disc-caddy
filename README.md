@@ -11,7 +11,7 @@ Stack: Vite + React + TypeScript on the front, Supabase (Postgres + Auth + Stora
 - **Multiple bags** — name them ("Tournament bag", "Wooded course bag", etc.), set a default, switch between them
 - **Disc photos** — upload an image per disc so you can spot it in your bag (Pro feature)
 - **Recommendation engine** — picks the right disc from your bag based on arm speed, plastic, weight, wear, wind, and shot shape
-- **Free + Pro tiers** — free gets 1 bag + the engine; Pro ($4.99/mo) gets unlimited bags + photos + future features
+- **Free + Pro tiers** — free gets 1 bag + the engine; Pro ($2.99/mo or $24.99/yr) gets unlimited bags + live rounds + messaging
 
 ## Quick start
 
@@ -50,14 +50,15 @@ The app boots and works without Stripe. The Upgrade button shows "Coming soon" u
 ### 1. Stripe dashboard
 
 1. Create a Stripe account, switch to **test mode**.
-2. **Products** → **Add product** → name "Disc Caddy Pro" → add a recurring price of $4.99/mo. Copy the **price ID** (`price_...`).
+2. **Products** → **Add product** → name "Disc Caddy Pro" → add two recurring prices: **$2.99/mo** and **$24.99/yr**. Copy both **price IDs** (`price_...`).
 3. **Developers → API keys** → copy your secret key (`sk_test_...`).
 
 ### 2. Set frontend env var
 
 Add to `.env.local`:
 ```
-VITE_STRIPE_PRICE_ID=price_...
+VITE_STRIPE_PRICE_ID_MONTHLY=price_...
+VITE_STRIPE_PRICE_ID_ANNUAL=price_...
 ```
 
 ### 3. Deploy the Supabase Edge Functions
@@ -93,7 +94,7 @@ supabase functions deploy stripe-webhook --no-verify-jwt
 ### 5. Test the flow
 
 1. In the app, sign in and go to **Upgrade**.
-2. Click "Upgrade — $4.99/mo" — you'll be redirected to Stripe Checkout.
+2. Pick **Yearly** or **Monthly** and click upgrade — you'll be redirected to Stripe Checkout.
 3. Use Stripe's test card `4242 4242 4242 4242`, any future expiry, any CVC.
 4. After checkout, the webhook fires, updates your `profiles` row, and the app shows you as Pro.
 
@@ -176,7 +177,7 @@ All coefficients live in `src/lib/recommend.ts` (exported as `MODEL`) and are ea
 
 ## Free vs Pro
 
-| Feature | Free | Pro ($4.99/mo) |
+| Feature | Free | Pro ($2.99/mo or $24.99/yr) |
 |---|---|---|
 | Recommendation engine | ✓ | ✓ |
 | Discs per bag | Unlimited | Unlimited |

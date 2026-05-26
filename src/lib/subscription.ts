@@ -1,9 +1,39 @@
 import { supabase } from './supabase'
 import { isWebCheckoutAvailable } from './platform'
 
-const STRIPE_PRICE_ID = import.meta.env.VITE_STRIPE_PRICE_ID
+/** Display pricing — actual charge comes from Stripe price IDs in env. */
+export const PRO_PRICING = {
+  monthly: {
+    amount: 2.99,
+    periodLabel: 'month',
+    checkoutLabel: '$2.99 / mo',
+  },
+  annual: {
+    amount: 24.99,
+    periodLabel: 'year',
+    checkoutLabel: '$24.99 / yr',
+    /** vs paying monthly for 12 months ($35.88). */
+    savingsPercent: 30,
+    equivalentMonthly: 2.08,
+  },
+} as const
 
-export const isStripeConfigured = Boolean(STRIPE_PRICE_ID)
+export type BillingInterval = keyof typeof PRO_PRICING
+
+const MONTHLY_PRICE_ID =
+  import.meta.env.VITE_STRIPE_PRICE_ID_MONTHLY ??
+  import.meta.env.VITE_STRIPE_PRICE_ID
+
+const ANNUAL_PRICE_ID = import.meta.env.VITE_STRIPE_PRICE_ID_ANNUAL
+
+export function getStripePriceId(interval: BillingInterval): string | undefined {
+  return interval === 'annual' ? ANNUAL_PRICE_ID : MONTHLY_PRICE_ID
+}
+
+export const isMonthlyBillingAvailable = Boolean(MONTHLY_PRICE_ID)
+export const isAnnualBillingAvailable = Boolean(ANNUAL_PRICE_ID)
+export const isStripeConfigured =
+  isMonthlyBillingAvailable || isAnnualBillingAvailable
 
 /** Flip to false when Stripe checkout is live. */
 export const PRO_BILLING_COMING_SOON = false
@@ -21,22 +51,30 @@ export const FREE_TIER = {
  * Starts a Stripe Checkout session. The Edge Function lives at
  * supabase/functions/create-checkout-session and returns { url }.
  */
-export async function startCheckout(): Promise<void> {
+export async function startCheckout(
+  interval: BillingInterval = 'annual',
+): Promise<void> {
   if (PRO_BILLING_COMING_SOON) {
     throw new Error('Pro checkout is not available yet — check back shortly.')
   }
   if (!isWebCheckoutAvailable()) {
     throw new Error('Pro subscriptions are managed on the Disc Caddy website.')
   }
-  if (!isStripeConfigured) {
-    throw new Error('Stripe is not configured yet. See README setup.')
+
+  const priceId = getStripePriceId(interval)
+  if (!priceId) {
+    throw new Error(
+      interval === 'annual'
+        ? 'Annual billing is not configured yet.'
+        : 'Monthly billing is not configured yet.',
+    )
   }
 
   const { data, error } = await supabase.functions.invoke(
     'create-checkout-session',
     {
       body: {
-        price_id: STRIPE_PRICE_ID,
+        price_id: priceId,
         success_url: `${window.location.origin}/settings?upgraded=1`,
         cancel_url: `${window.location.origin}/upgrade`,
       },

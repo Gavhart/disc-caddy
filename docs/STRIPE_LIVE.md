@@ -4,7 +4,9 @@ Disc Caddy uses Stripe in three places. **All three must use live keys together*
 
 | Where | Variable | Test → Live |
 |-------|----------|-------------|
-| Frontend (`.env.local`) | `VITE_STRIPE_PRICE_ID` | `price_...` from **live** product |
+| Frontend (`.env.local`) | `VITE_STRIPE_PRICE_ID_MONTHLY` | Live **$2.99/mo** price ID |
+| Frontend (`.env.local`) | `VITE_STRIPE_PRICE_ID_ANNUAL` | Live **$24.99/yr** price ID |
+| Frontend (legacy) | `VITE_STRIPE_PRICE_ID` | Still works as monthly fallback |
 | Supabase secrets | `STRIPE_SECRET_KEY` | `sk_live_...` |
 | Supabase secrets | `STRIPE_WEBHOOK_SECRET` | `whsec_...` from **live** webhook |
 
@@ -19,20 +21,31 @@ In [Stripe Dashboard](https://dashboard.stripe.com):
 
 ---
 
-## Step 2 — Create the live product & price
+## Step 2 — Create the live product & prices
 
 1. Toggle the dashboard from **Test mode** to **Live mode** (top-right).
-2. **Product catalog → Add product**
+2. **Product catalog → Add product** (or open **Disc Caddy Pro** if it already exists)
    - Name: **Disc Caddy Pro**
-   - Price: **$4.99 / month** (recurring)
-3. Copy the **Price ID** (`price_...`) — it is **different** from your test price ID.
+3. Add **two recurring prices** on that product:
+   - **$2.99 / month** (recurring, monthly)
+   - **$24.99 / year** (recurring, yearly)
+4. Copy both **Price IDs** (`price_...`) — they are **different** from test-mode IDs.
+
+Stripe prices are immutable. To change an amount later, add a **new** price and update your env vars; don’t edit the old price row.
 
 ---
 
 ## Step 3 — Update `.env.local`
 
 ```env
-VITE_STRIPE_PRICE_ID=price_XXXXXXXXXXXXX   # live price ID
+VITE_STRIPE_PRICE_ID_MONTHLY=price_XXXXXXXXXXXXX
+VITE_STRIPE_PRICE_ID_ANNUAL=price_YYYYYYYYYYYYY
+```
+
+Legacy fallback (monthly only — optional if you use `VITE_STRIPE_PRICE_ID_MONTHLY`):
+
+```env
+# VITE_STRIPE_PRICE_ID=price_XXXXXXXXXXXXX
 ```
 
 Restart the dev server after changing:
@@ -140,8 +153,9 @@ New subscribers and anyone who re-subscribes get a fresh live `stripe_customer_i
 ## Quick reference
 
 ```bash
-# 1. Live price in .env.local
-VITE_STRIPE_PRICE_ID=price_live_...
+# 1. Live prices in .env.local (+ Vercel)
+VITE_STRIPE_PRICE_ID_MONTHLY=price_live_monthly_...
+VITE_STRIPE_PRICE_ID_ANNUAL=price_live_annual_...
 
 # 2. Supabase secrets
 supabase secrets set STRIPE_SECRET_KEY=sk_live_...

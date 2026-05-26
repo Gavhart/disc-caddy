@@ -7,10 +7,15 @@ export function isPlayRoute(pathname: string): boolean {
 export function isSocialRoute(pathname: string): boolean {
   return (
     pathname === '/social' ||
+    pathname === '/notifications' ||
     pathname === '/community' ||
     pathname.startsWith('/community/') ||
     pathname === '/leagues'
   )
+}
+
+export function isNotificationsRoute(pathname: string): boolean {
+  return pathname === '/notifications'
 }
 
 export function isLibraryRoute(pathname: string): boolean {

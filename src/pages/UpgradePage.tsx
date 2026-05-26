@@ -1,7 +1,15 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { isStripeConfigured, PRO_BILLING_COMING_SOON, startCheckout } from '../lib/subscription'
+import {
+  type BillingInterval,
+  isAnnualBillingAvailable,
+  isMonthlyBillingAvailable,
+  isStripeConfigured,
+  PRO_BILLING_COMING_SOON,
+  PRO_PRICING,
+  startCheckout,
+} from '../lib/subscription'
 import { isNativeApp, isWebCheckoutAvailable } from '../lib/platform'
 
 const FEATURES_FREE = [
@@ -24,19 +32,30 @@ const FEATURES_PRO = [
   'Support the indie dev (you)',
 ]
 
+function defaultBillingInterval(): BillingInterval {
+  if (isAnnualBillingAvailable) return 'annual'
+  return 'monthly'
+}
+
 export function UpgradePage() {
   const { me } = useAuth()
   const navigate = useNavigate()
+  const [billingInterval, setBillingInterval] = useState<BillingInterval>(
+    defaultBillingInterval,
+  )
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const isPro = me?.isPro ?? false
+  const showBillingToggle =
+    isMonthlyBillingAvailable && isAnnualBillingAvailable
+  const selectedPricing = PRO_PRICING[billingInterval]
 
   async function handleUpgrade() {
     setBusy(true)
     setError(null)
     try {
-      await startCheckout()
+      await startCheckout(billingInterval)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not start checkout')
       setBusy(false)
@@ -104,14 +123,57 @@ export function UpgradePage() {
 
           <div className="plan plan-pro">
             <h3>Pro</h3>
+
+            {showBillingToggle && (
+              <div
+                className="billing-toggle"
+                role="group"
+                aria-label="Billing interval"
+              >
+                <button
+                  type="button"
+                  className={
+                    'billing-toggle-btn' +
+                    (billingInterval === 'monthly' ? ' billing-toggle-active' : '')
+                  }
+                  onClick={() => setBillingInterval('monthly')}
+                >
+                  Monthly
+                </button>
+                <button
+                  type="button"
+                  className={
+                    'billing-toggle-btn' +
+                    (billingInterval === 'annual' ? ' billing-toggle-active' : '')
+                  }
+                  onClick={() => setBillingInterval('annual')}
+                >
+                  Yearly
+                  <span className="billing-toggle-save">
+                    Save {PRO_PRICING.annual.savingsPercent}%
+                  </span>
+                </button>
+              </div>
+            )}
+
             <div className="plan-price">
-              $4.99 <span className="muted small">/ month</span>
+              ${selectedPricing.amount.toFixed(2)}{' '}
+              <span className="muted small">/ {selectedPricing.periodLabel}</span>
             </div>
+
+            {billingInterval === 'annual' && (
+              <p className="plan-price-note muted small">
+                About ${PRO_PRICING.annual.equivalentMonthly.toFixed(2)}/mo billed
+                once a year — save vs paying monthly.
+              </p>
+            )}
+
             <ul className="plan-features">
               {FEATURES_PRO.map(f => (
                 <li key={f}>{f}</li>
               ))}
             </ul>
+
             {PRO_BILLING_COMING_SOON ? (
               <p className="muted small plan-cta">
                 Pro checkout isn&apos;t live yet — check back soon.
@@ -122,7 +184,9 @@ export function UpgradePage() {
                 onClick={handleUpgrade}
                 disabled={busy}
               >
-                {busy ? 'Redirecting…' : 'Upgrade — $4.99 / mo'}
+                {busy
+                  ? 'Redirecting…'
+                  : `Upgrade — ${selectedPricing.checkoutLabel}`}
               </button>
             ) : isNativeApp() ? (
               <p className="muted small plan-cta">
@@ -139,8 +203,8 @@ export function UpgradePage() {
 
         {!PRO_BILLING_COMING_SOON && !isStripeConfigured && (
           <p className="muted small">
-            Stripe isn't wired up yet — see the README to set up payments when
-            you're ready to charge.
+            Stripe isn&apos;t wired up yet — see the README to set up payments when
+            you&apos;re ready to charge.
           </p>
         )}
       </div>
