@@ -333,8 +333,6 @@ export function CommunityPage() {
     }
   }
 
-  const canMessage = communityVisible && lookingForPlayers
-
   if (!me) {
     return (
       <div className="container community-page">
@@ -344,6 +342,9 @@ export function CommunityPage() {
       </div>
     )
   }
+
+  const canMessage = me.lookingForPlayers && me.communityVisible
+  const needsLookingSave = lookingForPlayers && !me.lookingForPlayers
 
   const isSavedVisible = me.communityVisible && savedCities.length > 0
   const hasUnsavedChanges =
@@ -691,7 +692,9 @@ export function CommunityPage() {
                   </button>
                 ) : (
                   <p className="community-member-hint">
-                    Turn on “Looking for players” above to send messages.
+                    {needsLookingSave
+                      ? 'Turn on “Looking for players” and tap Save settings to send messages.'
+                      : 'Turn on “Looking for players” above to send messages.'}
                   </p>
                 )}
               </li>
