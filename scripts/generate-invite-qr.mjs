@@ -29,7 +29,7 @@ async function loadEnvAppUrl() {
 const baseUrl = (
   process.argv[2] ||
   (await loadEnvAppUrl()) ||
-  'https://disc-caddy.vercel.app'
+  'https://thedisccaddy.com'
 ).replace(/\/$/, '')
 
 const outPath = path.resolve(

@@ -27,7 +27,7 @@ const vapidPrivate = Deno.env.get('VAPID_PRIVATE_KEY') ?? ''
 const vapidSubject = Deno.env.get('VAPID_SUBJECT') ?? 'mailto:support@disc-caddy.app'
 const resendKey = Deno.env.get('RESEND_API_KEY')
 const emailFrom = Deno.env.get('EMAIL_FROM') ?? 'Disc Caddy <onboarding@resend.dev>'
-const appUrl = Deno.env.get('APP_URL') ?? 'https://disc-caddy.vercel.app'
+const appUrl = Deno.env.get('APP_URL') ?? 'https://thedisccaddy.com'
 
 const supabaseAdmin = createClient(
   Deno.env.get('SUPABASE_URL')!,

@@ -49,7 +49,7 @@ serve(async (req) => {
       })
     }
 
-    const appUrl = Deno.env.get('APP_URL') ?? 'https://disc-caddy.vercel.app'
+    const appUrl = Deno.env.get('APP_URL') ?? 'https://thedisccaddy.com'
     const link = link_path ? `${appUrl}${link_path}` : appUrl
 
     const res = await fetch('https://api.resend.com/emails', {
