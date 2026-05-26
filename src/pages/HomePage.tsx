@@ -41,6 +41,7 @@ import {
 } from '../lib/roundInvites'
 import { createRoundShareLink, roundShareUrl } from '../lib/roundShare'
 import { refreshChallengeProgress } from '../lib/challenges'
+import { autoSubmitRoundToLeagues } from '../lib/leagues'
 import { updateCourseHole, listCourses, listHolesForCourse } from '../lib/courses'
 import { Scorecard } from '../components/Scorecard'
 import { RoundInviteBanner } from '../components/RoundInviteBanner'
@@ -110,6 +111,7 @@ export function HomePage() {
   const [shareUrl, setShareUrl] = useState<string | null>(null)
   const [offlineHint, setOfflineHint] = useState<string | null>(null)
   const [roundFormat, setRoundFormat] = useState<RoundFormat>('stroke')
+  const [leagueSubmitMsg, setLeagueSubmitMsg] = useState<string | null>(null)
 
   const isPro = me?.isPro ?? false
 
@@ -483,6 +485,16 @@ export function HomePage() {
     const wasHost = roundHostId != null && user?.id === roundHostId
     try {
       await endRound(endingRoundId)
+      try {
+        const leagueResult = await autoSubmitRoundToLeagues(endingRoundId)
+        if (leagueResult.submitted > 0) {
+          setLeagueSubmitMsg(
+            `Submitted to ${leagueResult.submitted} league${leagueResult.submitted > 1 ? 's' : ''} automatically.`,
+          )
+        }
+      } catch {
+        // migration 026 may not be applied yet
+      }
       if (wasHost) {
         notifyFriendsRoundCompleted(endingRoundId).catch(() => {})
         refreshChallengeProgress().catch(() => {})
@@ -597,6 +609,19 @@ export function HomePage() {
           }
         }}
       />
+      {leagueSubmitMsg && (
+        <div className="card league-auto-banner">
+          <strong>League update</strong>
+          <p className="muted small">{leagueSubmitMsg}</p>
+          <button
+            type="button"
+            className="link-button"
+            onClick={() => setLeagueSubmitMsg(null)}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
       {shareUrl && (
         <div className="card round-share-banner">
           <strong>Round recap link</strong>

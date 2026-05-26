@@ -103,7 +103,8 @@ export function LeaguesPage() {
       <div className="card">
         <h2>Leagues</h2>
         <p className="muted small">
-          Season standings with friends — submit completed rounds to your league card.
+          Season standings with friends — completed rounds (9+ holes) in season
+          auto-submit when you end a round. Manual submit still available below.
         </p>
         {error && <div className="form-error">{error}</div>}
 

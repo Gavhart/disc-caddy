@@ -4324,6 +4324,39 @@ footer {
   border-bottom: 1px solid var(--border);
 }
 
+.course-discovery-map {
+  height: 280px;
+  width: 100%;
+  border-radius: 8px;
+  margin: 12px 0 16px;
+  border: 1px solid var(--border);
+  z-index: 0;
+}
+
+.course-discovery-item-selected {
+  background: color-mix(in srgb, var(--accent-soft) 40%, transparent);
+  border-radius: 8px;
+}
+
+.course-discovery-select {
+  flex: 1;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  padding: 4px 0;
+}
+
+.league-auto-banner {
+  margin-bottom: 12px;
+}
+
+.leaflet-container {
+  font-family: inherit;
+}
+
 .bag-insights-top {
   margin: 8px 0;
   padding-left: 18px;

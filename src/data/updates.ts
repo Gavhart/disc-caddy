@@ -1,5 +1,5 @@
 /** Bump when you ship a release users should see on next sign-in. */
-export const APP_VERSION = '0.6.0'
+export const APP_VERSION = '0.6.1'
 
 export interface ReleaseNote {
   version: string
@@ -19,6 +19,18 @@ export const ROADMAP: string[] = [
 ]
 
 export const RELEASES: ReleaseNote[] = [
+  {
+    version: '0.6.1',
+    date: '2026-05-21',
+    title: 'Embedded map, auto leagues & live push',
+    items: [
+      'Interactive course map on Courses — tap pins to highlight nearby tracks',
+      'Auto league import — ending a round (9+ holes) submits to all active leagues in season',
+      'Push notifications delivered via dispatch-notification edge function (Web Push + email)',
+      'Server-side notification dispatch from scorecard invites, messages, and friend activity',
+      'Run node scripts/generate-vapid.mjs to generate VAPID keys for push setup',
+    ],
+  },
   {
     version: '0.6.0',
     date: '2026-05-21',

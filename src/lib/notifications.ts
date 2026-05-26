@@ -52,15 +52,15 @@ export async function setNotifyEmail(enabled: boolean): Promise<void> {
   if (error) throw error
 }
 
-/** Fire-and-forget optional email for a notification. */
-export function sendNotificationEmail(payload: {
+/** Fire-and-forget push + email delivery. */
+export function dispatchNotificationDelivery(payload: {
   userId: string
   title: string
   body: string
   linkPath?: string | null
 }): void {
   supabase.functions
-    .invoke('send-notification-email', {
+    .invoke('dispatch-notification', {
       body: {
         user_id: payload.userId,
         title: payload.title,
@@ -68,7 +68,17 @@ export function sendNotificationEmail(payload: {
         link_path: payload.linkPath ?? null,
       },
     })
-    .catch(err => console.warn('[notifications] email send failed', err))
+    .catch(err => console.warn('[notifications] dispatch failed', err))
+}
+
+/** @deprecated Use dispatchNotificationDelivery */
+export function sendNotificationEmail(payload: {
+  userId: string
+  title: string
+  body: string
+  linkPath?: string | null
+}): void {
+  dispatchNotificationDelivery(payload)
 }
 
 export async function fetchCommunityUnreadCount(): Promise<number> {

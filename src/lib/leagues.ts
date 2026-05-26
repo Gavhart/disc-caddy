@@ -84,3 +84,17 @@ export async function submitRoundToLeague(
   })
   if (error) throw error
 }
+
+export async function autoSubmitRoundToLeagues(
+  roundId: string,
+): Promise<{ submitted: number; leagueIds: string[] }> {
+  const { data, error } = await supabase.rpc('auto_submit_round_to_leagues', {
+    p_round_id: roundId,
+  })
+  if (error) throw error
+  const row = (data ?? {}) as { submitted: number; league_ids: string[] }
+  return {
+    submitted: Number(row.submitted ?? 0),
+    leagueIds: row.league_ids ?? [],
+  }
+}

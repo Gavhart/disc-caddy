@@ -422,15 +422,24 @@ export function SettingsPage() {
           />
         </div>
         {isPushSupported() && (
-          <button
-            type="button"
-            className="btn-secondary"
-            disabled={pushBusy}
-            onClick={handleEnablePush}
-            style={{ marginTop: 10 }}
-          >
-            {pushBusy ? 'Enabling…' : 'Enable browser push notifications'}
-          </button>
+          <>
+            <button
+              type="button"
+              className="btn-secondary"
+              disabled={pushBusy}
+              onClick={handleEnablePush}
+              style={{ marginTop: 10 }}
+            >
+              {pushBusy ? 'Enabling…' : 'Enable browser push notifications'}
+            </button>
+            {!import.meta.env.VITE_VAPID_PUBLIC_KEY && (
+              <p className="muted small" style={{ marginTop: 8 }}>
+                Push requires <code>VITE_VAPID_PUBLIC_KEY</code> in Vercel and VAPID
+                keys on the <code>dispatch-notification</code> edge function. Run{' '}
+                <code>node scripts/generate-vapid.mjs</code> to generate a key pair.
+              </p>
+            )}
+          </>
         )}
       </div>
 
