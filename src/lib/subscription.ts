@@ -5,6 +5,9 @@ const STRIPE_PRICE_ID = import.meta.env.VITE_STRIPE_PRICE_ID
 
 export const isStripeConfigured = Boolean(STRIPE_PRICE_ID)
 
+/** Flip to false when Stripe checkout is live. */
+export const PRO_BILLING_COMING_SOON = true
+
 /**
  * Free tier limits. Enforced in UI; server-side enforcement happens via
  * a `before insert` trigger on the bags table (add this later if needed).
@@ -19,6 +22,9 @@ export const FREE_TIER = {
  * supabase/functions/create-checkout-session and returns { url }.
  */
 export async function startCheckout(): Promise<void> {
+  if (PRO_BILLING_COMING_SOON) {
+    throw new Error('Pro checkout is not available yet — check back shortly.')
+  }
   if (!isWebCheckoutAvailable()) {
     throw new Error('Pro subscriptions are managed on the Disc Caddy website.')
   }

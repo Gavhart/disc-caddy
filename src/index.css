@@ -3501,6 +3501,25 @@ tr.ranked td:first-child {
   );
 }
 
+.upgrade-status-notice {
+  margin: 16px 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--pro) 45%, var(--border));
+  background: color-mix(in srgb, var(--pro-soft) 55%, var(--surface-2));
+}
+
+.upgrade-status-notice strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+}
+
+.upgrade-status-notice p {
+  margin: 0;
+  line-height: 1.45;
+}
+
 .plan h3 {
   margin: 0;
   font-size: 16px;

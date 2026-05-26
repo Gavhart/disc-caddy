@@ -3,7 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { signOut } from '../lib/auth'
 import { deleteAccount } from '../lib/account'
-import { isStripeConfigured, openBillingPortal, syncSubscription } from '../lib/subscription'
+import { isStripeConfigured, openBillingPortal, PRO_BILLING_COMING_SOON, syncSubscription } from '../lib/subscription'
 import { isNativeApp, isWebCheckoutAvailable } from '../lib/platform'
 import { ProfileNameEditor } from '../components/ProfileNameEditor'
 import { ProfilePhotoUploader } from '../components/ProfilePhotoUploader'
@@ -414,7 +414,14 @@ export function SettingsPage() {
           )
         ) : (
           <>
-            {isWebCheckoutAvailable() && (
+            {PRO_BILLING_COMING_SOON && (
+              <p className="muted small">
+                Pro checkout is being set up — see the{' '}
+                <Link to="/upgrade">Upgrade page</Link> for plan details. Billing
+                will be available shortly.
+              </p>
+            )}
+            {isWebCheckoutAvailable() && !PRO_BILLING_COMING_SOON && (
               <Link to="/upgrade" className="btn-primary">
                 Upgrade to Pro
               </Link>

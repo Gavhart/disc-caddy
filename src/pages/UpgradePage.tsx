@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { isStripeConfigured, startCheckout } from '../lib/subscription'
+import { isStripeConfigured, PRO_BILLING_COMING_SOON, startCheckout } from '../lib/subscription'
 import { isNativeApp, isWebCheckoutAvailable } from '../lib/platform'
 
 const FEATURES_FREE = [
@@ -11,9 +11,11 @@ const FEATURES_FREE = [
   'Full recommendation engine with detailed explanations',
   'Course stepper + manual hole input',
   'Live wind from your location (override anytime)',
+  'Browse Community — find nearby players',
 ]
 
 const FEATURES_PRO = [
+  'Everything in Free',
   'Unlimited bags',
   'Message players on Community',
   'Live round mode — log throws hole-by-hole',
@@ -63,8 +65,19 @@ export function UpgradePage() {
         <h2>Upgrade to Pro</h2>
         <p className="muted">
           The core recommendation engine stays free forever. Pro unlocks the
-          power-user features.
+          power-user features below.
         </p>
+
+        {PRO_BILLING_COMING_SOON && (
+          <div className="upgrade-status-notice">
+            <strong>Pro checkout coming shortly</strong>
+            <p className="muted small">
+              I&apos;m working on getting the Pro plan and billing fully wired
+              up. The plan details below are accurate, but upgrading isn&apos;t
+              available yet — this page will be updated shortly.
+            </p>
+          </div>
+        )}
 
         {isNativeApp() && (
           <p className="muted small native-billing-note">
@@ -98,7 +111,11 @@ export function UpgradePage() {
                 <li key={f}>{f}</li>
               ))}
             </ul>
-            {isStripeConfigured && isWebCheckoutAvailable() ? (
+            {PRO_BILLING_COMING_SOON ? (
+              <p className="muted small plan-cta">
+                Pro checkout isn&apos;t live yet — check back soon.
+              </p>
+            ) : isStripeConfigured && isWebCheckoutAvailable() ? (
               <button
                 className="btn-primary"
                 onClick={handleUpgrade}
@@ -119,7 +136,7 @@ export function UpgradePage() {
           </div>
         </div>
 
-        {!isStripeConfigured && (
+        {!PRO_BILLING_COMING_SOON && !isStripeConfigured && (
           <p className="muted small">
             Stripe isn't wired up yet — see the README to set up payments when
             you're ready to charge.
