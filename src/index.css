@@ -745,11 +745,6 @@ select {
 }
 
 .disc-select-pop {
-  position: absolute;
-  z-index: 50;
-  top: calc(100% + 4px);
-  left: 0;
-  right: 0;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -758,6 +753,13 @@ select {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.disc-select-pop-portal {
+  /* Fixed position and max-height are set inline from viewport measurements. */
+  touch-action: manipulation;
 }
 
 .disc-select-search {
@@ -870,7 +872,17 @@ select {
 }
 
 .disc-select-list-search {
-  max-height: min(52vh, 420px);
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.disc-select-pop-portal .disc-form {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* ---------- Add-custom-disc form (inside picker popover) ---------- */

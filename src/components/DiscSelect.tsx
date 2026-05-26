@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { createPortal } from 'react-dom'
 import { Disc, DiscType } from '../types'
 import {
   DISC_DATABASE,
@@ -92,12 +93,49 @@ function validate(draft: DraftForm): { ok: true; payload: NewDiscInput } | { ok:
   }
 }
 
-/**
- * Searchable disc picker. Replaces a giant native <select> with a
- * filterable combobox so the user can type "destroyer" or "innova" and
- * narrow ~2,250 molds quickly. Also exposes an inline "Add custom disc"
- * form that inserts new molds into the shared catalog.
- */
+const POP_MARGIN = 12
+const POP_GAP = 6
+
+function measurePopoverStyle(trigger: HTMLElement): CSSProperties {
+  const rect = trigger.getBoundingClientRect()
+  const vv = window.visualViewport
+  const viewportTop = vv?.offsetTop ?? 0
+  const viewportHeight = vv?.height ?? window.innerHeight
+  const viewportBottom = viewportTop + viewportHeight
+  const viewportWidth = vv?.width ?? window.innerWidth
+
+  const spaceBelow = viewportBottom - rect.bottom - POP_MARGIN
+  const spaceAbove = rect.top - viewportTop - POP_MARGIN
+  const openBelow = spaceBelow >= 180 || spaceBelow >= spaceAbove
+
+  const maxHeight = Math.max(
+    160,
+    Math.min(openBelow ? spaceBelow - POP_GAP : spaceAbove - POP_GAP, 420),
+  )
+
+  const width = Math.min(rect.width, viewportWidth - POP_MARGIN * 2)
+  let left = rect.left
+  if (left + width > viewportWidth - POP_MARGIN) {
+    left = viewportWidth - POP_MARGIN - width
+  }
+  left = Math.max(POP_MARGIN, left)
+
+  const style: CSSProperties = {
+    position: 'fixed',
+    left,
+    width,
+    maxHeight,
+    zIndex: 1000,
+  }
+
+  if (openBelow) {
+    style.top = rect.bottom + POP_GAP
+  } else {
+    style.bottom = viewportBottom - rect.top + POP_GAP
+  }
+
+  return style
+}
 export function DiscSelect({ value, onChange }: Props) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -107,8 +145,11 @@ export function DiscSelect({ value, onChange }: Props) {
   const [errors, setErrors] = useState<DraftErrors>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [popStyle, setPopStyle] = useState<CSSProperties>({})
 
   const containerRef = useRef<HTMLDivElement>(null)
+  const triggerRef = useRef<HTMLButtonElement>(null)
+  const popRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLUListElement>(null)
 
@@ -151,11 +192,35 @@ export function DiscSelect({ value, onChange }: Props) {
     setActiveIdx(0)
   }, [query, catalogVersion])
 
+  useLayoutEffect(() => {
+    if (!open) return
+
+    function updatePosition() {
+      const trigger = triggerRef.current
+      if (!trigger) return
+      setPopStyle(measurePopoverStyle(trigger))
+    }
+
+    updatePosition()
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+    window.visualViewport?.addEventListener('resize', updatePosition)
+    window.visualViewport?.addEventListener('scroll', updatePosition)
+    return () => {
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+      window.visualViewport?.removeEventListener('resize', updatePosition)
+      window.visualViewport?.removeEventListener('scroll', updatePosition)
+    }
+  }, [open, query, searching, draft])
+
   useEffect(() => {
     if (!open) return
     function onDocClick(e: MouseEvent) {
-      if (!containerRef.current) return
-      if (!containerRef.current.contains(e.target as Node)) closeAll()
+      const target = e.target as Node
+      if (containerRef.current?.contains(target)) return
+      if (popRef.current?.contains(target)) return
+      closeAll()
     }
     document.addEventListener('mousedown', onDocClick)
     return () => document.removeEventListener('mousedown', onDocClick)
@@ -239,6 +304,7 @@ export function DiscSelect({ value, onChange }: Props) {
   return (
     <div className="disc-select" ref={containerRef}>
       <button
+        ref={triggerRef}
         type="button"
         className="disc-select-trigger"
         onClick={() => setOpen(o => !o)}
@@ -261,100 +327,106 @@ export function DiscSelect({ value, onChange }: Props) {
         </span>
       </button>
 
-      {open && (
-        <div className="disc-select-pop">
-          {draft ? (
-            <DraftFormView
-              draft={draft}
-              errors={errors}
-              submitting={submitting}
-              submitError={submitError}
-              onChange={setDraft}
-              onCancel={() => {
-                setDraft(null)
-                setErrors({})
-                setSubmitError(null)
-              }}
-              onSubmit={submitCreate}
-            />
-          ) : (
-            <>
-              <button
-                type="button"
-                className="disc-select-add disc-select-add-top"
-                onClick={startCreate}
-              >
-                + Add custom disc not listed
-                {query.trim() && (
-                  <span className="muted small"> · “{query.trim()}”</span>
-                )}
-              </button>
-              <input
-                ref={inputRef}
-                type="text"
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-                onKeyDown={onListKeyDown}
-                placeholder="Search by name, brand, or type…"
-                className="disc-select-search"
-                autoFocus
+      {open &&
+        createPortal(
+          <div
+            ref={popRef}
+            className="disc-select-pop disc-select-pop-portal"
+            style={popStyle}
+          >
+            {draft ? (
+              <DraftFormView
+                draft={draft}
+                errors={errors}
+                submitting={submitting}
+                submitError={submitError}
+                onChange={setDraft}
+                onCancel={() => {
+                  setDraft(null)
+                  setErrors({})
+                  setSubmitError(null)
+                }}
+                onSubmit={submitCreate}
               />
-              {!searching ? (
-                <p className="disc-select-hint">
-                  Type to search {DISC_DATABASE.length.toLocaleString()}+ discs
-                  — e.g. <strong>Destroyer</strong>, <strong>Innova</strong>,{' '}
-                  <strong>putter</strong>
-                </p>
-              ) : (
-                <>
-                  <p className="disc-select-count" aria-live="polite">
-                    {filtered.length === 0
-                      ? `No matches for “${query.trim()}”`
-                      : `${filtered.length.toLocaleString()} disc${filtered.length === 1 ? '' : 's'} — scroll for all matches`}
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="disc-select-add disc-select-add-top"
+                  onClick={startCreate}
+                >
+                  + Add custom disc not listed
+                  {query.trim() && (
+                    <span className="muted small"> · “{query.trim()}”</span>
+                  )}
+                </button>
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={query}
+                  onChange={e => setQuery(e.target.value)}
+                  onKeyDown={onListKeyDown}
+                  placeholder="Search by name, brand, or type…"
+                  className="disc-select-search"
+                  autoFocus
+                />
+                {!searching ? (
+                  <p className="disc-select-hint">
+                    Type to search {DISC_DATABASE.length.toLocaleString()}+ discs
+                    — e.g. <strong>Destroyer</strong>, <strong>Innova</strong>,{' '}
+                    <strong>putter</strong>
                   </p>
-                  <ul
-                    ref={listRef}
-                    className="disc-select-list disc-select-list-search"
-                    role="listbox"
-                    aria-label="Disc search results"
-                  >
-                    {filtered.map((d, i) => {
-                      const isActive = i === activeIdx
-                      const isSelected = d.name === value
-                      return (
-                        <li
-                          key={d.name}
-                          data-idx={i}
-                          role="option"
-                          aria-selected={isSelected}
-                          className={
-                            'disc-select-option' +
-                            (isActive ? ' active' : '') +
-                            (isSelected ? ' selected' : '')
-                          }
-                          onMouseEnter={() => setActiveIdx(i)}
-                          onClick={() => commit(d)}
-                        >
-                          <div className="disc-select-option-main">
-                            <span className="disc-select-name">{d.name}</span>
-                            <span className="disc-select-brand">
-                              {d.brand}
-                              {d.type ? ` · ${d.type}` : ''}
+                ) : (
+                  <>
+                    <p className="disc-select-count" aria-live="polite">
+                      {filtered.length === 0
+                        ? `No matches for “${query.trim()}”`
+                        : `${filtered.length.toLocaleString()} disc${filtered.length === 1 ? '' : 's'} — scroll for all matches`}
+                    </p>
+                    <ul
+                      ref={listRef}
+                      className="disc-select-list disc-select-list-search"
+                      role="listbox"
+                      aria-label="Disc search results"
+                    >
+                      {filtered.map((d, i) => {
+                        const isActive = i === activeIdx
+                        const isSelected = d.name === value
+                        return (
+                          <li
+                            key={d.name}
+                            data-idx={i}
+                            role="option"
+                            aria-selected={isSelected}
+                            className={
+                              'disc-select-option' +
+                              (isActive ? ' active' : '') +
+                              (isSelected ? ' selected' : '')
+                            }
+                            onMouseEnter={() => setActiveIdx(i)}
+                            onClick={() => commit(d)}
+                          >
+                            <div className="disc-select-option-main">
+                              <span className="disc-select-name">{d.name}</span>
+                              <span className="disc-select-brand">
+                                {d.brand}
+                                {d.type ? ` · ${d.type}` : ''}
+                              </span>
+                            </div>
+                            <span className="disc-select-flight">
+                              {d.speed}/{d.glide}/{d.turn}/{d.fade}
                             </span>
-                          </div>
-                          <span className="disc-select-flight">
-                            {d.speed}/{d.glide}/{d.turn}/{d.fade}
-                          </span>
-                        </li>
-                      )
-                    })}
-                  </ul>
-                </>
-              )}
-            </>
-          )}
-        </div>
-      )}
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </>
+                )}
+              </>
+            )}
+          </div>,
+          document.body,
+        )}
     </div>
   )
 }
