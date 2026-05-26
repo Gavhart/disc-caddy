@@ -451,9 +451,9 @@ export function CommunityPage() {
                     <span className="community-badge">Looking to play</span>
                   )}
                 </div>
-                <span className="muted small">
+                <p className="community-member-cities">
                   Also plays in {m.sharedCityLabels.join(', ')}
-                </span>
+                </p>
                 {canMessage ? (
                   <button
                     type="button"
@@ -466,9 +466,9 @@ export function CommunityPage() {
                     Message
                   </button>
                 ) : (
-                  <span className="muted small">
-                    Turn on “Looking for players” above to message others.
-                  </span>
+                  <p className="community-member-hint">
+                    Turn on “Looking for players” above to send messages.
+                  </p>
                 )}
               </li>
             ))}

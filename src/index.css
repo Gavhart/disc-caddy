@@ -221,6 +221,12 @@ body {
   overflow: hidden;
 }
 
+.card:has(.community-member-list),
+.card:has(.community-message-list),
+.card:has(.community-city-list) {
+  overflow: visible;
+}
+
 .card::before {
   content: '';
   position: absolute;
@@ -1242,16 +1248,19 @@ select {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-width: 0;
 }
 
 .community-member-row {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
   padding: 12px 14px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--surface-2);
+  min-width: 0;
+  overflow: hidden;
 }
 
 .community-member-main {
@@ -1259,11 +1268,29 @@ select {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 
 .community-member-name {
   font-weight: 700;
   font-size: 15px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.community-member-cities {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.community-member-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.45;
 }
 
 .community-badge {
@@ -1294,14 +1321,20 @@ select {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-width: 0;
 }
 
 .community-message-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
   padding: 12px 14px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--surface-2);
   cursor: pointer;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .community-message-unread {
@@ -1312,14 +1345,17 @@ select {
 .community-message-meta {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   gap: 10px;
   flex-wrap: wrap;
-  margin-bottom: 6px;
+  min-width: 0;
 }
 
 .community-message-direction {
   font-weight: 700;
   font-size: 13px;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .community-message-body {
@@ -1327,6 +1363,9 @@ select {
   font-size: 14px;
   line-height: 1.45;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  max-width: 100%;
 }
 
 .community-message-new {

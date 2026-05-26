@@ -19,6 +19,23 @@ function rowToHomeCity(r: HomeCityRow): HomeCity {
   }
 }
 
+/** Postgres text[] sometimes arrives as a string from RPC — normalize it. */
+function normalizeTextArray(value: unknown): string[] {
+  if (Array.isArray(value)) {
+    return value.filter((v): v is string => typeof v === 'string')
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim()
+    if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+      const inner = trimmed.slice(1, -1).trim()
+      if (!inner) return []
+      return inner.split(',').map(part => part.trim().replace(/^"|"$/g, ''))
+    }
+    return trimmed ? [trimmed] : []
+  }
+  return []
+}
+
 export function formatCityLabel(city: HomeCity | { city: string; regionCode?: string | null; countryCode?: string | null }): string {
   const region = city.regionCode?.trim()
   const country = city.countryCode?.trim()
@@ -74,8 +91,8 @@ export async function fetchCommunityMembers(): Promise<CommunityMember[]> {
     }[]) ?? []
   ).map(r => ({
     userId: r.user_id,
-    displayName: r.display_name,
-    sharedCityLabels: r.shared_city_labels ?? [],
+    displayName: r.display_name || 'Player',
+    sharedCityLabels: normalizeTextArray(r.shared_city_labels),
     lookingForPlayers: Boolean(r.looking_for_players),
   }))
 }
