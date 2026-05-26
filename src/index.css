@@ -44,21 +44,35 @@ body {
 
 #root {
   min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+}
+
+html,
+body {
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 /* ---------- Layout shells ---------- */
 .main {
   min-height: calc(100vh - 56px);
   padding-bottom: env(safe-area-inset-bottom);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .container {
+  width: 100%;
   max-width: 720px;
+  min-width: 0;
   margin: 0 auto;
   padding: 16px 16px 80px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  box-sizing: border-box;
 }
 
 .app {
@@ -324,11 +338,49 @@ body {
 
 .nav-drawer-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 12px 16px 16px;
+  padding: 12px 16px;
   border-bottom: 1px solid var(--border);
+}
+
+.nav-drawer-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.nav-drawer-profile {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  margin: 12px 16px 4px;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  text-decoration: none;
+  color: inherit;
+}
+
+.nav-drawer-profile-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.nav-drawer-profile-copy strong {
+  font-size: 15px;
+  line-height: 1.3;
+  overflow-wrap: break-word;
+}
+
+.nav-drawer-chevron {
+  color: var(--text-muted);
+  font-size: 22px;
 }
 
 .nav-drawer-user {
@@ -434,6 +486,22 @@ body {
 
 body.nav-menu-open {
   overflow: hidden;
+}
+
+body.nav-menu-open .main {
+  overflow: hidden;
+}
+
+@media (max-width: 899px) {
+  .nav-drawer-panel {
+    width: 100%;
+    max-width: 100%;
+    border-right: 0;
+  }
+
+  .nav-drawer-backdrop {
+    background: rgba(0, 0, 0, 0.72);
+  }
 }
 
 @media (min-width: 900px) {
@@ -2788,6 +2856,82 @@ tr.ranked td:first-child {
   color: var(--accent-bright);
 }
 
+.settings-page {
+  width: 100%;
+  min-width: 0;
+}
+
+.settings-page .card {
+  width: 100%;
+  min-width: 0;
+}
+
+.settings-account-photo {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.setting-value {
+  text-align: left;
+  word-break: break-word;
+}
+
+.profile-name-editor {
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.profile-name-editor label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.profile-name-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.profile-name-row input {
+  width: 100%;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+
+.profile-name-row .btn-secondary {
+  width: 100%;
+}
+
+.profile-name-editor-hero {
+  text-align: center;
+}
+
+.profile-name-editor-hero label {
+  text-align: center;
+}
+
+@media (min-width: 541px) {
+  .profile-name-row {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .profile-name-row input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .profile-name-row .btn-secondary {
+    width: auto;
+    flex: 0 0 auto;
+  }
+}
+
 .setting-row {
   display: flex;
   justify-content: space-between;
@@ -2811,7 +2955,23 @@ tr.ranked td:first-child {
 @media (max-width: 540px) {
   .setting-row {
     flex-direction: column;
-    align-items: flex-start;
+    align-items: stretch;
+  }
+
+  .setting-row .segmented {
+    width: 100%;
+  }
+
+  .setting-row .segmented button {
+    flex: 1;
+  }
+
+  .setting-row .input-group {
+    width: 100% !important;
+  }
+
+  .setting-row .input-group input {
+    width: 100% !important;
   }
 }
 

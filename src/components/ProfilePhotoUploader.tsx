@@ -82,7 +82,7 @@ export function ProfilePhotoUploader({ avatarPath, displayName, onChange }: Prop
         hidden
       />
       <p className="muted small profile-photo-hint">
-        {busy ? 'Uploading…' : avatarPath ? 'Tap to change photo' : 'Tap to add a photo'}
+        {busy ? 'Uploading…' : avatarPath ? 'Tap photo to change' : 'Tap photo to add'}
       </p>
       {avatarPath && (
         <button

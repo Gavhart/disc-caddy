@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { signOut } from '../lib/auth'
@@ -7,12 +8,12 @@ import { ProfileAvatar } from './ProfileAvatar'
 import { Logo } from './Logo'
 
 const NAV_ITEMS = [
-  { to: '/', end: true, label: 'Recommend', icon: '🎯', short: 'Home' },
-  { to: '/bags', label: 'Bags', icon: '🎒', short: 'Bags' },
-  { to: '/courses', label: 'Courses', icon: '🗺️', short: 'Courses' },
-  { to: '/rounds', label: 'Rounds', icon: '📋', short: 'Rounds' },
-  { to: '/community', label: 'Community', icon: '👥', short: 'Community' },
-  { to: '/profile', label: 'Profile', icon: '👤', short: 'Profile' },
+  { to: '/', end: true, label: 'Recommend', icon: '🎯' },
+  { to: '/bags', label: 'Bags', icon: '🎒' },
+  { to: '/courses', label: 'Courses', icon: '🗺️' },
+  { to: '/rounds', label: 'Rounds', icon: '📋' },
+  { to: '/community', label: 'Community', icon: '👥' },
+  { to: '/profile', label: 'Profile', icon: '👤' },
 ] as const
 
 function isProfileRoute(pathname: string): boolean {
@@ -27,7 +28,7 @@ export function Navigation() {
 
   useEffect(() => {
     setMenuOpen(false)
-  }, [location.pathname])
+  }, [location.pathname, location.hash])
 
   useEffect(() => {
     document.body.classList.toggle('nav-menu-open', menuOpen)
@@ -43,6 +44,87 @@ export function Navigation() {
   function closeMenu() {
     setMenuOpen(false)
   }
+
+  const drawer = (
+    <div
+      id="nav-drawer"
+      className={`nav-drawer${menuOpen ? ' nav-drawer-open' : ''}`}
+      aria-hidden={!menuOpen}
+    >
+      <button
+        type="button"
+        className="nav-drawer-backdrop"
+        aria-label="Close menu"
+        onClick={closeMenu}
+        tabIndex={menuOpen ? 0 : -1}
+      />
+      <div className="nav-drawer-panel" role="dialog" aria-modal="true" aria-label="App menu">
+        <div className="nav-drawer-header">
+          <p className="nav-drawer-title">Menu</p>
+          <button type="button" className="link-button nav-drawer-close" onClick={closeMenu}>
+            Close
+          </button>
+        </div>
+
+        <NavLink to="/profile" className="nav-drawer-profile" onClick={closeMenu}>
+          <ProfileAvatar
+            displayName={me?.displayName}
+            avatarPath={me?.avatarPath}
+            size="sm"
+            className="nav-drawer-avatar"
+          />
+          <span className="nav-drawer-profile-copy">
+            <strong>{me?.displayName?.trim() || 'Add your name'}</strong>
+            <span className="muted small">{me?.email}</span>
+          </span>
+          <span className="nav-drawer-chevron" aria-hidden>
+            ›
+          </span>
+        </NavLink>
+
+        <div className="nav-drawer-links">
+          {NAV_ITEMS.map(item => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={'end' in item ? item.end : undefined}
+              className={({ isActive }) => {
+                const active =
+                  item.to === '/profile'
+                    ? isActive || isProfileRoute(location.pathname)
+                    : isActive
+                return 'nav-drawer-link' + (active ? ' active' : '')
+              }}
+              onClick={closeMenu}
+            >
+              <span className="nav-drawer-link-icon" aria-hidden>
+                {item.icon}
+              </span>
+              <span>{item.label}</span>
+            </NavLink>
+          ))}
+          {me && !me.isPro && isWebCheckoutAvailable() && (
+            <NavLink
+              to="/upgrade"
+              className="nav-drawer-link nav-drawer-upgrade"
+              onClick={closeMenu}
+            >
+              <span className="nav-drawer-link-icon" aria-hidden>
+                ✨
+              </span>
+              <span>Upgrade to Pro</span>
+            </NavLink>
+          )}
+        </div>
+
+        <div className="nav-drawer-footer">
+          <button type="button" className="link-button nav-drawer-signout" onClick={handleSignOut}>
+            Sign out
+          </button>
+        </div>
+      </div>
+    </div>
+  )
 
   return (
     <nav className="nav">
@@ -72,6 +154,7 @@ export function Navigation() {
           'nav-profile-chip' + (isActive || isProfileRoute(location.pathname) ? ' active' : '')
         }
         aria-label="Your profile"
+        onClick={() => setMenuOpen(false)}
       >
         <ProfileAvatar
           displayName={me?.displayName}
@@ -105,79 +188,7 @@ export function Navigation() {
         )}
       </div>
 
-      <div
-        id="nav-drawer"
-        className={`nav-drawer${menuOpen ? ' nav-drawer-open' : ''}`}
-        aria-hidden={!menuOpen}
-      >
-        <button
-          type="button"
-          className="nav-drawer-backdrop"
-          aria-label="Close menu"
-          onClick={closeMenu}
-          tabIndex={menuOpen ? 0 : -1}
-        />
-        <div className="nav-drawer-panel" role="dialog" aria-modal="true" aria-label="App menu">
-          <div className="nav-drawer-header">
-            <div className="nav-drawer-user">
-              <ProfileAvatar
-                displayName={me?.displayName}
-                avatarPath={me?.avatarPath}
-                size="sm"
-                className="nav-drawer-avatar"
-              />
-              <div>
-                <strong>{me?.displayName ?? 'Player'}</strong>
-                <span className="muted small nav-drawer-email">{me?.email}</span>
-              </div>
-            </div>
-            <button
-              type="button"
-              className="link-button nav-drawer-close"
-              onClick={closeMenu}
-            >
-              Close
-            </button>
-          </div>
-
-          <div className="nav-drawer-links">
-            {NAV_ITEMS.map(item => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={'end' in item ? item.end : undefined}
-                className={({ isActive }) => {
-                  const active =
-                    item.to === '/profile'
-                      ? isActive || isProfileRoute(location.pathname)
-                      : isActive
-                  return 'nav-drawer-link' + (active ? ' active' : '')
-                }}
-                onClick={closeMenu}
-              >
-                <span className="nav-drawer-link-icon" aria-hidden>
-                  {item.icon}
-                </span>
-                <span>{item.label}</span>
-              </NavLink>
-            ))}
-            {me && !me.isPro && isWebCheckoutAvailable() && (
-              <NavLink to="/upgrade" className="nav-drawer-link nav-drawer-upgrade" onClick={closeMenu}>
-                <span className="nav-drawer-link-icon" aria-hidden>
-                  ✨
-                </span>
-                <span>Upgrade to Pro</span>
-              </NavLink>
-            )}
-          </div>
-
-          <div className="nav-drawer-footer">
-            <button type="button" className="link-button nav-drawer-signout" onClick={handleSignOut}>
-              Sign out
-            </button>
-          </div>
-        </div>
-      </div>
+      {createPortal(drawer, document.body)}
     </nav>
   )
 }

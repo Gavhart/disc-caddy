@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { signOut } from '../lib/auth'
+import { ProfileNameEditor } from '../components/ProfileNameEditor'
 import { ProfilePhotoUploader } from '../components/ProfilePhotoUploader'
 import { fetchMyHomeCities, formatCityLabel } from '../lib/community'
 import { isWebCheckoutAvailable } from '../lib/platform'
@@ -59,7 +60,7 @@ export function ProfilePage() {
           }}
         />
         <div className="profile-hero-text">
-          <h1>{me.displayName ?? 'Player'}</h1>
+          <ProfileNameEditor variant="hero" />
           <p className="profile-email muted">{me.email}</p>
           <div className="profile-badges">
             {me.isPro ? (

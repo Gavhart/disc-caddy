@@ -5,6 +5,8 @@ import { signOut } from '../lib/auth'
 import { deleteAccount } from '../lib/account'
 import { isStripeConfigured, openBillingPortal, syncSubscription } from '../lib/subscription'
 import { isNativeApp, isWebCheckoutAvailable } from '../lib/platform'
+import { ProfileNameEditor } from '../components/ProfileNameEditor'
+import { ProfilePhotoUploader } from '../components/ProfilePhotoUploader'
 import { updatePlayer } from '../lib/profile'
 import { Hand, ThrowStyle } from '../types'
 
@@ -164,23 +166,29 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="container">
+    <div className="container settings-page">
       <p className="settings-back">
         <Link to="/profile">← Back to profile</Link>
       </p>
       <div className="card settings-section" id="account">
         <h2>Account</h2>
-        <div className="setting-row">
-          <span className="setting-label">Name</span>
-          <span>{me.displayName ?? '—'}</span>
+        <div className="settings-account-photo">
+          <ProfilePhotoUploader
+            avatarPath={me.avatarPath}
+            displayName={me.displayName}
+            onChange={async () => {
+              await refreshMe()
+            }}
+          />
         </div>
+        <ProfileNameEditor />
         <div className="setting-row">
           <span className="setting-label">Email</span>
-          <span>{me.email}</span>
+          <span className="setting-value">{me.email}</span>
         </div>
         <div className="setting-row">
           <span className="setting-label">Max distance</span>
-          <span>
+          <span className="setting-value">
             {me.maxDistance} ft <span className="muted small">(edit on Recommend page)</span>
           </span>
         </div>
