@@ -28,34 +28,36 @@ export function Navigation() {
     <>
       <nav className="nav nav-top" aria-label="Main">
         <div className="nav-top-inner">
-          <NotificationsBell count={communityBadgeCount} />
+          <div className="nav-top-slot nav-top-slot-start">
+            <NotificationsBell count={communityBadgeCount} />
+          </div>
 
           <NavLink to="/" end className="nav-brand">
             <Logo height={36} />
           </NavLink>
 
-          <div className="nav-top-spacer" aria-hidden />
-
-          <div className="nav-links-desktop">
-            {PRIMARY_TABS.map(tab => (
-              <NavLink
-                key={tab.to}
-                to={tab.to}
-                end={'end' in tab ? tab.end : undefined}
-                className={({ isActive }) => {
-                  const active = tab.match(location.pathname) || isActive
-                  return active ? 'active' : ''
-                }}
-              >
-                {tab.label}
-              </NavLink>
-            ))}
-            <NotificationsBell count={communityBadgeCount} className="nav-bell-desktop" />
-            {me && !me.isPro && isWebCheckoutAvailable() && (
-              <NavLink to="/upgrade" className="nav-upgrade">
-                Upgrade
-              </NavLink>
-            )}
+          <div className="nav-top-slot nav-top-slot-end">
+            <div className="nav-links-desktop">
+              {PRIMARY_TABS.map(tab => (
+                <NavLink
+                  key={tab.to}
+                  to={tab.to}
+                  end={'end' in tab ? tab.end : undefined}
+                  className={({ isActive }) => {
+                    const active = tab.match(location.pathname) || isActive
+                    return active ? 'active' : ''
+                  }}
+                >
+                  {tab.label}
+                </NavLink>
+              ))}
+              <NotificationsBell count={communityBadgeCount} className="nav-bell-desktop" />
+              {me && !me.isPro && isWebCheckoutAvailable() && (
+                <NavLink to="/upgrade" className="nav-upgrade">
+                  Upgrade
+                </NavLink>
+              )}
+            </div>
           </div>
         </div>
       </nav>
