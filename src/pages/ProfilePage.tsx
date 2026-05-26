@@ -2,15 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { signOut } from '../lib/auth'
+import { ProfilePhotoUploader } from '../components/ProfilePhotoUploader'
 import { fetchMyHomeCities, formatCityLabel } from '../lib/community'
 import { isWebCheckoutAvailable } from '../lib/platform'
 import { HomeCity } from '../types'
-
-function profileInitials(name: string | null | undefined): string {
-  if (!name?.trim()) return '?'
-  const parts = name.trim().split(/\s+/).slice(0, 2)
-  return parts.map(p => p[0]?.toUpperCase() ?? '').join('') || '?'
-}
 
 function handLabel(hand: 'left' | 'right'): string {
   return hand === 'left' ? 'Left-handed' : 'Right-handed'
@@ -22,7 +17,7 @@ function throwLabel(primary: 'backhand' | 'forehand', throwsFh: boolean): string
 }
 
 export function ProfilePage() {
-  const { me } = useAuth()
+  const { me, refreshMe } = useAuth()
   const navigate = useNavigate()
   const [cities, setCities] = useState<HomeCity[]>([])
   const [citiesLoading, setCitiesLoading] = useState(true)
@@ -56,9 +51,13 @@ export function ProfilePage() {
   return (
     <div className="container profile-page">
       <div className="profile-hero card">
-        <div className="profile-avatar" aria-hidden>
-          {profileInitials(me.displayName)}
-        </div>
+        <ProfilePhotoUploader
+          avatarPath={me.avatarPath}
+          displayName={me.displayName}
+          onChange={async () => {
+            await refreshMe()
+          }}
+        />
         <div className="profile-hero-text">
           <h1>{me.displayName ?? 'Player'}</h1>
           <p className="profile-email muted">{me.email}</p>

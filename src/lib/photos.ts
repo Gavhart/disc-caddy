@@ -38,6 +38,22 @@ export async function getDiscPhotoUrl(path: string): Promise<string | null> {
   return data.signedUrl
 }
 
+/** Upload a profile avatar. Returns the storage object path. */
+export async function uploadProfilePhoto(userId: string, file: File): Promise<string> {
+  const ext = file.name.split('.').pop()?.toLowerCase() ?? 'jpg'
+  const path = `${userId}/avatar-${Date.now()}.${ext}`
+
+  const { error } = await supabase.storage
+    .from(BUCKET)
+    .upload(path, file, {
+      cacheControl: '3600',
+      upsert: true,
+      contentType: file.type,
+    })
+  if (error) throw error
+  return path
+}
+
 export async function deleteDiscPhoto(path: string): Promise<void> {
   if (!path) return
   const { error } = await supabase.storage.from(BUCKET).remove([path])

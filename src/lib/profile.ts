@@ -38,6 +38,7 @@ export async function fetchMe(): Promise<Me | null> {
     isPro: data.is_pro,
     communityVisible: Boolean(data.community_visible),
     lookingForPlayers: Boolean(data.looking_for_players),
+    avatarPath: data.avatar_path ?? null,
   }
 }
 
@@ -114,6 +115,18 @@ export async function updatePlayer(userId: string, patch: PlayerPatch) {
   const { error } = await supabase
     .from('profiles')
     .update(update)
+    .eq('id', userId)
+  if (error) throw error
+}
+
+/** Update the user's profile photo path. */
+export async function updateProfileAvatar(userId: string, avatarPath: string | null) {
+  const { error } = await supabase
+    .from('profiles')
+    .update({
+      avatar_path: avatarPath,
+      updated_at: new Date().toISOString(),
+    })
     .eq('id', userId)
   if (error) throw error
 }

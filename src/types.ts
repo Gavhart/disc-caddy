@@ -239,6 +239,8 @@ export interface Me {
   communityVisible: boolean
   /** Opt-in: open to new card-mates; required to send community messages. */
   lookingForPlayers: boolean
+  /** Storage path for profile photo in disc-photos bucket. */
+  avatarPath: string | null
 }
 
 /** A home-area city on the player's profile (up to 3). */

@@ -126,6 +126,7 @@ body {
 
 /* ---------- Nav ---------- */
 .nav {
+  --nav-bar-height: calc(max(10px, env(safe-area-inset-top)) + 54px);
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
@@ -133,11 +134,11 @@ body {
   padding: max(10px, env(safe-area-inset-top)) 12px 10px;
   padding-left: max(12px, env(safe-area-inset-left));
   padding-right: max(12px, env(safe-area-inset-right));
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
   border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 400;
   backdrop-filter: blur(12px);
 }
 
@@ -158,6 +159,7 @@ body {
 
 .nav-menu-btn {
   position: relative;
+  z-index: 401;
   width: 44px;
   height: 44px;
   border: 1px solid var(--border);
@@ -216,6 +218,8 @@ body {
 }
 
 .nav-profile-chip {
+  position: relative;
+  z-index: 401;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -233,17 +237,11 @@ body {
   box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
-.nav-profile-avatar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.nav-profile-chip .profile-avatar-sm {
   width: 100%;
   height: 100%;
   border-radius: 999px;
-  background: var(--gradient-brand);
-  color: var(--bg);
-  font-size: 13px;
-  font-weight: 800;
+  object-fit: cover;
 }
 
 .nav-links-desktop {
@@ -277,7 +275,7 @@ body {
 .nav-drawer {
   position: fixed;
   inset: 0;
-  z-index: 200;
+  z-index: 350;
   pointer-events: none;
 }
 
@@ -287,7 +285,10 @@ body {
 
 .nav-drawer-backdrop {
   position: absolute;
-  inset: 0;
+  top: var(--nav-bar-height);
+  left: 0;
+  right: 0;
+  bottom: 0;
   border: 0;
   background: rgba(0, 0, 0, 0.55);
   opacity: 0;
@@ -301,10 +302,10 @@ body {
 
 .nav-drawer-panel {
   position: absolute;
-  top: 0;
+  top: var(--nav-bar-height);
   left: 0;
   bottom: 0;
-  width: min(320px, 88vw);
+  width: min(100%, 320px);
   max-width: 100%;
   background: var(--surface);
   border-right: 1px solid var(--border);
@@ -313,7 +314,7 @@ body {
   flex-direction: column;
   transform: translateX(-105%);
   transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
-  padding-top: max(12px, env(safe-area-inset-top));
+  padding-top: 8px;
   padding-bottom: max(12px, env(safe-area-inset-bottom));
 }
 
@@ -354,6 +355,9 @@ body {
 
 .nav-drawer-avatar {
   flex: 0 0 auto;
+}
+
+.nav-drawer-avatar.profile-avatar-sm {
   width: 44px;
   height: 44px;
   border-radius: 999px;
@@ -364,6 +368,7 @@ body {
   color: var(--bg);
   font-size: 14px;
   font-weight: 800;
+  object-fit: cover;
 }
 
 .nav-drawer-close {
@@ -2818,22 +2823,91 @@ tr.ranked td:first-child {
 
 .profile-hero {
   display: flex;
+  flex-direction: column;
   align-items: center;
+  text-align: center;
   gap: 16px;
 }
 
 .profile-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--gradient-brand);
+  color: var(--bg);
+  font-weight: 800;
+  object-fit: cover;
   flex: 0 0 auto;
-  width: 72px;
-  height: 72px;
+}
+
+.profile-avatar-sm {
+  width: 40px;
+  height: 40px;
+  font-size: 13px;
+}
+
+.profile-avatar-md {
+  width: 56px;
+  height: 56px;
+  font-size: 18px;
+}
+
+.profile-avatar-lg {
+  width: 88px;
+  height: 88px;
+  font-size: 28px;
+}
+
+.profile-photo-uploader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.profile-photo-trigger {
+  position: relative;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  border-radius: 999px;
+  line-height: 0;
+}
+
+.profile-photo-trigger:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.profile-photo-badge {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 28px;
+  height: 28px;
   border-radius: 999px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--gradient-brand);
-  color: var(--bg);
-  font-size: 24px;
+  background: var(--surface);
+  border: 2px solid var(--accent-bright);
+  color: var(--accent-bright);
+  font-size: 14px;
   font-weight: 800;
+}
+
+.profile-photo-hint {
+  margin: 0;
+}
+
+.profile-photo-remove {
+  font-size: 13px;
+}
+
+.profile-hero-text {
+  width: 100%;
 }
 
 .profile-hero-text h1 {

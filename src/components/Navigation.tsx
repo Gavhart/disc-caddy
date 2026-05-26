@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { signOut } from '../lib/auth'
 import { isWebCheckoutAvailable } from '../lib/platform'
+import { ProfileAvatar } from './ProfileAvatar'
 import { Logo } from './Logo'
 
 const NAV_ITEMS = [
@@ -13,12 +14,6 @@ const NAV_ITEMS = [
   { to: '/community', label: 'Community', icon: '👥', short: 'Community' },
   { to: '/profile', label: 'Profile', icon: '👤', short: 'Profile' },
 ] as const
-
-function profileInitials(name: string | null | undefined): string {
-  if (!name?.trim()) return '?'
-  const parts = name.trim().split(/\s+/).slice(0, 2)
-  return parts.map(p => p[0]?.toUpperCase() ?? '').join('') || '?'
-}
 
 function isProfileRoute(pathname: string): boolean {
   return pathname === '/profile' || pathname.startsWith('/settings')
@@ -78,9 +73,12 @@ export function Navigation() {
         }
         aria-label="Your profile"
       >
-        <span className="nav-profile-avatar" aria-hidden>
-          {profileInitials(me?.displayName)}
-        </span>
+        <ProfileAvatar
+          displayName={me?.displayName}
+          avatarPath={me?.avatarPath}
+          size="sm"
+          className="nav-profile-avatar"
+        />
       </NavLink>
 
       <div className="nav-links nav-links-desktop">
@@ -122,9 +120,12 @@ export function Navigation() {
         <div className="nav-drawer-panel" role="dialog" aria-modal="true" aria-label="App menu">
           <div className="nav-drawer-header">
             <div className="nav-drawer-user">
-              <span className="nav-drawer-avatar" aria-hidden>
-                {profileInitials(me?.displayName)}
-              </span>
+              <ProfileAvatar
+                displayName={me?.displayName}
+                avatarPath={me?.avatarPath}
+                size="sm"
+                className="nav-drawer-avatar"
+              />
               <div>
                 <strong>{me?.displayName ?? 'Player'}</strong>
                 <span className="muted small nav-drawer-email">{me?.email}</span>
