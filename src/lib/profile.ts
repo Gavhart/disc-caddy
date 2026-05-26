@@ -39,6 +39,7 @@ export async function fetchMe(): Promise<Me | null> {
     communityVisible: Boolean(data.community_visible),
     lookingForPlayers: Boolean(data.looking_for_players),
     avatarPath: data.avatar_path ?? null,
+    communitySearchRadiusMiles: data.community_search_radius_miles ?? 25,
   }
 }
 

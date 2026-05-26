@@ -241,7 +241,13 @@ export interface Me {
   lookingForPlayers: boolean
   /** Storage path for profile photo in disc-photos bucket. */
   avatarPath: string | null
+  /** Miles to search for community members from saved coordinates. */
+  communitySearchRadiusMiles: number
 }
+
+/** Preset radius options for community search (miles). */
+export const COMMUNITY_RADIUS_OPTIONS = [10, 25, 50, 100, 150] as const
+export type CommunityRadiusMiles = (typeof COMMUNITY_RADIUS_OPTIONS)[number]
 
 /** A home-area city on the player's profile (up to 3). */
 export interface HomeCity {
@@ -250,6 +256,8 @@ export interface HomeCity {
   countryCode: string | null
   courseId?: string | null
   sortOrder: number
+  latitude?: number | null
+  longitude?: number | null
 }
 
 /** Another opt-in member who shares at least one home city. */
@@ -258,6 +266,8 @@ export interface CommunityMember {
   displayName: string
   sharedCityLabels: string[]
   lookingForPlayers: boolean
+  /** Approximate distance in miles when matched by GPS radius. */
+  distanceMiles: number | null
 }
 
 /** In-app message between community members. */

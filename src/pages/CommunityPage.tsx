@@ -12,7 +12,8 @@ import {
   saveHomeCities,
   sendCommunityMessage,
 } from '../lib/community'
-import { CommunityMember, CommunityMessage, Course, HomeCity } from '../types'
+import { LocationError, resolveCurrentLocationPlace } from '../lib/geocode'
+import { CommunityMember, CommunityMessage, Course, HomeCity, COMMUNITY_RADIUS_OPTIONS } from '../types'
 
 const MAX_HOME_CITIES = 3
 
@@ -23,6 +24,8 @@ function emptyCity(sortOrder: number): HomeCity {
     countryCode: null,
     courseId: null,
     sortOrder,
+    latitude: null,
+    longitude: null,
   }
 }
 
@@ -42,8 +45,12 @@ function formatMessageWhen(iso: string): string {
 export function CommunityPage() {
   const { me, refreshMe } = useAuth()
   const [cities, setCities] = useState<HomeCity[]>([])
+  const [savedCities, setSavedCities] = useState<HomeCity[]>([])
   const [communityVisible, setCommunityVisible] = useState(false)
   const [lookingForPlayers, setLookingForPlayers] = useState(false)
+  const [useLocationOnSave, setUseLocationOnSave] = useState(false)
+  const [searchRadiusMiles, setSearchRadiusMiles] = useState(25)
+  const [locating, setLocating] = useState(false)
   const [members, setMembers] = useState<CommunityMember[]>([])
   const [messages, setMessages] = useState<CommunityMessage[]>([])
   const [loading, setLoading] = useState(true)
@@ -69,6 +76,7 @@ export function CommunityPage() {
         fetchCommunityMessages(),
       ])
       setCities(loadedCities.length > 0 ? loadedCities : [emptyCity(0)])
+      setSavedCities(loadedCities)
       setMembers(loadedMembers)
       setMessages(loadedMessages)
     } catch (err) {
@@ -86,6 +94,7 @@ export function CommunityPage() {
     if (me) {
       setCommunityVisible(me.communityVisible)
       setLookingForPlayers(me.lookingForPlayers)
+      setSearchRadiusMiles(me.communitySearchRadiusMiles ?? 25)
       loadAll()
     }
   }, [me, loadAll])
@@ -161,6 +170,43 @@ export function CommunityPage() {
     setSaveOk(false)
   }
 
+  async function applyCurrentLocation() {
+    setLocating(true)
+    setError(null)
+    try {
+      const place = await resolveCurrentLocationPlace()
+      const derived: HomeCity = {
+        city: place.city,
+        regionCode: place.regionCode,
+        countryCode: place.countryCode,
+        courseId: null,
+        sortOrder: 0,
+        latitude: place.latitude,
+        longitude: place.longitude,
+      }
+      const key = cityKey(derived)
+      setCities(prev => {
+        const withoutDupes = prev.filter(c => !c.city.trim() || cityKey(c) !== key)
+        const trimmed = withoutDupes.filter(c => c.city.trim())
+        return [{ ...derived, sortOrder: 0 }, ...trimmed.map((c, i) => ({ ...c, sortOrder: i + 1 }))].slice(
+          0,
+          MAX_HOME_CITIES,
+        )
+      })
+      setSaveOk(false)
+    } catch (err) {
+      setError(
+        err instanceof LocationError
+          ? err.message
+          : err instanceof Error
+            ? err.message
+            : 'Could not use your location.',
+      )
+    } finally {
+      setLocating(false)
+    }
+  }
+
   async function handleSave(e: FormEvent) {
     e.preventDefault()
     if (!me) return
@@ -168,7 +214,25 @@ export function CommunityPage() {
     setError(null)
     setSaveOk(false)
     try {
-      const cleaned = cities
+      let working = cities
+      if (useLocationOnSave) {
+        const place = await resolveCurrentLocationPlace()
+        const gpsCity: HomeCity = {
+          city: place.city,
+          regionCode: place.regionCode,
+          countryCode: place.countryCode,
+          courseId: null,
+          sortOrder: 0,
+          latitude: place.latitude,
+          longitude: place.longitude,
+        }
+        const gpsKey = cityKey(gpsCity)
+        const rest = working.filter(c => c.city.trim() && cityKey(c) !== gpsKey)
+        working = [gpsCity, ...rest].slice(0, MAX_HOME_CITIES)
+        setCities(working.length > 0 ? working : [gpsCity])
+      }
+
+      const cleaned = working
         .map((c, i) => ({
           ...c,
           city: c.city.trim(),
@@ -193,9 +257,10 @@ export function CommunityPage() {
 
       const effectiveLooking = communityVisible && lookingForPlayers
 
-      await saveHomeCities(cleaned, communityVisible, effectiveLooking)
+      await saveHomeCities(cleaned, communityVisible, effectiveLooking, searchRadiusMiles)
       await refreshMe()
       setCities(cleaned.length > 0 ? cleaned : [emptyCity(0)])
+      setSavedCities(cleaned)
       if (!communityVisible) setLookingForPlayers(false)
       setSaveOk(true)
 
@@ -256,6 +321,8 @@ export function CommunityPage() {
     )
   }
 
+  const isSavedVisible = me.communityVisible && savedCities.length > 0
+
   return (
     <div className="container community-page">
       <div className="card community-callout">
@@ -270,10 +337,63 @@ export function CommunityPage() {
       <form className="card" onSubmit={handleSave}>
         <h2>Your home areas</h2>
         <p className="muted small">
-          City matching works better than exact courses while our course catalog
-          is still growing. Search a course to pull its city, or type cities
-          manually.
+          Set a search radius, then add home areas (GPS is best). Players appear
+          when they are within your radius and you are within theirs.
         </p>
+
+        <div className="community-radius-field">
+          <span className="community-radius-label">Search radius</span>
+          <div className="chip-row community-radius-chips">
+            {COMMUNITY_RADIUS_OPTIONS.map(miles => (
+              <button
+                key={miles}
+                type="button"
+                className={`chip${searchRadiusMiles === miles ? ' chip-on' : ''}`}
+                onClick={() => {
+                  setSearchRadiusMiles(miles)
+                  setSaveOk(false)
+                }}
+                disabled={saving || loading}
+              >
+                {miles} mi
+              </button>
+            ))}
+          </div>
+          <p className="muted small community-radius-hint">
+            Uses GPS coordinates on saved home areas. Typed cities are geocoded
+            when you save.
+          </p>
+        </div>
+
+        <div className="community-location-actions">
+          <button
+            type="button"
+            className="btn-secondary community-location-btn"
+            onClick={applyCurrentLocation}
+            disabled={loading || saving || locating}
+          >
+            {locating ? 'Getting location…' : 'Use my current location'}
+          </button>
+          <div className="community-toggle community-location-toggle">
+            <input
+              id="community-use-location-on-save"
+              type="checkbox"
+              checked={useLocationOnSave}
+              onChange={e => {
+                setUseLocationOnSave(e.target.checked)
+                setSaveOk(false)
+              }}
+              disabled={saving || loading || locating}
+            />
+            <label htmlFor="community-use-location-on-save">
+              <strong>Update first home area from GPS when I save</strong>
+              <span className="community-toggle-help">
+                Handy if you travel — refreshes your primary area each time you
+                save settings.
+              </span>
+            </label>
+          </div>
+        </div>
 
         <div className="community-course-search">
           <label htmlFor="community-course-q">Fill city from a course (optional)</label>
@@ -430,15 +550,46 @@ export function CommunityPage() {
         </button>
       </form>
 
+      <div className="card community-status">
+        <h2>Your Community status</h2>
+        <ul className="community-status-list">
+          <li className={me.communityVisible ? 'community-status-ok' : 'community-status-warn'}>
+            {me.communityVisible ? '✓' : '○'} Show me on Community is{' '}
+            <strong>{me.communityVisible ? 'on' : 'off'}</strong>
+          </li>
+          <li className={savedCities.length > 0 ? 'community-status-ok' : 'community-status-warn'}>
+            {savedCities.length > 0 ? '✓' : '○'}{' '}
+            <strong>{savedCities.length}</strong> saved home{' '}
+            {savedCities.length === 1 ? 'area' : 'areas'}
+          </li>
+          <li className="community-status-ok">
+            ✓ Search radius: <strong>{me.communitySearchRadiusMiles} mi</strong>
+          </li>
+        </ul>
+        {savedCities.length > 0 ? (
+          <p className="muted small community-status-cities">
+            Saved as: {savedCities.map(c => formatCityLabel(c)).join(' · ')}
+          </p>
+        ) : (
+          <p className="muted small">
+            Add a city (GPS button above is easiest), check “Show me on Community”,
+            then tap <strong>Save settings</strong>.
+          </p>
+        )}
+        <p className="muted small community-status-tip">
+          Both accounts need Community on, saved home areas, and to fall within
+          each other&apos;s search radius (or share the same city). Use GPS on
+          both accounts for the most reliable match.
+        </p>
+      </div>
+
       <div className="card">
         <h2>Players at your courses</h2>
-        {!communityVisible ? (
+        {!isSavedVisible ? (
           <p className="muted">
-            Opt in above and save at least one home city to see other members who
-            play in the same areas.
+            Opt in above, add a home area, and tap <strong>Save settings</strong>{' '}
+            to see other members in your cities.
           </p>
-        ) : cities.every(c => !c.city.trim()) ? (
-          <p className="muted">Add and save your home cities to find matches.</p>
         ) : members.length === 0 ? (
           <p className="muted">
             No other opt-in members in your cities yet — check back as more
@@ -453,6 +604,11 @@ export function CommunityPage() {
                   <span className="community-badge">Looking to play</span>
                 )}
                 <p className="community-member-cities">
+                  {m.distanceMiles != null && (
+                    <span className="community-member-distance">
+                      ~{m.distanceMiles} mi away ·{' '}
+                    </span>
+                  )}
                   Also plays in {m.sharedCityLabels.join(', ')}
                 </p>
                 {canMessage ? (

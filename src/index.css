@@ -1492,6 +1492,79 @@ select {
   line-height: 1.5;
 }
 
+.community-location-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 12px 0 16px;
+}
+
+.community-radius-field {
+  margin: 12px 0 16px;
+}
+
+.community-radius-label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.community-radius-chips {
+  margin-bottom: 6px;
+}
+
+.community-radius-hint {
+  margin: 0;
+}
+
+.community-member-distance {
+  color: var(--accent-bright);
+  font-weight: 600;
+}
+
+.community-location-btn {
+  width: 100%;
+}
+
+.community-location-toggle {
+  margin: 0;
+}
+
+.community-status-list {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.community-status-list li {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.community-status-ok {
+  color: var(--accent-bright);
+}
+
+.community-status-warn {
+  color: var(--warm);
+}
+
+.community-status-cities {
+  margin: 0 0 8px;
+  word-break: break-word;
+}
+
+.community-status-tip {
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--border);
+}
+
 .community-course-search {
   display: block;
   margin: 16px 0;

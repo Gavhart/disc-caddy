@@ -1,3 +1,4 @@
+import { geocodeCityPlace, normalizeHomeCityFields } from './geocode'
 import { supabase } from './supabase'
 import { CommunityMember, CommunityMessage, HomeCity } from '../types'
 
@@ -7,6 +8,8 @@ interface HomeCityRow {
   country_code: string | null
   course_id: string | null
   sort_order: number
+  latitude: number | null
+  longitude: number | null
 }
 
 function rowToHomeCity(r: HomeCityRow): HomeCity {
@@ -16,6 +19,8 @@ function rowToHomeCity(r: HomeCityRow): HomeCity {
     countryCode: r.country_code,
     courseId: r.course_id,
     sortOrder: r.sort_order,
+    latitude: r.latitude,
+    longitude: r.longitude,
   }
 }
 
@@ -45,10 +50,35 @@ export function formatCityLabel(city: HomeCity | { city: string; regionCode?: st
   return label
 }
 
+/** Fill missing coordinates so radius search works for typed cities too. */
+export async function ensureHomeCityCoordinates(cities: HomeCity[]): Promise<HomeCity[]> {
+  const results: HomeCity[] = []
+  for (const city of cities) {
+    if (city.latitude != null && city.longitude != null) {
+      results.push(city)
+      continue
+    }
+    const geo = await geocodeCityPlace(city.city, city.regionCode, city.countryCode)
+    if (geo) {
+      results.push({
+        ...city,
+        city: geo.city,
+        regionCode: geo.regionCode,
+        countryCode: geo.countryCode,
+        latitude: geo.latitude,
+        longitude: geo.longitude,
+      })
+    } else {
+      results.push(city)
+    }
+  }
+  return results
+}
+
 export async function fetchMyHomeCities(): Promise<HomeCity[]> {
   const { data, error } = await supabase
     .from('profile_home_cities')
-    .select('city, region_code, country_code, course_id, sort_order')
+    .select('city, region_code, country_code, course_id, sort_order, latitude, longitude')
     .order('sort_order', { ascending: true })
   if (error) throw error
   return ((data as HomeCityRow[]) ?? []).map(rowToHomeCity)
@@ -58,23 +88,35 @@ export async function saveHomeCities(
   cities: HomeCity[],
   communityVisible: boolean,
   lookingForPlayers: boolean,
+  searchRadiusMiles: number,
 ): Promise<void> {
   if (cities.length > 3) {
     throw new Error('At most 3 home cities allowed')
   }
+  if (searchRadiusMiles < 5 || searchRadiusMiles > 200) {
+    throw new Error('Search radius must be 5–200 miles')
+  }
 
-  const payload = cities.map((c, i) => ({
-    city: c.city.trim(),
-    region_code: c.regionCode?.trim() || null,
-    country_code: c.countryCode?.trim() || null,
-    course_id: c.courseId ?? null,
-    sort_order: i,
-  }))
+  const withCoords = await ensureHomeCityCoordinates(cities)
+
+  const payload = withCoords.map((c, i) => {
+    const normalized = normalizeHomeCityFields(c)
+    return {
+      city: normalized.city,
+      region_code: normalized.regionCode,
+      country_code: normalized.countryCode,
+      course_id: c.courseId ?? null,
+      latitude: c.latitude ?? null,
+      longitude: c.longitude ?? null,
+      sort_order: i,
+    }
+  })
 
   const { error } = await supabase.rpc('set_profile_home_cities', {
     p_cities: payload,
     p_community_visible: communityVisible,
     p_looking_for_players: communityVisible ? lookingForPlayers : false,
+    p_search_radius_miles: searchRadiusMiles,
   })
   if (error) throw error
 }
@@ -88,12 +130,14 @@ export async function fetchCommunityMembers(): Promise<CommunityMember[]> {
       display_name: string
       shared_city_labels: string[]
       looking_for_players: boolean
+      distance_miles: number | null
     }[]) ?? []
   ).map(r => ({
     userId: r.user_id,
     displayName: r.display_name || 'Player',
     sharedCityLabels: normalizeTextArray(r.shared_city_labels),
     lookingForPlayers: Boolean(r.looking_for_players),
+    distanceMiles: r.distance_miles != null ? Number(r.distance_miles) : null,
   }))
 }
 
@@ -149,6 +193,8 @@ export function homeCityFromCourse(course: {
   locality: string | null
   regionCode: string | null
   countryCode: string | null
+  lat: number | null
+  lon: number | null
   name: string
 }): HomeCity | null {
   const city =
@@ -156,11 +202,18 @@ export function homeCityFromCourse(course: {
     course.regionCode?.trim() ||
     null
   if (!city) return null
-  return {
+  const normalized = normalizeHomeCityFields({
     city,
     regionCode: course.locality?.trim() ? course.regionCode?.trim() ?? null : null,
     countryCode: course.countryCode?.trim() ?? null,
+  })
+  return {
+    city: normalized.city,
+    regionCode: normalized.regionCode,
+    countryCode: normalized.countryCode,
     courseId: course.id,
     sortOrder: 0,
+    latitude: course.lat,
+    longitude: course.lon,
   }
 }
