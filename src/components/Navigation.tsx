@@ -25,6 +25,7 @@ export function Navigation() {
         <NavLink to="/bags">Bags</NavLink>
         <NavLink to="/courses">Courses</NavLink>
         <NavLink to="/rounds">Rounds</NavLink>
+        <NavLink to="/community">Community</NavLink>
         <NavLink to="/settings">Settings</NavLink>
         {me && !me.isPro && isWebCheckoutAvailable() && (
           <NavLink to="/upgrade" className="nav-upgrade">

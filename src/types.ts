@@ -235,6 +235,40 @@ export interface Me {
     | 'trialing'
   subscriptionPeriodEnd: string | null
   isPro: boolean
+  /** Opt-in: visible to other members on the Community page. */
+  communityVisible: boolean
+  /** Opt-in: open to new card-mates; required to send community messages. */
+  lookingForPlayers: boolean
+}
+
+/** A home-area city on the player's profile (up to 3). */
+export interface HomeCity {
+  city: string
+  regionCode: string | null
+  countryCode: string | null
+  courseId?: string | null
+  sortOrder: number
+}
+
+/** Another opt-in member who shares at least one home city. */
+export interface CommunityMember {
+  userId: string
+  displayName: string
+  sharedCityLabels: string[]
+  lookingForPlayers: boolean
+}
+
+/** In-app message between community members. */
+export interface CommunityMessage {
+  id: string
+  senderId: string
+  senderName: string
+  recipientId: string
+  recipientName: string
+  body: string
+  createdAt: string
+  readAt: string | null
+  isInbound: boolean
 }
 
 export interface Recommendation {

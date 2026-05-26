@@ -19,6 +19,7 @@ import { UpdatesPage } from './pages/UpdatesPage'
 import { PrivacyPage } from './pages/PrivacyPage'
 import { TermsPage } from './pages/TermsPage'
 import { RoundsPage } from './pages/RoundsPage'
+import { CommunityPage } from './pages/CommunityPage'
 
 function AppShell() {
   const { session, me, loading } = useAuth()
@@ -93,6 +94,14 @@ function AppShell() {
             element={
               <ProtectedRoute>
                 <RoundsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/community"
+            element={
+              <ProtectedRoute>
+                <CommunityPage />
               </ProtectedRoute>
             }
           />

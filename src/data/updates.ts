@@ -1,5 +1,5 @@
 /** Bump when you ship a release users should see on next sign-in. */
-export const APP_VERSION = '0.3.0'
+export const APP_VERSION = '0.3.2'
 
 export interface ReleaseNote {
   version: string
@@ -18,6 +18,26 @@ export const ROADMAP: string[] = [
 ]
 
 export const RELEASES: ReleaseNote[] = [
+  {
+    version: '0.3.2',
+    date: '2026-05-25',
+    title: 'Community messaging & looking for players',
+    items: [
+      '“Looking for players” badge — show when you want new card-mates',
+      'Message other community members in your home cities (in-app inbox)',
+      'Unread message highlight on the Community page',
+    ],
+  },
+  {
+    version: '0.3.1',
+    date: '2026-05-25',
+    title: 'Community — find players in your area',
+    items: [
+      'Set up to 3 home-area cities on your profile (manual or from a course search)',
+      'Opt-in Community page — see other members who share your cities',
+      'City-based matching while the course catalog is still growing',
+    ],
+  },
   {
     version: '0.3.0',
     date: '2026-05-21',

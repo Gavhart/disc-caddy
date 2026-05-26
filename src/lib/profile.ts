@@ -36,6 +36,8 @@ export async function fetchMe(): Promise<Me | null> {
     subscriptionStatus: data.subscription_status,
     subscriptionPeriodEnd: data.subscription_period_end,
     isPro: data.is_pro,
+    communityVisible: Boolean(data.community_visible),
+    lookingForPlayers: Boolean(data.looking_for_players),
   }
 }
 
