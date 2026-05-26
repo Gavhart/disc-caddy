@@ -1,6 +1,7 @@
-import { FormEvent, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { FormEvent, useEffect, useState } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { signUp } from '../lib/auth'
+import { captureInviteRefFromSearch } from '../lib/invite'
 import { Logo } from '../components/Logo'
 import {
   DEFAULT_PROFILE_FIELDS,
@@ -16,6 +17,11 @@ export function SignupPage() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+
+  useEffect(() => {
+    captureInviteRefFromSearch(searchParams.toString())
+  }, [searchParams])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()

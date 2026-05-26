@@ -12,7 +12,8 @@
     "cap:android": "npx cap open android",
     "preview": "vite preview",
     "import-discs": "node scripts/import-discs.mjs",
-    "icons": "node scripts/generate-icons.mjs"
+    "icons": "node scripts/generate-icons.mjs",
+    "invite-qr": "node scripts/generate-invite-qr.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.4",
@@ -24,12 +25,14 @@
     "@capacitor/status-bar": "^8.0.2",
     "@supabase/supabase-js": "^2.45.4",
     "leaflet": "^1.9.4",
+    "qrcode": "^1.5.4",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.27.0"
   },
   "devDependencies": {
     "@types/leaflet": "^1.9.21",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",

@@ -23,6 +23,7 @@ import { CommunityPage } from './pages/CommunityPage'
 import { CommunityMessagesPage } from './pages/CommunityMessagesPage'
 import { ProfilePage } from './pages/ProfilePage'
 import { RoundSharePage } from './pages/RoundSharePage'
+import { InvitePage } from './pages/InvitePage'
 import { StatsPage } from './pages/StatsPage'
 import { CoursePlaybookPage } from './pages/CoursePlaybookPage'
 import { LeaguesPage } from './pages/LeaguesPage'
@@ -32,6 +33,7 @@ function AppShell() {
   const { session, me, loading } = useAuth()
   const location = useLocation()
   const isSharePage = location.pathname.startsWith('/share/')
+  const isInvitePage = location.pathname.startsWith('/invite')
   if (loading) {
     return (
       <div className="auth-loading">
@@ -41,7 +43,9 @@ function AppShell() {
   }
   return (
     <>
-      {session && me?.onboardingComplete && !isSharePage && <Navigation />}
+      {session && me?.onboardingComplete && !isSharePage && !isInvitePage && (
+        <Navigation />
+      )}
       <main className="main">
         <Routes>
           <Route
@@ -56,6 +60,7 @@ function AppShell() {
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
           <Route path="/share/:token" element={<RoundSharePage />} />
+          <Route path="/invite" element={<InvitePage />} />
 
           <Route
             path="/welcome"

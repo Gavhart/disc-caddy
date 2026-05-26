@@ -232,6 +232,18 @@ export function ProfilePage() {
             ›
           </span>
         </Link>
+        <Link to="/invite" className="profile-menu-item card">
+          <span className="profile-menu-icon" aria-hidden>
+            🔗
+          </span>
+          <span className="profile-menu-copy">
+            <strong>Invite friends</strong>
+            <span className="muted small">Share link &amp; QR code for Disc Caddy</span>
+          </span>
+          <span className="profile-menu-chevron" aria-hidden>
+            ›
+          </span>
+        </Link>
         <Link to="/updates" className="profile-menu-item card">
           <span className="profile-menu-icon" aria-hidden>
             📣
