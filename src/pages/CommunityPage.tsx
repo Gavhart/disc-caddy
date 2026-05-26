@@ -1,17 +1,16 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { CommunityMessageModal } from '../components/CommunityMessageModal'
+import { PageHeader } from '../components/PageHeader'
 import { ProGate } from '../components/ProGate'
 import { useAuth } from '../contexts/AuthContext'
 import { searchCoursesByName } from '../lib/courses'
 import {
   fetchCommunityMembers,
-  fetchCommunityMessages,
   fetchCommunitySetupStatus,
   fetchMyHomeCities,
   formatCityLabel,
   homeCityFromCourse,
-  countUnreadCommunityMessages,
   saveHomeCities,
   sendCommunityMessage,
 } from '../lib/community'
@@ -50,7 +49,6 @@ export function CommunityPage() {
   const [searchRadiusMiles, setSearchRadiusMiles] = useState(25)
   const [locating, setLocating] = useState(false)
   const [members, setMembers] = useState<CommunityMember[]>([])
-  const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -73,7 +71,7 @@ export function CommunityPage() {
     setLoading(true)
     setError(null)
     try {
-      const [loadedCities, loadedMembers, loadedMessages, loadedStatus] = await Promise.all([
+      const [loadedCities, loadedMembers, loadedStatus] = await Promise.all([
         fetchMyHomeCities(),
         fetchCommunityMembers().catch(err => {
           setMembersError(
@@ -81,14 +79,12 @@ export function CommunityPage() {
           )
           return [] as CommunityMember[]
         }),
-        fetchCommunityMessages(),
         fetchCommunitySetupStatus().catch(() => null),
       ])
       setMembersError(null)
       setCities(loadedCities.length > 0 ? loadedCities : [emptyCity(0)])
       setSavedCities(loadedCities)
       setMembers(loadedMembers)
-      setUnreadCount(countUnreadCommunityMessages(loadedMessages))
       setSetupStatus(loadedStatus)
     } catch (err) {
       setError(
@@ -294,18 +290,16 @@ export function CommunityPage() {
       setSaveOk(true)
 
       if (communityVisible && cleaned.length > 0) {
-        const [loadedMembers, loadedMessages, loadedStatus] = await Promise.all([
+        const [loadedMembers, loadedStatus] = await Promise.all([
           fetchCommunityMembers().catch(err => {
             setMembersError(
               err instanceof Error ? err.message : 'Could not load community members.',
             )
             return [] as CommunityMember[]
           }),
-          fetchCommunityMessages(),
           fetchCommunitySetupStatus().catch(() => null),
         ])
         setMembers(loadedMembers)
-        setUnreadCount(countUnreadCommunityMessages(loadedMessages))
         setSetupStatus(loadedStatus)
       } else {
         setMembers([])
@@ -370,25 +364,27 @@ export function CommunityPage() {
 
   return (
     <div className="container community-page">
+      <PageHeader
+        title="Find players"
+        description="Set your home areas and visibility to connect with disc golfers nearby."
+        backTo="/social"
+        backLabel="Social"
+      />
+
       <div className="card community-callout">
-        <h2>Find players near you</h2>
-        <p>
-          Set home-area cities and opt in to Community to find local card-mates.
-          Messaging players is a Pro feature (display name only — no email).
+        <p className="community-callout-lead">
+          Opt in to appear on Community, then browse players within your search radius.
+          Messaging is a Pro feature.
         </p>
         {!me.isPro && (
           <p className="muted small community-pro-note">
-            Free accounts can browse Community; upgrade to send and reply to messages.
+            Free accounts can browse; upgrade to send and reply to messages.
           </p>
         )}
       </div>
 
-      <form className="card" onSubmit={handleSave}>
-        <h2>Your home areas</h2>
-        <p className="muted small">
-          Set a search radius, then add home areas (GPS is best). Players appear
-          when they are within your radius and you are within theirs.
-        </p>
+      <form className="card community-settings-card" onSubmit={handleSave}>
+        <h2 className="section-title">Visibility &amp; home areas</h2>
 
         <div className="community-radius-field">
           <span className="community-radius-label">Search radius</span>
@@ -664,7 +660,7 @@ export function CommunityPage() {
       </div>
 
       <div className="card">
-        <h2>Players at your courses</h2>
+        <h2 className="section-title">Players at your courses</h2>
         {inviteOk && <div className="form-success small">{inviteOk}</div>}
         {activeRoundId && me.isPro && (
           <p className="muted small community-live-round-hint">
@@ -745,30 +741,6 @@ export function CommunityPage() {
           </ul>
         )}
       </div>
-
-      <Link to="/community/events" className="card community-messages-link">
-        <div className="community-messages-link-row">
-          <h2>Events &amp; pickup rounds</h2>
-        </div>
-        <p className="muted">
-          Create events or post that you want people to play with you — players within 75 miles
-          can join.
-        </p>
-      </Link>
-
-      <Link to="/community/messages" className="card community-messages-link">
-        <div className="community-messages-link-row">
-          <h2>Messages</h2>
-          {unreadCount > 0 && (
-            <span className="community-messages-unread-badge">{unreadCount} new</span>
-          )}
-        </div>
-        <p className="muted">
-          {me.isPro
-            ? 'Read and reply to conversations with players in your home areas.'
-            : 'Read messages from other players. Upgrade to Pro to send and reply.'}
-        </p>
-      </Link>
 
       {messageTarget && (
         <CommunityMessageModal

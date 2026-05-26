@@ -6,6 +6,7 @@ import { deleteAccount } from '../lib/account'
 import { isStripeConfigured, openBillingPortal, PRO_BILLING_COMING_SOON, syncSubscription } from '../lib/subscription'
 import { isNativeApp, isWebCheckoutAvailable } from '../lib/platform'
 import { ProfileNameEditor } from '../components/ProfileNameEditor'
+import { PageHeader } from '../components/PageHeader'
 import { ProfilePhotoUploader } from '../components/ProfilePhotoUploader'
 import { setNotifyEmail } from '../lib/notifications'
 import { isPushSupported, registerForPushNotifications } from '../lib/pushNotifications'
@@ -200,9 +201,12 @@ export function SettingsPage() {
 
   return (
     <div className="container settings-page">
-      <p className="settings-back">
-        <Link to="/profile">← Back to profile</Link>
-      </p>
+      <PageHeader
+        title="Settings"
+        description="Player profile, subscription, notifications, and account."
+        backTo="/profile"
+        backLabel="You"
+      />
       <div className="card settings-section" id="account">
         <h2>Account</h2>
         <div className="settings-account-photo">

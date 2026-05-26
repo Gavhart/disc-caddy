@@ -1,6 +1,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
+import { PageHeader } from '../components/PageHeader'
 import { fetchMyHomeCities } from '../lib/community'
 import { listCourses } from '../lib/courses'
 import {
@@ -151,17 +152,12 @@ export function EventsPage() {
 
   return (
     <div className="container events-page">
-      <p className="settings-back">
-        <Link to="/community">← Back to Community</Link>
-      </p>
-
-      <header className="events-header">
-        <h1>Events &amp; pickup rounds</h1>
-        <p className="muted">
-          Post an event or say you want people to play with you. Players within{' '}
-          {COMMUNITY_EVENT_RADIUS_MILES} miles of your home areas can see and join.
-        </p>
-      </header>
+      <PageHeader
+        title="Events & pickup rounds"
+        description={`Post tee times or find groups within ${COMMUNITY_EVENT_RADIUS_MILES} miles.`}
+        backTo="/social"
+        backLabel="Social"
+      />
 
       {!hasHomeCoords && (
         <div className="card events-setup-banner">

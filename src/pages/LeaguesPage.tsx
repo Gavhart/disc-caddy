@@ -1,4 +1,5 @@
 import { FormEvent, useEffect, useState } from 'react'
+import { PageHeader } from '../components/PageHeader'
 import {
   createLeague,
   deleteLeague,
@@ -204,21 +205,17 @@ export function LeaguesPage() {
 
   return (
     <div className="container leagues-page">
-      <header className="leagues-header">
-        <h1>Leagues</h1>
-        <p className="muted">
-          Season standings with your group. Completed rounds (9+ holes) in season auto-submit
-          when you end a round.
-        </p>
-      </header>
+      <PageHeader
+        title="Leagues"
+        description="Season standings with your group. Completed rounds auto-submit when you finish."
+        backTo="/social"
+        backLabel="Social"
+      />
 
       {error && <div className="form-error">{error}</div>}
 
       <section className="card">
-        <div className="leagues-section-head">
-          <h2>Your leagues</h2>
-          <span className="muted small">{leagues.length} total</span>
-        </div>
+        <h2 className="section-title">Your leagues</h2>
 
         {leagues.length === 0 ? (
           <p className="muted">

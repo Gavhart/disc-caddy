@@ -118,48 +118,19 @@ export function ProfilePage() {
 
       <WeeklyChallengesPanel />
 
-      <div className="profile-menu">
-        <h2 className="profile-menu-heading">Play &amp; improve</h2>
-        <Link to="/stats" className="profile-menu-item card">
-          <span className="profile-menu-icon" aria-hidden>
-            📈
-          </span>
-          <span className="profile-menu-copy">
-            <strong>Player stats</strong>
-            <span className="muted small">Trends, birdies, and disc performance (Pro)</span>
-          </span>
-          <span className="profile-menu-chevron" aria-hidden>
-            ›
-          </span>
+      <div className="profile-quick-nav">
+        <Link to="/social" className="profile-quick-nav-item card">
+          <strong>Social</strong>
+          <span className="muted small">Players, events, messages, leagues</span>
         </Link>
-        <Link to="/playbook" className="profile-menu-item card">
-          <span className="profile-menu-icon" aria-hidden>
-            📖
-          </span>
-          <span className="profile-menu-copy">
-            <strong>Course playbook</strong>
-            <span className="muted small">Hole strategy and your scoring history</span>
-          </span>
-          <span className="profile-menu-chevron" aria-hidden>
-            ›
-          </span>
-        </Link>
-        <Link to="/leagues" className="profile-menu-item card">
-          <span className="profile-menu-icon" aria-hidden>
-            🏆
-          </span>
-          <span className="profile-menu-copy">
-            <strong>Leagues</strong>
-            <span className="muted small">Season standings with your group</span>
-          </span>
-          <span className="profile-menu-chevron" aria-hidden>
-            ›
-          </span>
+        <Link to="/library" className="profile-quick-nav-item card">
+          <strong>Library</strong>
+          <span className="muted small">Bags, courses, rounds, stats</span>
         </Link>
       </div>
 
       <div className="profile-menu">
-        <h2 className="profile-menu-heading">Settings &amp; account</h2>
+        <h2 className="profile-menu-heading">Account</h2>
         <Link to="/settings#player" className="profile-menu-item card">
           <span className="profile-menu-icon" aria-hidden>
             🥏
@@ -168,36 +139,6 @@ export function ProfilePage() {
             <strong>Player settings</strong>
             <span className="muted small">
               Hand, throw style, and distance by disc type
-            </span>
-          </span>
-          <span className="profile-menu-chevron" aria-hidden>
-            ›
-          </span>
-        </Link>
-        <Link to="/community/messages" className="profile-menu-item card">
-          <span className="profile-menu-icon" aria-hidden>
-            💬
-          </span>
-          <span className="profile-menu-copy">
-            <strong>Messages</strong>
-            <span className="muted small">
-              {me.isPro
-                ? 'Community inbox and replies'
-                : 'Read inbox · Pro required to send'}
-            </span>
-          </span>
-          <span className="profile-menu-chevron" aria-hidden>
-            ›
-          </span>
-        </Link>
-        <Link to="/community" className="profile-menu-item card">
-          <span className="profile-menu-icon" aria-hidden>
-            👥
-          </span>
-          <span className="profile-menu-copy">
-            <strong>Community</strong>
-            <span className="muted small">
-              Home cities, visibility, and local messages
             </span>
           </span>
           <span className="profile-menu-chevron" aria-hidden>

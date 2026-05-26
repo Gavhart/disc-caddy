@@ -1,5 +1,5 @@
 /** Bump when you ship a release users should see on next sign-in. */
-export const APP_VERSION = '0.6.2'
+export const APP_VERSION = '0.6.3'
 
 export interface ReleaseNote {
   version: string
@@ -19,6 +19,18 @@ export const ROADMAP: string[] = [
 ]
 
 export const RELEASES: ReleaseNote[] = [
+  {
+    version: '0.6.3',
+    date: '2026-05-21',
+    title: 'Clearer app structure',
+    items: [
+      'Four main sections: Play, Social, Library, and You — with a bottom tab bar on mobile',
+      'Social hub — one place for players, events, messages, and leagues',
+      'Library hub — bags, courses, round history, stats, and playbook',
+      'Consistent page headers and back navigation across sub-pages',
+      'Profile simplified — account settings without duplicate feature links',
+    ],
+  },
   {
     version: '0.6.2',
     date: '2026-05-21',

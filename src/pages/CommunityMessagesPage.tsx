@@ -1,6 +1,7 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ProGate } from '../components/ProGate'
+import { PageHeader } from '../components/PageHeader'
 import { useAuth } from '../contexts/AuthContext'
 import {
   buildCommunityThreads,
@@ -204,22 +205,26 @@ export function CommunityMessagesPage() {
 
   return (
     <div className="container community-messages-page">
-      <div className="card community-messages-header">
-        <div className="community-messages-header-row">
-          <h1>Messages</h1>
-          {unreadTotal > 0 && (
-            <span className="community-messages-unread-badge">{unreadTotal} new</span>
-          )}
-        </div>
-        <p className="muted">
-          {me.isPro
-            ? 'Conversations with players in your home areas. Tap a thread to read and reply.'
-            : 'Read messages from nearby players. Upgrade to Pro to send and reply.'}
+      <PageHeader
+        title="Messages"
+        description={
+          me.isPro
+            ? 'Conversations with players in your home areas.'
+            : 'Read messages from nearby players. Upgrade to Pro to send and reply.'
+        }
+        backTo="/social"
+        backLabel="Social"
+      />
+
+      {unreadTotal > 0 && (
+        <p className="community-messages-unread-line muted small">
+          <span className="community-messages-unread-badge">{unreadTotal} new</span>
         </p>
-        <Link to="/community" className="link-button community-messages-settings-link">
-          Community settings
-        </Link>
-      </div>
+      )}
+
+      <p className="muted small">
+        <Link to="/community">Community settings</Link>
+      </p>
 
       {loading ? (
         <div className="card">

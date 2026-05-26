@@ -109,7 +109,7 @@ export async function rsvpScheduledRound(
     p_scheduled_round_id: scheduledRoundId,
     p_status: status,
   })
-  if (error) throw error
+  if (error) throw new Error(error.message)
 }
 
 export async function cancelScheduledRound(scheduledRoundId: string): Promise<void> {

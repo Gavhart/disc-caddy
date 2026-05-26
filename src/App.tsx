@@ -28,6 +28,8 @@ import { StatsPage } from './pages/StatsPage'
 import { CoursePlaybookPage } from './pages/CoursePlaybookPage'
 import { LeaguesPage } from './pages/LeaguesPage'
 import { EventsPage } from './pages/EventsPage'
+import { SocialHubPage } from './pages/SocialHubPage'
+import { LibraryHubPage } from './pages/LibraryHubPage'
 
 function AppShell() {
   const { session, me, loading } = useAuth()
@@ -109,6 +111,22 @@ function AppShell() {
             element={
               <ProtectedRoute>
                 <RoundsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/social"
+            element={
+              <ProtectedRoute>
+                <SocialHubPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/library"
+            element={
+              <ProtectedRoute>
+                <LibraryHubPage />
               </ProtectedRoute>
             }
           />
