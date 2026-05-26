@@ -1,5 +1,7 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { CommunityMessageModal } from '../components/CommunityMessageModal'
+import { ProGate } from '../components/ProGate'
 import { useAuth } from '../contexts/AuthContext'
 import { searchCoursesByName } from '../lib/courses'
 import {
@@ -9,12 +11,12 @@ import {
   fetchMyHomeCities,
   formatCityLabel,
   homeCityFromCourse,
-  markCommunityMessageRead,
+  countUnreadCommunityMessages,
   saveHomeCities,
   sendCommunityMessage,
 } from '../lib/community'
 import { LocationError, resolveCurrentLocationPlace } from '../lib/geocode'
-import { CommunityMember, CommunityMessage, Course, HomeCity, COMMUNITY_RADIUS_OPTIONS } from '../types'
+import { CommunityMember, Course, HomeCity, COMMUNITY_RADIUS_OPTIONS } from '../types'
 import type { CommunitySetupStatus } from '../lib/community'
 
 const MAX_HOME_CITIES = 3
@@ -35,17 +37,9 @@ function cityKey(c: HomeCity): string {
   return `${c.city.trim().toLowerCase()}|${(c.regionCode ?? '').trim().toLowerCase()}|${(c.countryCode ?? '').trim().toLowerCase()}`
 }
 
-function formatMessageWhen(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  })
-}
-
 export function CommunityPage() {
   const { me, refreshMe } = useAuth()
+  const navigate = useNavigate()
   const [cities, setCities] = useState<HomeCity[]>([])
   const [savedCities, setSavedCities] = useState<HomeCity[]>([])
   const [communityVisible, setCommunityVisible] = useState(false)
@@ -54,7 +48,7 @@ export function CommunityPage() {
   const [searchRadiusMiles, setSearchRadiusMiles] = useState(25)
   const [locating, setLocating] = useState(false)
   const [members, setMembers] = useState<CommunityMember[]>([])
-  const [messages, setMessages] = useState<CommunityMessage[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -89,7 +83,7 @@ export function CommunityPage() {
       setCities(loadedCities.length > 0 ? loadedCities : [emptyCity(0)])
       setSavedCities(loadedCities)
       setMembers(loadedMembers)
-      setMessages(loadedMessages)
+      setUnreadCount(countUnreadCommunityMessages(loadedMessages))
       setSetupStatus(loadedStatus)
     } catch (err) {
       setError(
@@ -293,7 +287,7 @@ export function CommunityPage() {
           fetchCommunitySetupStatus().catch(() => null),
         ])
         setMembers(loadedMembers)
-        setMessages(loadedMessages)
+        setUnreadCount(countUnreadCommunityMessages(loadedMessages))
         setSetupStatus(loadedStatus)
       } else {
         setMembers([])
@@ -311,25 +305,13 @@ export function CommunityPage() {
     setMessageError(null)
     try {
       await sendCommunityMessage(messageTarget.userId, body)
+      const partnerId = messageTarget.userId
       setMessageTarget(null)
-      const loadedMessages = await fetchCommunityMessages()
-      setMessages(loadedMessages)
+      navigate(`/community/messages/${partnerId}`)
     } catch (err) {
       setMessageError(err instanceof Error ? err.message : 'Could not send message')
     } finally {
       setMessageSending(false)
-    }
-  }
-
-  async function handleMarkRead(msg: CommunityMessage) {
-    if (!msg.isInbound || msg.readAt) return
-    try {
-      await markCommunityMessageRead(msg.id)
-      setMessages(prev =>
-        prev.map(m => (m.id === msg.id ? { ...m, readAt: new Date().toISOString() } : m)),
-      )
-    } catch {
-      // non-fatal
     }
   }
 
@@ -343,7 +325,7 @@ export function CommunityPage() {
     )
   }
 
-  const canMessage = me.lookingForPlayers && me.communityVisible
+  const canMessage = me.isPro && me.lookingForPlayers && me.communityVisible
   const needsLookingSave = lookingForPlayers && !me.lookingForPlayers
 
   const isSavedVisible = me.communityVisible && savedCities.length > 0
@@ -357,10 +339,14 @@ export function CommunityPage() {
       <div className="card community-callout">
         <h2>Find players near you</h2>
         <p>
-          Set home-area cities, opt in to Community, and mark yourself as
-          looking for players to message local card-mates (display name only —
-          no email).
+          Set home-area cities and opt in to Community to find local card-mates.
+          Messaging players is a Pro feature (display name only — no email).
         </p>
+        {!me.isPro && (
+          <p className="muted small community-pro-note">
+            Free accounts can browse Community; upgrade to send and reply to messages.
+          </p>
+        )}
       </div>
 
       <form className="card" onSubmit={handleSave}>
@@ -566,7 +552,7 @@ export function CommunityPage() {
           <label htmlFor="community-looking">
             <strong>Looking for players to play together</strong>
             <span className="community-toggle-help">
-              Shows a badge on Community. Required to send messages.
+              Shows a badge on Community. Required to send messages (Pro).
             </span>
           </label>
         </div>
@@ -690,6 +676,8 @@ export function CommunityPage() {
                   >
                     Message {m.displayName.split(' ')[0]}
                   </button>
+                ) : !me.isPro ? (
+                  <ProGate feature="Community messaging" />
                 ) : (
                   <p className="community-member-hint">
                     {needsLookingSave
@@ -703,36 +691,19 @@ export function CommunityPage() {
         )}
       </div>
 
-      <div className="card">
-        <h2>Your messages</h2>
-        {messages.length === 0 ? (
-          <p className="muted">No messages yet.</p>
-        ) : (
-          <ul className="community-message-list">
-            {messages.map(msg => (
-              <li
-                key={msg.id}
-                className={
-                  'community-message-card' +
-                  (msg.isInbound && !msg.readAt ? ' community-message-unread' : '')
-                }
-                onClick={() => handleMarkRead(msg)}
-              >
-                <p className="community-message-direction">
-                  {msg.isInbound
-                    ? `From ${msg.senderName}`
-                    : `To ${msg.recipientName}`}
-                </p>
-                <p className="community-message-time">{formatMessageWhen(msg.createdAt)}</p>
-                <p className="community-message-body">{msg.body}</p>
-                {msg.isInbound && !msg.readAt && (
-                  <span className="community-message-new">New</span>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      <Link to="/community/messages" className="card community-messages-link">
+        <div className="community-messages-link-row">
+          <h2>Messages</h2>
+          {unreadCount > 0 && (
+            <span className="community-messages-unread-badge">{unreadCount} new</span>
+          )}
+        </div>
+        <p className="muted">
+          {me.isPro
+            ? 'Read and reply to conversations with players in your home areas.'
+            : 'Read messages from other players. Upgrade to Pro to send and reply.'}
+        </p>
+      </Link>
 
       {messageTarget && (
         <CommunityMessageModal

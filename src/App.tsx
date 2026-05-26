@@ -20,6 +20,7 @@ import { PrivacyPage } from './pages/PrivacyPage'
 import { TermsPage } from './pages/TermsPage'
 import { RoundsPage } from './pages/RoundsPage'
 import { CommunityPage } from './pages/CommunityPage'
+import { CommunityMessagesPage } from './pages/CommunityMessagesPage'
 import { ProfilePage } from './pages/ProfilePage'
 
 function AppShell() {
@@ -103,6 +104,22 @@ function AppShell() {
             element={
               <ProtectedRoute>
                 <CommunityPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/community/messages"
+            element={
+              <ProtectedRoute>
+                <CommunityMessagesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/community/messages/:partnerId"
+            element={
+              <ProtectedRoute>
+                <CommunityMessagesPage />
               </ProtectedRoute>
             }
           />

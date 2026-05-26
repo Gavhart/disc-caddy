@@ -125,6 +125,22 @@ export function ProfilePage() {
             ›
           </span>
         </Link>
+        <Link to="/community/messages" className="profile-menu-item card">
+          <span className="profile-menu-icon" aria-hidden>
+            💬
+          </span>
+          <span className="profile-menu-copy">
+            <strong>Messages</strong>
+            <span className="muted small">
+              {me.isPro
+                ? 'Community inbox and replies'
+                : 'Read inbox · Pro required to send'}
+            </span>
+          </span>
+          <span className="profile-menu-chevron" aria-hidden>
+            ›
+          </span>
+        </Link>
         <Link to="/community" className="profile-menu-item card">
           <span className="profile-menu-icon" aria-hidden>
             👥

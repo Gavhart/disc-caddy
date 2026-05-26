@@ -15,6 +15,7 @@ const FEATURES_FREE = [
 
 const FEATURES_PRO = [
   'Unlimited bags',
+  'Message players on Community',
   'Live round mode — log throws hole-by-hole',
   'Sync across devices',
   'Support the indie dev (you)',

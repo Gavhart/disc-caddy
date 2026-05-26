@@ -1,6 +1,6 @@
 import { geocodeCityPlace, normalizeHomeCityFields } from './geocode'
 import { supabase } from './supabase'
-import { CommunityMember, CommunityMessage, HomeCity } from '../types'
+import { CommunityMember, CommunityMessage, CommunityThread, HomeCity } from '../types'
 
 interface HomeCityRow {
   city: string
@@ -230,6 +230,81 @@ export async function markCommunityMessageRead(messageId: string): Promise<void>
     p_message_id: messageId,
   })
   if (error) throw error
+}
+
+export function formatCommunityMessageWhen(iso: string): string {
+  return new Date(iso).toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+}
+
+export function formatCommunityMessageDay(iso: string): string {
+  const date = new Date(iso)
+  const today = new Date()
+  const yesterday = new Date()
+  yesterday.setDate(today.getDate() - 1)
+
+  if (date.toDateString() === today.toDateString()) return 'Today'
+  if (date.toDateString() === yesterday.toDateString()) return 'Yesterday'
+  return date.toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  })
+}
+
+export function threadPartnerId(message: CommunityMessage, myUserId: string): string {
+  return message.senderId === myUserId ? message.recipientId : message.senderId
+}
+
+export function threadPartnerName(message: CommunityMessage, myUserId: string): string {
+  return message.senderId === myUserId ? message.recipientName : message.senderName
+}
+
+/** Group flat messages into per-player threads, newest thread first. */
+export function buildCommunityThreads(
+  messages: CommunityMessage[],
+  myUserId: string,
+): CommunityThread[] {
+  const byPartner = new Map<string, CommunityMessage[]>()
+  const names = new Map<string, string>()
+
+  for (const message of messages) {
+    const partnerId = threadPartnerId(message, myUserId)
+    const partnerName = threadPartnerName(message, myUserId)
+    names.set(partnerId, partnerName)
+    const list = byPartner.get(partnerId) ?? []
+    list.push(message)
+    byPartner.set(partnerId, list)
+  }
+
+  const threads: CommunityThread[] = []
+  for (const [partnerId, partnerMessages] of byPartner) {
+    const sorted = [...partnerMessages].sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+    )
+    const lastMessage = sorted[sorted.length - 1]
+    threads.push({
+      partnerId,
+      partnerName: names.get(partnerId) ?? 'Player',
+      lastMessage,
+      unreadCount: partnerMessages.filter(m => m.isInbound && !m.readAt).length,
+      messages: sorted,
+    })
+  }
+
+  return threads.sort(
+    (a, b) =>
+      new Date(b.lastMessage.createdAt).getTime() -
+      new Date(a.lastMessage.createdAt).getTime(),
+  )
+}
+
+export function countUnreadCommunityMessages(messages: CommunityMessage[]): number {
+  return messages.filter(m => m.isInbound && !m.readAt).length
 }
 
 /** Derive a home city from course metadata (falls back to region/country). */

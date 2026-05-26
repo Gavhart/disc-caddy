@@ -283,6 +283,15 @@ export interface CommunityMessage {
   isInbound: boolean
 }
 
+/** Conversation grouped by the other player. */
+export interface CommunityThread {
+  partnerId: string
+  partnerName: string
+  lastMessage: CommunityMessage
+  unreadCount: number
+  messages: CommunityMessage[]
+}
+
 export interface Recommendation {
   bagDisc: BagDisc
   disc: Disc

@@ -20,6 +20,10 @@ function isProfileRoute(pathname: string): boolean {
   return pathname === '/profile' || pathname.startsWith('/settings')
 }
 
+function isCommunityRoute(pathname: string): boolean {
+  return pathname === '/community' || pathname.startsWith('/community/')
+}
+
 export function Navigation() {
   const { me } = useAuth()
   const navigate = useNavigate()
@@ -92,7 +96,9 @@ export function Navigation() {
                 const active =
                   item.to === '/profile'
                     ? isActive || isProfileRoute(location.pathname)
-                    : isActive
+                    : item.to === '/community'
+                      ? isActive || isCommunityRoute(location.pathname)
+                      : isActive
                 return 'nav-drawer-link' + (active ? ' active' : '')
               }}
               onClick={closeMenu}
@@ -174,7 +180,9 @@ export function Navigation() {
               const active =
                 item.to === '/profile'
                   ? isActive || isProfileRoute(location.pathname)
-                  : isActive
+                  : item.to === '/community'
+                    ? isActive || isCommunityRoute(location.pathname)
+                    : isActive
               return active ? 'active' : ''
             }}
           >
