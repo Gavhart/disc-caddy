@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Recommendation as Rec, ThrowStyle } from '../types'
+import { ProGate } from './ProGate'
 
 interface Props {
   recommendations: Rec[]
@@ -14,6 +15,8 @@ interface Props {
   loggedHoleNumber?: number | null
   currentHoleNumber?: number | null
   onLogThrow?: (rec: Rec) => Promise<void>
+  holeMemoryMessage?: string | null
+  memorySelection?: { bagDiscId: string; throwStyle: ThrowStyle } | null
 }
 
 function styleLabel(style: Rec['throwStyle']): string {
@@ -35,6 +38,8 @@ export function Recommendation({
   loggedHoleNumber = null,
   currentHoleNumber = null,
   onLogThrow,
+  holeMemoryMessage = null,
+  memorySelection = null,
 }: Props) {
   const top = recommendations[0]
   const [selectedBagDiscId, setSelectedBagDiscId] = useState<string | null>(null)
@@ -43,9 +48,20 @@ export function Recommendation({
   )
 
   useEffect(() => {
+    if (memorySelection) {
+      setSelectedBagDiscId(memorySelection.bagDiscId)
+      setThrowStyleOverride(memorySelection.throwStyle)
+      return
+    }
     setSelectedBagDiscId(null)
     setThrowStyleOverride(null)
-  }, [top?.bagDisc.id, top?.throwStyle, top?.explanation])
+  }, [
+    memorySelection?.bagDiscId,
+    memorySelection?.throwStyle,
+    currentHoleNumber,
+    top?.bagDisc.id,
+    top?.throwStyle,
+  ])
 
   const displayed = useMemo(() => {
     if (!top) return null
@@ -76,11 +92,15 @@ export function Recommendation({
     currentHoleNumber != null &&
     loggedHoleNumber === currentHoleNumber
 
-  const pickLabel = usingTopPick
-    ? top.pick ?? 'TOP PICK'
-    : displayed.rank > 0
-      ? `#${displayed.rank} in your bag`
-      : 'YOUR PICK'
+  const pickLabel = displayed.pick === 'MEMORY'
+    ? 'RECOMMENDED AGAIN'
+    : usingTopPick
+      ? top.pick === 'MEMORY'
+        ? 'RECOMMENDED AGAIN'
+        : top.pick ?? 'TOP PICK'
+      : displayed.rank > 0
+        ? `#${displayed.rank} in your bag`
+        : 'YOUR PICK'
 
   function selectDisc(bagDiscId: string) {
     setSelectedBagDiscId(bagDiscId)
@@ -98,6 +118,20 @@ export function Recommendation({
   return (
     <section className="card recommendation">
       <h2>Recommendation</h2>
+
+      {isPro && holeMemoryMessage && (
+        <div className="hole-memory-banner">
+          <span className="hole-memory-badge">Hole memory</span>
+          <p>{holeMemoryMessage}</p>
+        </div>
+      )}
+
+      {!isPro && currentHoleNumber != null && (
+        <ProGate feature="Hole memory">
+          {' '}
+          Pick a course hole as Pro to recall your last disc and result here.
+        </ProGate>
+      )}
 
       <div className="pick-chooser">
         <label className="pick-chooser-field">
@@ -277,7 +311,7 @@ export function Recommendation({
                     <td>{styleLabel(r.throwStyle)}</td>
                     <td>{r.stability.toFixed(2)}</td>
                     <td>{r.effDistance}</td>
-                    <td>{r.pick ?? ''}</td>
+                    <td>{r.pick === 'MEMORY' ? 'Memory' : (r.pick ?? '')}</td>
                   </tr>
                 )
               })}

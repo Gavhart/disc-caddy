@@ -7,6 +7,12 @@ import { Recommendation } from '../components/Recommendation'
 import { BagPicker } from '../components/BagPicker'
 import { CourseSelector } from '../components/CourseSelector'
 import { recommend, recommendForDisc } from '../lib/recommend'
+import {
+  applyHoleMemory,
+  buildHoleMemoryMessage,
+  fetchHoleMemory,
+  resolveMemoryBagDiscId,
+} from '../lib/holeMemory'
 import { updateMaxDistance, updatePlayer } from '../lib/profile'
 import { localState } from '../lib/storage'
 import { createBag, listBags, listDiscsInBag } from '../lib/bags'
@@ -27,6 +33,7 @@ import {
   Course,
   CourseHole,
   Hole,
+  HoleMemory,
   Recommendation as Rec,
   RoundThrow,
   RoundPlayer,
@@ -76,6 +83,8 @@ export function HomePage() {
   const [roundHostId, setRoundHostId] = useState<string | null>(null)
   const [roundBusy, setRoundBusy] = useState(false)
   const [roundError, setRoundError] = useState<string | null>(null)
+  const [holeMemory, setHoleMemory] = useState<HoleMemory | null>(null)
+  const [holeMemoryVersion, setHoleMemoryVersion] = useState(0)
 
   const isPro = me?.isPro ?? false
 
@@ -134,6 +143,25 @@ export function HomePage() {
       .then(setCourseHoles)
       .catch(err => console.error('[home] load course holes failed', err))
   }, [pickedCourseId])
+
+  useEffect(() => {
+    if (!isPro || !pickedCourseId || pickedHoleNumber == null) {
+      setHoleMemory(null)
+      return
+    }
+    let cancelled = false
+    fetchHoleMemory(pickedCourseId, pickedHoleNumber)
+      .then(memory => {
+        if (!cancelled) setHoleMemory(memory)
+      })
+      .catch(err => {
+        console.warn('[home] hole memory fetch failed', err)
+        if (!cancelled) setHoleMemory(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [isPro, pickedCourseId, pickedHoleNumber, holeMemoryVersion])
 
   const refreshRoundData = useCallback(async (id: string) => {
     const [playersRes, scoresRes, throwsRes] = await Promise.allSettled([
@@ -316,6 +344,7 @@ export function HomePage() {
       setRoundPlayers([])
       setRoundScores([])
       setRoundHostId(null)
+      setHoleMemoryVersion(v => v + 1)
     } catch (err) {
       console.error('[home] end round failed', err)
       alert(err instanceof Error ? err.message : 'Could not end round')
@@ -367,8 +396,23 @@ export function HomePage() {
 
   const recommendations = useMemo(() => {
     if (!me) return []
-    return recommend(recommendOpts)
-  }, [me, recommendOpts])
+    const base = recommend(recommendOpts)
+    if (!isPro || !holeMemory) return base
+    return applyHoleMemory(base, holeMemory, discs)
+  }, [me, recommendOpts, holeMemory, discs, isPro])
+
+  const holeMemoryMessage = useMemo(() => {
+    if (!holeMemory) return null
+    const inBag = resolveMemoryBagDiscId(holeMemory, discs) != null
+    return buildHoleMemoryMessage(holeMemory, inBag)
+  }, [holeMemory, discs])
+
+  const memorySelection = useMemo(() => {
+    if (!isPro || !holeMemory) return null
+    const bagDiscId = resolveMemoryBagDiscId(holeMemory, discs)
+    if (!bagDiscId) return null
+    return { bagDiscId, throwStyle: holeMemory.throwStyle }
+  }, [holeMemory, discs, isPro])
 
   const getDiscRecommendation = useCallback(
     (bagDiscId: string, throwStyle?: ThrowStyle) =>
@@ -450,6 +494,8 @@ export function HomePage() {
         loggedHoleNumber={loggedHoleNumber}
         currentHoleNumber={pickedHoleNumber}
         onLogThrow={handleLogThrow}
+        holeMemoryMessage={holeMemoryMessage}
+        memorySelection={memorySelection}
       />
     </div>
   )

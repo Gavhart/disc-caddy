@@ -19,6 +19,7 @@ const FEATURES_PRO = [
   'Unlimited bags',
   'Message players on Community',
   'Live round mode — log throws hole-by-hole',
+  'Hole memory — “Last time you played this hole, you threw a Buzzz and parred. Recommended again.”',
   'Sync across devices',
   'Support the indie dev (you)',
 ]

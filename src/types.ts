@@ -307,7 +307,7 @@ export interface Recommendation {
   directionError: number
   score: number
   rank: number
-  pick: 'TOP PICK' | 'Alternative' | 'Backup' | null
+  pick: 'TOP PICK' | 'Alternative' | 'Backup' | 'MEMORY' | null
   /** Human-readable rationale: "RHBH hyzer — let the natural fade ride the dogleg." */
   explanation: string
   /** Structured breakdown for the expanded Pro UI. */
@@ -333,6 +333,19 @@ export interface RoundThrow {
   usedRecommendation: boolean
   notes: string | null
   createdAt: string
+}
+
+/** Prior throw + score on a course hole (Pro hole memory). */
+export interface HoleMemory {
+  courseId: string
+  holeNumber: number
+  roundId: string
+  bagDiscId: string | null
+  discName: string
+  throwStyle: ThrowStyle
+  strokes: number | null
+  par: number | null
+  playedAt: string
 }
 
 export interface RoundPlayer {

@@ -1,5 +1,5 @@
 /** Bump when you ship a release users should see on next sign-in. */
-export const APP_VERSION = '0.3.2'
+export const APP_VERSION = '0.3.3'
 
 export interface ReleaseNote {
   version: string
@@ -11,6 +11,9 @@ export interface ReleaseNote {
 
 /** Planned features — edit anytime; shown on the updates page. */
 export const ROADMAP: string[] = [
+  'Pro checkout — Stripe billing live on the Upgrade page',
+  'Hole memory refinements — more history per hole and smarter tie-ins to your bag',
+  'Community notifications when someone messages you',
   'iOS & Android apps in the App Store and Google Play',
   'Share a bag or round recap with friends',
   'Offline mode for course stepping on spotty signal',
@@ -18,6 +21,20 @@ export const ROADMAP: string[] = [
 ]
 
 export const RELEASES: ReleaseNote[] = [
+  {
+    version: '0.3.3',
+    date: '2026-05-21',
+    title: 'Hole memory, Community inbox & Pro messaging',
+    items: [
+      'Hole memory (Pro) — on a course hole, see your last logged disc and result (e.g. “you threw a Buzzz and parred”) and get it recommended again',
+      'Dedicated Messages page with threaded conversations and replies',
+      'Community messaging is Pro-only; free accounts can still browse Community and read inbound messages',
+      'Community matching fixes — players you see can actually receive messages; replies work in existing threads',
+      'GPS home areas, search radius, and a mobile-friendly Community layout',
+      'Profile hub — photo, display name, and settings links; hamburger nav on phone',
+      'Upgrade page lists current Pro perks; checkout is being wired up and will go live shortly',
+    ],
+  },
   {
     version: '0.3.2',
     date: '2026-05-25',

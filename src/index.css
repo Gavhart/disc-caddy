@@ -2612,6 +2612,30 @@ select {
   letter-spacing: 0.08em;
 }
 
+.hole-memory-banner {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--pro) 45%, var(--border));
+  background: color-mix(in srgb, var(--pro-soft) 55%, var(--surface-2));
+}
+
+.hole-memory-badge {
+  display: inline-block;
+  margin-bottom: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--pro);
+}
+
+.hole-memory-banner p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
 .pick-disc {
   font-size: 26px;
   font-weight: 800;

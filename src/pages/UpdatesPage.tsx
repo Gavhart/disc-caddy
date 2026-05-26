@@ -32,8 +32,8 @@ export function UpdatesPage() {
         <p className="muted">
           Version <strong>{APP_VERSION}</strong>
           {unread
-            ? " — here's what changed since you last signed in."
-            : " — you're on the latest release."}
+            ? ' — here\'s what we shipped recently and what\'s coming next.'
+            : " — you're on the latest release. See what's new below and what's planned."}
         </p>
       </div>
 
