@@ -51,36 +51,73 @@ export const DISC_DATABASE: Disc[] = cache
 /** Live name → disc map. Mutates in place on refresh. */
 export const DISC_BY_NAME: Record<string, Disc> = byName
 
+let catalogVersion = 0
+const catalogListeners = new Set<() => void>()
+
+/** Bumps when the in-memory catalog is replaced or a disc is added. */
+export function getDiscCatalogVersion(): number {
+  return catalogVersion
+}
+
+export function subscribeDiscCatalog(listener: () => void): () => void {
+  catalogListeners.add(listener)
+  return () => {
+    catalogListeners.delete(listener)
+  }
+}
+
+function notifyCatalogUpdated(): void {
+  catalogVersion++
+  catalogListeners.forEach(listener => listener())
+}
+
 /**
  * Pull the catalog from Supabase and replace the in-memory cache. Safe to
  * call repeatedly; falls back silently to the snapshot on error so the UI
  * never goes blank.
+ *
+ * PostgREST caps each request at 1000 rows; the catalog is ~2250 discs, so
+ * paginate until exhausted (Innova and later brands were missing without this).
  */
 export async function refreshDiscsFromSupabase(): Promise<void> {
-  const { data, error } = await supabase
-    .from('discs')
-    .select('name, brand, type, speed, glide, turn, fade')
-    .order('brand', { ascending: true })
-    .order('name', { ascending: true })
+  const pageSize = 1000
+  const fresh: Disc[] = []
+  let from = 0
 
-  if (error) {
-    console.warn('[discs] supabase refresh failed, keeping snapshot', error)
-    return
+  while (true) {
+    const { data, error } = await supabase
+      .from('discs')
+      .select('name, brand, type, speed, glide, turn, fade')
+      .order('brand', { ascending: true })
+      .order('name', { ascending: true })
+      .range(from, from + pageSize - 1)
+
+    if (error) {
+      console.warn('[discs] supabase refresh failed, keeping snapshot', error)
+      return
+    }
+    if (!data || data.length === 0) break
+
+    for (const d of data) {
+      fresh.push({
+        name: d.name,
+        brand: d.brand,
+        type: d.type as DiscType,
+        speed: Number(d.speed),
+        glide: Number(d.glide),
+        turn: Number(d.turn),
+        fade: Number(d.fade),
+      })
+    }
+
+    if (data.length < pageSize) break
+    from += pageSize
   }
-  if (!data || data.length === 0) {
+
+  if (fresh.length === 0) {
     console.warn('[discs] supabase returned 0 discs, keeping snapshot')
     return
   }
-
-  const fresh: Disc[] = data.map(d => ({
-    name: d.name,
-    brand: d.brand,
-    type: d.type as DiscType,
-    speed: Number(d.speed),
-    glide: Number(d.glide),
-    turn: Number(d.turn),
-    fade: Number(d.fade),
-  }))
 
   // Mutate the exported arrays/objects in place so existing references in
   // long-lived components keep pointing at live data.
@@ -89,6 +126,7 @@ export async function refreshDiscsFromSupabase(): Promise<void> {
 
   for (const k of Object.keys(byName)) delete byName[k]
   for (const d of fresh) byName[d.name] = d
+  notifyCatalogUpdated()
 }
 
 /**
@@ -183,6 +221,7 @@ export async function createDisc(input: NewDiscInput): Promise<Disc> {
   if (insertAt === -1) cache.push(fresh)
   else cache.splice(insertAt, 0, fresh)
   byName[fresh.name] = fresh
+  notifyCatalogUpdated()
 
   return fresh
 }

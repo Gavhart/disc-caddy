@@ -6,6 +6,9 @@ import {
   DuplicateDiscError,
   createDisc,
   NewDiscInput,
+  refreshDiscsFromSupabase,
+  subscribeDiscCatalog,
+  getDiscCatalogVersion,
 } from '../lib/discs'
 
 interface Props {
@@ -99,6 +102,7 @@ export function DiscSelect({ value, onChange }: Props) {
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [activeIdx, setActiveIdx] = useState(0)
+  const [catalogVersion, setCatalogVersion] = useState(0)
   const [draft, setDraft] = useState<DraftForm | null>(null)
   const [errors, setErrors] = useState<DraftErrors>({})
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -109,10 +113,11 @@ export function DiscSelect({ value, onChange }: Props) {
   const listRef = useRef<HTMLUListElement>(null)
 
   const selected: Disc | undefined = value ? DISC_BY_NAME[value] : undefined
+  const searching = query.trim().length > 0
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return DISC_DATABASE
+    if (!q) return []
     return DISC_DATABASE.filter(d => {
       const name = d.name.toLowerCase()
       const brand = d.brand.toLowerCase()
@@ -121,13 +126,30 @@ export function DiscSelect({ value, onChange }: Props) {
         .split(/\s+/)
         .every(tok => name.includes(tok) || brand.includes(tok) || type.includes(tok))
     })
-  }, [query])
+  }, [query, catalogVersion])
+
+  useEffect(
+    () =>
+      subscribeDiscCatalog(() =>
+        setCatalogVersion(getDiscCatalogVersion()),
+      ),
+    [],
+  )
+
+  useEffect(() => {
+    if (!open) return
+    refreshDiscsFromSupabase()
+  }, [open])
 
   useEffect(() => {
     if (!open) return
     setActiveIdx(0)
     inputRef.current?.focus()
   }, [open])
+
+  useEffect(() => {
+    setActiveIdx(0)
+  }, [query, catalogVersion])
 
   useEffect(() => {
     if (!open) return
@@ -191,6 +213,13 @@ export function DiscSelect({ value, onChange }: Props) {
   }
 
   function onListKeyDown(e: React.KeyboardEvent) {
+    if (!searching || filtered.length === 0) {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        closeAll()
+      }
+      return
+    }
     if (e.key === 'ArrowDown') {
       e.preventDefault()
       setActiveIdx(i => Math.min(filtered.length - 1, i + 1))
@@ -250,6 +279,16 @@ export function DiscSelect({ value, onChange }: Props) {
             />
           ) : (
             <>
+              <button
+                type="button"
+                className="disc-select-add disc-select-add-top"
+                onClick={startCreate}
+              >
+                + Add custom disc not listed
+                {query.trim() && (
+                  <span className="muted small"> · “{query.trim()}”</span>
+                )}
+              </button>
               <input
                 ref={inputRef}
                 type="text"
@@ -260,58 +299,58 @@ export function DiscSelect({ value, onChange }: Props) {
                 className="disc-select-search"
                 autoFocus
               />
-              <ul
-                ref={listRef}
-                className="disc-select-list"
-                role="listbox"
-                aria-label="Discs"
-              >
-                {filtered.length === 0 && (
-                  <li className="disc-select-empty">
-                    No matches for “{query}”.
-                  </li>
-                )}
-                {filtered.map((d, i) => {
-                  const isActive = i === activeIdx
-                  const isSelected = d.name === value
-                  return (
-                    <li
-                      key={d.name}
-                      data-idx={i}
-                      role="option"
-                      aria-selected={isSelected}
-                      className={
-                        'disc-select-option' +
-                        (isActive ? ' active' : '') +
-                        (isSelected ? ' selected' : '')
-                      }
-                      onMouseEnter={() => setActiveIdx(i)}
-                      onClick={() => commit(d)}
-                    >
-                      <div className="disc-select-option-main">
-                        <span className="disc-select-name">{d.name}</span>
-                        <span className="disc-select-brand">
-                          {d.brand}
-                          {d.type ? ` · ${d.type}` : ''}
-                        </span>
-                      </div>
-                      <span className="disc-select-flight">
-                        {d.speed}/{d.glide}/{d.turn}/{d.fade}
-                      </span>
-                    </li>
-                  )
-                })}
-              </ul>
-              <button
-                type="button"
-                className="disc-select-add"
-                onClick={startCreate}
-              >
-                + Add custom disc
-                {query.trim() && (
-                  <span className="muted small"> · “{query.trim()}”</span>
-                )}
-              </button>
+              {!searching ? (
+                <p className="disc-select-hint">
+                  Type to search {DISC_DATABASE.length.toLocaleString()}+ discs
+                  — e.g. <strong>Destroyer</strong>, <strong>Innova</strong>,{' '}
+                  <strong>putter</strong>
+                </p>
+              ) : (
+                <>
+                  <p className="disc-select-count" aria-live="polite">
+                    {filtered.length === 0
+                      ? `No matches for “${query.trim()}”`
+                      : `${filtered.length.toLocaleString()} disc${filtered.length === 1 ? '' : 's'} — scroll for all matches`}
+                  </p>
+                  <ul
+                    ref={listRef}
+                    className="disc-select-list disc-select-list-search"
+                    role="listbox"
+                    aria-label="Disc search results"
+                  >
+                    {filtered.map((d, i) => {
+                      const isActive = i === activeIdx
+                      const isSelected = d.name === value
+                      return (
+                        <li
+                          key={d.name}
+                          data-idx={i}
+                          role="option"
+                          aria-selected={isSelected}
+                          className={
+                            'disc-select-option' +
+                            (isActive ? ' active' : '') +
+                            (isSelected ? ' selected' : '')
+                          }
+                          onMouseEnter={() => setActiveIdx(i)}
+                          onClick={() => commit(d)}
+                        >
+                          <div className="disc-select-option-main">
+                            <span className="disc-select-name">{d.name}</span>
+                            <span className="disc-select-brand">
+                              {d.brand}
+                              {d.type ? ` · ${d.type}` : ''}
+                            </span>
+                          </div>
+                          <span className="disc-select-flight">
+                            {d.speed}/{d.glide}/{d.turn}/{d.fade}
+                          </span>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </>
+              )}
             </>
           )}
         </div>
