@@ -248,7 +248,7 @@ export function CommunityPage() {
 
   if (!me) {
     return (
-      <div className="container">
+      <div className="container community-page">
         <div className="card">
           <p className="muted">Loading…</p>
         </div>
@@ -257,7 +257,7 @@ export function CommunityPage() {
   }
 
   return (
-    <div className="container">
+    <div className="container community-page">
       <div className="card community-callout">
         <h2>Find players near you</h2>
         <p>
@@ -379,8 +379,9 @@ export function CommunityPage() {
           </button>
         )}
 
-        <label className="community-opt-in">
+        <div className="community-toggle">
           <input
+            id="community-visible"
             type="checkbox"
             checked={communityVisible}
             onChange={e => {
@@ -391,17 +392,20 @@ export function CommunityPage() {
             }}
             disabled={saving || loading}
           />
-          <span>
+          <label htmlFor="community-visible">
             <strong>Show me on Community</strong>
-            <span className="muted small">
-              Opt-in only. Other members who share your city and also opt in can
-              see your display name here.
+            <span className="community-toggle-help">
+              Opt-in only. Other members who share your city can see your display
+              name here.
             </span>
-          </span>
-        </label>
+          </label>
+        </div>
 
-        <label className={`community-opt-in${!communityVisible ? ' community-opt-in-disabled' : ''}`}>
+        <div
+          className={`community-toggle${!communityVisible ? ' community-opt-in-disabled' : ''}`}
+        >
           <input
+            id="community-looking"
             type="checkbox"
             checked={lookingForPlayers}
             onChange={e => {
@@ -410,14 +414,13 @@ export function CommunityPage() {
             }}
             disabled={saving || loading || !communityVisible}
           />
-          <span>
+          <label htmlFor="community-looking">
             <strong>Looking for players to play together</strong>
-            <span className="muted small">
-              Shows a badge on your profile in Community. Required to send
-              messages to other local players.
+            <span className="community-toggle-help">
+              Shows a badge on Community. Required to send messages.
             </span>
-          </span>
-        </label>
+          </label>
+        </div>
 
         {error && <div className="form-error">{error}</div>}
         {saveOk && <div className="form-success">Community settings saved.</div>}
@@ -444,26 +447,24 @@ export function CommunityPage() {
         ) : (
           <ul className="community-member-list">
             {members.map(m => (
-              <li key={m.userId} className="community-member-row">
-                <div className="community-member-main">
-                  <span className="community-member-name">{m.displayName}</span>
-                  {m.lookingForPlayers && (
-                    <span className="community-badge">Looking to play</span>
-                  )}
-                </div>
+              <li key={m.userId} className="community-member-card">
+                <p className="community-member-name">{m.displayName}</p>
+                {m.lookingForPlayers && (
+                  <span className="community-badge">Looking to play</span>
+                )}
                 <p className="community-member-cities">
                   Also plays in {m.sharedCityLabels.join(', ')}
                 </p>
                 {canMessage ? (
                   <button
                     type="button"
-                    className="btn-secondary community-message-btn"
+                    className="btn-primary community-action-btn"
                     onClick={() => {
                       setMessageError(null)
                       setMessageTarget(m)
                     }}
                   >
-                    Message
+                    Message {m.displayName.split(' ')[0]}
                   </button>
                 ) : (
                   <p className="community-member-hint">
@@ -486,19 +487,17 @@ export function CommunityPage() {
               <li
                 key={msg.id}
                 className={
-                  'community-message-row' +
+                  'community-message-card' +
                   (msg.isInbound && !msg.readAt ? ' community-message-unread' : '')
                 }
                 onClick={() => handleMarkRead(msg)}
               >
-                <div className="community-message-meta">
-                  <span className="community-message-direction">
-                    {msg.isInbound
-                      ? `From ${msg.senderName}`
-                      : `To ${msg.recipientName}`}
-                  </span>
-                  <span className="muted small">{formatMessageWhen(msg.createdAt)}</span>
-                </div>
+                <p className="community-message-direction">
+                  {msg.isInbound
+                    ? `From ${msg.senderName}`
+                    : `To ${msg.recipientName}`}
+                </p>
+                <p className="community-message-time">{formatMessageWhen(msg.createdAt)}</p>
                 <p className="community-message-body">{msg.body}</p>
                 {msg.isInbound && !msg.readAt && (
                   <span className="community-message-new">New</span>
