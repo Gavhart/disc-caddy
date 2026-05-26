@@ -5,6 +5,7 @@ import { searchCoursesByName } from '../lib/courses'
 import {
   fetchCommunityMembers,
   fetchCommunityMessages,
+  fetchCommunitySetupStatus,
   fetchMyHomeCities,
   formatCityLabel,
   homeCityFromCourse,
@@ -14,6 +15,7 @@ import {
 } from '../lib/community'
 import { LocationError, resolveCurrentLocationPlace } from '../lib/geocode'
 import { CommunityMember, CommunityMessage, Course, HomeCity, COMMUNITY_RADIUS_OPTIONS } from '../types'
+import type { CommunitySetupStatus } from '../lib/community'
 
 const MAX_HOME_CITIES = 3
 
@@ -65,20 +67,30 @@ export function CommunityPage() {
   const [messageTarget, setMessageTarget] = useState<CommunityMember | null>(null)
   const [messageSending, setMessageSending] = useState(false)
   const [messageError, setMessageError] = useState<string | null>(null)
+  const [setupStatus, setSetupStatus] = useState<CommunitySetupStatus | null>(null)
+  const [membersError, setMembersError] = useState<string | null>(null)
 
   const loadAll = useCallback(async () => {
     setLoading(true)
     setError(null)
     try {
-      const [loadedCities, loadedMembers, loadedMessages] = await Promise.all([
+      const [loadedCities, loadedMembers, loadedMessages, loadedStatus] = await Promise.all([
         fetchMyHomeCities(),
-        fetchCommunityMembers(),
+        fetchCommunityMembers().catch(err => {
+          setMembersError(
+            err instanceof Error ? err.message : 'Could not load community members.',
+          )
+          return [] as CommunityMember[]
+        }),
         fetchCommunityMessages(),
+        fetchCommunitySetupStatus().catch(() => null),
       ])
+      setMembersError(null)
       setCities(loadedCities.length > 0 ? loadedCities : [emptyCity(0)])
       setSavedCities(loadedCities)
       setMembers(loadedMembers)
       setMessages(loadedMessages)
+      setSetupStatus(loadedStatus)
     } catch (err) {
       setError(
         err instanceof Error
@@ -259,18 +271,30 @@ export function CommunityPage() {
 
       await saveHomeCities(cleaned, communityVisible, effectiveLooking, searchRadiusMiles)
       await refreshMe()
-      setCities(cleaned.length > 0 ? cleaned : [emptyCity(0)])
-      setSavedCities(cleaned)
+      const [reloadedCities, reloadedStatus] = await Promise.all([
+        fetchMyHomeCities(),
+        fetchCommunitySetupStatus().catch(() => null),
+      ])
+      setCities(reloadedCities.length > 0 ? reloadedCities : [emptyCity(0)])
+      setSavedCities(reloadedCities)
+      setSetupStatus(reloadedStatus)
       if (!communityVisible) setLookingForPlayers(false)
       setSaveOk(true)
 
       if (communityVisible && cleaned.length > 0) {
-        const [loadedMembers, loadedMessages] = await Promise.all([
-          fetchCommunityMembers(),
+        const [loadedMembers, loadedMessages, loadedStatus] = await Promise.all([
+          fetchCommunityMembers().catch(err => {
+            setMembersError(
+              err instanceof Error ? err.message : 'Could not load community members.',
+            )
+            return [] as CommunityMember[]
+          }),
           fetchCommunityMessages(),
+          fetchCommunitySetupStatus().catch(() => null),
         ])
         setMembers(loadedMembers)
         setMessages(loadedMessages)
+        setSetupStatus(loadedStatus)
       } else {
         setMembers([])
       }
@@ -322,6 +346,10 @@ export function CommunityPage() {
   }
 
   const isSavedVisible = me.communityVisible && savedCities.length > 0
+  const hasUnsavedChanges =
+    communityVisible !== me.communityVisible ||
+    lookingForPlayers !== me.lookingForPlayers ||
+    searchRadiusMiles !== me.communitySearchRadiusMiles
 
   return (
     <div className="container community-page">
@@ -543,6 +571,12 @@ export function CommunityPage() {
         </div>
 
         {error && <div className="form-error">{error}</div>}
+        {hasUnsavedChanges && (
+          <div className="form-error">
+            You changed settings — tap <strong>Save settings</strong> or other players
+            won&apos;t see you.
+          </div>
+        )}
         {saveOk && <div className="form-success">Community settings saved.</div>}
 
         <button type="submit" className="btn-primary" disabled={saving || loading}>
@@ -565,6 +599,31 @@ export function CommunityPage() {
           <li className="community-status-ok">
             ✓ Search radius: <strong>{me.communitySearchRadiusMiles} mi</strong>
           </li>
+          {setupStatus && (
+            <>
+              <li
+                className={
+                  setupStatus.gpsCityCount > 0 ? 'community-status-ok' : 'community-status-warn'
+                }
+              >
+                {setupStatus.gpsCityCount > 0 ? '✓' : '○'}{' '}
+                <strong>{setupStatus.gpsCityCount}</strong> saved area
+                {setupStatus.gpsCityCount === 1 ? '' : 's'} with GPS map pin
+              </li>
+              <li className="community-status-ok">
+                ✓ Other visible players in app:{' '}
+                <strong>{setupStatus.otherVisibleWithCities}</strong>
+              </li>
+              <li
+                className={
+                  setupStatus.matchCount > 0 ? 'community-status-ok' : 'community-status-warn'
+                }
+              >
+                {setupStatus.matchCount > 0 ? '✓' : '○'} Matches in your radius:{' '}
+                <strong>{setupStatus.matchCount}</strong>
+              </li>
+            </>
+          )}
         </ul>
         {savedCities.length > 0 ? (
           <p className="muted small community-status-cities">
@@ -577,14 +636,15 @@ export function CommunityPage() {
           </p>
         )}
         <p className="muted small community-status-tip">
-          Both accounts need Community on, saved home areas, and to fall within
-          each other&apos;s search radius (or share the same city). Use GPS on
-          both accounts for the most reliable match.
+          Both accounts must tap <strong>Save settings</strong> after turning Community on.
+          Use <strong>Use my current location</strong> on each account, pick the same radius
+          (50 mi is good for testing), then save again on both.
         </p>
       </div>
 
       <div className="card">
         <h2>Players at your courses</h2>
+        {membersError && <div className="form-error">{membersError}</div>}
         {!isSavedVisible ? (
           <p className="muted">
             Opt in above, add a home area, and tap <strong>Save settings</strong>{' '}
@@ -592,8 +652,15 @@ export function CommunityPage() {
           </p>
         ) : members.length === 0 ? (
           <p className="muted">
-            No other opt-in members in your cities yet — check back as more
-            players join.
+            No matches yet. On your other test account: open Community, tap{' '}
+            <strong>Use my current location</strong>, turn Community on, choose the same
+            radius, and tap <strong>Save settings</strong>. Then save again on this account.
+            {setupStatus && setupStatus.otherVisibleWithCities === 0 && (
+              <>
+                {' '}
+                Right now no other account has Community saved with a home area.
+              </>
+            )}
           </p>
         ) : (
           <ul className="community-member-list">

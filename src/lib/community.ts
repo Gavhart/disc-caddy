@@ -84,12 +84,43 @@ export async function fetchMyHomeCities(): Promise<HomeCity[]> {
   return ((data as HomeCityRow[]) ?? []).map(rowToHomeCity)
 }
 
+export interface CommunitySetupStatus {
+  communityVisible: boolean
+  lookingForPlayers: boolean
+  searchRadiusMiles: number
+  homeCityCount: number
+  gpsCityCount: number
+  savedCityLabels: string[]
+  otherVisiblePlayers: number
+  otherVisibleWithCities: number
+  matchCount: number
+}
+
+export async function fetchCommunitySetupStatus(): Promise<CommunitySetupStatus> {
+  const { data, error } = await supabase.rpc('community_setup_status')
+  if (error) throw error
+  const row = (data ?? {}) as Record<string, unknown>
+  return {
+    communityVisible: Boolean(row.community_visible),
+    lookingForPlayers: Boolean(row.looking_for_players),
+    searchRadiusMiles: Number(row.search_radius_miles ?? 25),
+    homeCityCount: Number(row.home_city_count ?? 0),
+    gpsCityCount: Number(row.gps_city_count ?? 0),
+    savedCityLabels: Array.isArray(row.saved_city_labels)
+      ? row.saved_city_labels.filter((v): v is string => typeof v === 'string')
+      : [],
+    otherVisiblePlayers: Number(row.other_visible_players ?? 0),
+    otherVisibleWithCities: Number(row.other_visible_with_cities ?? 0),
+    matchCount: Number(row.match_count ?? 0),
+  }
+}
+
 export async function saveHomeCities(
   cities: HomeCity[],
   communityVisible: boolean,
   lookingForPlayers: boolean,
   searchRadiusMiles: number,
-): Promise<void> {
+): Promise<HomeCity[]> {
   if (cities.length > 3) {
     throw new Error('At most 3 home cities allowed')
   }
@@ -98,6 +129,18 @@ export async function saveHomeCities(
   }
 
   const withCoords = await ensureHomeCityCoordinates(cities)
+
+  if (communityVisible && withCoords.length === 0) {
+    throw new Error('Add at least one home area before opting in to Community.')
+  }
+
+  if (
+    communityVisible &&
+    withCoords.length > 0 &&
+    withCoords.every(c => c.latitude == null || c.longitude == null)
+  ) {
+    // Still allow save — city-name matching may work — but radius search needs coords.
+  }
 
   const payload = withCoords.map((c, i) => {
     const normalized = normalizeHomeCityFields(c)
@@ -119,6 +162,8 @@ export async function saveHomeCities(
     p_search_radius_miles: searchRadiusMiles,
   })
   if (error) throw error
+
+  return withCoords
 }
 
 export async function fetchCommunityMembers(): Promise<CommunityMember[]> {

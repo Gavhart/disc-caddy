@@ -97,6 +97,70 @@ export async function geocodeCityPlace(
   regionCode?: string | null,
   countryCode?: string | null,
 ): Promise<(GeocodedPlace & { latitude: number; longitude: number }) | null> {
+  const trimmedCity = city.trim()
+  if (!trimmedCity) return null
+
+  const meteo = await geocodeWithOpenMeteo(trimmedCity, countryCode)
+  if (meteo) {
+    const normalized = normalizeHomeCityFields({
+      city: meteo.city,
+      regionCode: regionCode ?? meteo.regionCode,
+      countryCode: countryCode ?? meteo.countryCode,
+    })
+    return {
+      ...normalized,
+      latitude: meteo.latitude,
+      longitude: meteo.longitude,
+    }
+  }
+
+  return geocodeWithNominatim(trimmedCity, regionCode, countryCode)
+}
+
+async function geocodeWithOpenMeteo(
+  city: string,
+  countryCode?: string | null,
+): Promise<(GeocodedPlace & { latitude: number; longitude: number }) | null> {
+  const url = new URL('https://geocoding-api.open-meteo.com/v1/search')
+  url.searchParams.set('name', city)
+  url.searchParams.set('count', '5')
+  url.searchParams.set('language', 'en')
+  url.searchParams.set('format', 'json')
+  if (countryCode?.trim()) {
+    url.searchParams.set('countryCode', countryCode.trim().toUpperCase().slice(0, 2))
+  }
+
+  try {
+    const res = await fetch(url.toString())
+    if (!res.ok) return null
+    const json = (await res.json()) as {
+      results?: Array<{
+        name?: string
+        latitude?: number
+        longitude?: number
+        admin1?: string
+        country_code?: string
+      }>
+    }
+    const hit = json.results?.[0]
+    if (!hit?.latitude || hit.longitude == null || !hit.name) return null
+    return {
+      city: hit.name,
+      regionCode: hit.admin1?.trim().toUpperCase().slice(0, 10) ?? null,
+      countryCode: hit.country_code?.trim().toUpperCase() ?? null,
+      latitude: hit.latitude,
+      longitude: hit.longitude,
+    }
+  } catch {
+    return null
+  }
+}
+
+async function geocodeWithNominatim(
+  city: string,
+  regionCode?: string | null,
+  countryCode?: string | null,
+): Promise<(GeocodedPlace & { latitude: number; longitude: number }) | null> {
   const parts = [city.trim()]
   if (regionCode?.trim()) parts.push(regionCode.trim())
   if (countryCode?.trim()) parts.push(countryCode.trim())
@@ -109,35 +173,39 @@ export async function geocodeCityPlace(
   url.searchParams.set('addressdetails', '1')
   url.searchParams.set('limit', '1')
 
-  const res = await fetch(url.toString(), {
-    headers: {
-      Accept: 'application/json',
-      'Accept-Language': 'en',
-      'User-Agent': 'DiscCaddy/1.0 (community home cities)',
-    },
-  })
-  if (!res.ok) return null
+  try {
+    const res = await fetch(url.toString(), {
+      headers: {
+        Accept: 'application/json',
+        'Accept-Language': 'en',
+        'User-Agent': 'DiscCaddy/1.0 (community home cities)',
+      },
+    })
+    if (!res.ok) return null
 
-  const json = (await res.json()) as Array<{
-    lat?: string
-    lon?: string
-    address?: Record<string, string>
-  }>
-  const hit = json[0]
-  if (!hit?.lat || !hit?.lon) return null
+    const json = (await res.json()) as Array<{
+      lat?: string
+      lon?: string
+      address?: Record<string, string>
+    }>
+    const hit = json[0]
+    if (!hit?.lat || !hit?.lon) return null
 
-  const address = hit.address ?? {}
-  const resolvedCity = cityFromNominatimAddress(address) ?? city.trim()
-  const normalized = normalizeHomeCityFields({
-    city: resolvedCity,
-    regionCode: regionCode ?? regionFromNominatimAddress(address),
-    countryCode: countryCode ?? address.country_code?.trim().toUpperCase() ?? null,
-  })
+    const address = hit.address ?? {}
+    const resolvedCity = cityFromNominatimAddress(address) ?? city.trim()
+    const normalized = normalizeHomeCityFields({
+      city: resolvedCity,
+      regionCode: regionCode ?? regionFromNominatimAddress(address),
+      countryCode: countryCode ?? address.country_code?.trim().toUpperCase() ?? null,
+    })
 
-  return {
-    ...normalized,
-    latitude: Number(hit.lat),
-    longitude: Number(hit.lon),
+    return {
+      ...normalized,
+      latitude: Number(hit.lat),
+      longitude: Number(hit.lon),
+    }
+  } catch {
+    return null
   }
 }
 
