@@ -4,6 +4,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { signOut } from '../lib/auth'
 import { isWebCheckoutAvailable } from '../lib/platform'
+import { useAppNotifications } from '../hooks/useAppNotifications'
 import { ProfileAvatar } from './ProfileAvatar'
 import { Logo } from './Logo'
 
@@ -25,10 +26,11 @@ function isCommunityRoute(pathname: string): boolean {
 }
 
 export function Navigation() {
-  const { me } = useAuth()
+  const { me, session } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
+  const { communityBadgeCount } = useAppNotifications(Boolean(session && me))
 
   useEffect(() => {
     setMenuOpen(false)
@@ -107,6 +109,11 @@ export function Navigation() {
                 {item.icon}
               </span>
               <span>{item.label}</span>
+              {item.to === '/community' && communityBadgeCount > 0 && (
+                <span className="nav-badge" aria-label={`${communityBadgeCount} unread`}>
+                  {communityBadgeCount > 99 ? '99+' : communityBadgeCount}
+                </span>
+              )}
             </NavLink>
           ))}
           {me && !me.isPro && isWebCheckoutAvailable() && (
@@ -187,6 +194,11 @@ export function Navigation() {
             }}
           >
             {item.label}
+            {item.to === '/community' && communityBadgeCount > 0 && (
+              <span className="nav-badge nav-badge-desktop" aria-label={`${communityBadgeCount} unread`}>
+                {communityBadgeCount > 99 ? '99+' : communityBadgeCount}
+              </span>
+            )}
           </NavLink>
         ))}
         {me && !me.isPro && isWebCheckoutAvailable() && (

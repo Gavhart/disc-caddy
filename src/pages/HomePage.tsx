@@ -9,8 +9,8 @@ import { CourseSelector } from '../components/CourseSelector'
 import { recommend, recommendForDisc } from '../lib/recommend'
 import {
   applyHoleMemory,
-  buildHoleMemoryMessage,
-  fetchHoleMemory,
+  buildHoleMemoriesMessage,
+  fetchHoleMemories,
   resolveMemoryBagDiscId,
 } from '../lib/holeMemory'
 import { updateMaxDistance, updatePlayer } from '../lib/profile'
@@ -25,10 +25,24 @@ import {
   listThrowsForRound,
   logThrow,
   startRound,
+  upsertHoleScore,
 } from '../lib/rounds'
 import { subscribeRoundUpdates } from '../lib/roundRealtime'
+import {
+  cacheCourseHoles,
+  isOnline,
+  loadCachedCourseHoles,
+  syncOfflineScoreQueue,
+} from '../lib/offlineRound'
+import {
+  listPendingRoundInvites,
+  notifyFriendsRoundCompleted,
+} from '../lib/roundInvites'
+import { createRoundShareLink, roundShareUrl } from '../lib/roundShare'
 import { updateCourseHole, listCourses, listHolesForCourse } from '../lib/courses'
 import { Scorecard } from '../components/Scorecard'
+import { RoundInviteBanner } from '../components/RoundInviteBanner'
+import { HoleNoteEditor } from '../components/HoleNoteEditor'
 import {
   Bag,
   BagDisc,
@@ -40,6 +54,7 @@ import {
   RoundThrow,
   RoundPlayer,
   RoundScore,
+  RoundInvite,
   TeeBearing,
   ThrowStyle,
 } from '../types'
@@ -86,7 +101,11 @@ export function HomePage() {
   const [roundBusy, setRoundBusy] = useState(false)
   const [roundError, setRoundError] = useState<string | null>(null)
   const [holeMemory, setHoleMemory] = useState<HoleMemory | null>(null)
+  const [holeMemories, setHoleMemories] = useState<HoleMemory[]>([])
   const [holeMemoryVersion, setHoleMemoryVersion] = useState(0)
+  const [pendingInvites, setPendingInvites] = useState<RoundInvite[]>([])
+  const [shareUrl, setShareUrl] = useState<string | null>(null)
+  const [offlineHint, setOfflineHint] = useState<string | null>(null)
 
   const isPro = me?.isPro ?? false
 
@@ -142,23 +161,48 @@ export function HomePage() {
       return
     }
     listHolesForCourse(pickedCourseId)
-      .then(setCourseHoles)
-      .catch(err => console.error('[home] load course holes failed', err))
+      .then(holes => {
+        setCourseHoles(holes)
+        cacheCourseHoles(pickedCourseId, holes)
+        setOfflineHint(null)
+      })
+      .catch(err => {
+        console.error('[home] load course holes failed', err)
+        const cached = loadCachedCourseHoles(pickedCourseId)
+        if (cached?.length) {
+          setCourseHoles(cached)
+          setOfflineHint('Using cached holes — scores will sync when you reconnect.')
+        }
+      })
   }, [pickedCourseId])
+
+  useEffect(() => {
+    if (!user) return
+    listPendingRoundInvites()
+      .then(setPendingInvites)
+      .catch(() => setPendingInvites([]))
+  }, [user])
 
   useEffect(() => {
     if (!isPro || !pickedCourseId || pickedHoleNumber == null) {
       setHoleMemory(null)
+      setHoleMemories([])
       return
     }
     let cancelled = false
-    fetchHoleMemory(pickedCourseId, pickedHoleNumber)
-      .then(memory => {
-        if (!cancelled) setHoleMemory(memory)
+    fetchHoleMemories(pickedCourseId, pickedHoleNumber, 3)
+      .then(memories => {
+        if (!cancelled) {
+          setHoleMemories(memories)
+          setHoleMemory(memories[0] ?? null)
+        }
       })
       .catch(err => {
         console.warn('[home] hole memory fetch failed', err)
-        if (!cancelled) setHoleMemory(null)
+        if (!cancelled) {
+          setHoleMemory(null)
+          setHoleMemories([])
+        }
       })
     return () => {
       cancelled = true
@@ -249,6 +293,69 @@ export function HomePage() {
         .catch(err => console.error('[home] live round refresh failed', err))
     })
   }, [roundId, roundActive, refreshRoundData])
+
+  useEffect(() => {
+    const sync = () => {
+      if (!roundId || !isOnline()) return
+      syncOfflineScoreQueue(async item => {
+        await upsertHoleScore({
+          roundId: item.roundId,
+          roundPlayerId: item.roundPlayerId,
+          holeNumber: item.holeNumber,
+          strokes: item.strokes,
+          putts: item.putts,
+          par: item.par,
+        })
+      })
+        .then(count => {
+          if (count > 0) {
+            setOfflineHint(null)
+            refreshRoundData(roundId).catch(() => {})
+          }
+        })
+        .catch(() => {})
+    }
+    window.addEventListener('online', sync)
+    sync()
+    return () => window.removeEventListener('online', sync)
+  }, [roundId, refreshRoundData])
+
+  const handleOptimisticScore = useCallback(
+    (update: {
+      roundPlayerId: string
+      holeNumber: number
+      strokes: number
+      putts: number | null
+      par: number | null
+    }) => {
+      setRoundScores(prev => {
+        const rest = prev.filter(
+          s =>
+            !(
+              s.roundPlayerId === update.roundPlayerId &&
+              s.holeNumber === update.holeNumber
+            ),
+        )
+        return [
+          ...rest,
+          {
+            id: `offline-${update.roundPlayerId}-${update.holeNumber}`,
+            roundId: roundId ?? '',
+            roundPlayerId: update.roundPlayerId,
+            holeNumber: update.holeNumber,
+            strokes: update.strokes,
+            putts: update.putts,
+            par: update.par,
+            updatedAt: new Date().toISOString(),
+          },
+        ]
+      })
+      if (!isOnline()) {
+        setOfflineHint('Score saved offline — will sync when you reconnect.')
+      }
+    },
+    [roundId],
+  )
 
   const loggedHoleNumber = useMemo(() => {
     if (pickedHoleNumber == null) return null
@@ -364,8 +471,19 @@ export function HomePage() {
       return
     }
     setRoundBusy(true)
+    const endingRoundId = roundId
+    const wasHost = roundHostId != null && user?.id === roundHostId
     try {
-      await endRound(roundId)
+      await endRound(endingRoundId)
+      if (wasHost) {
+        notifyFriendsRoundCompleted(endingRoundId).catch(() => {})
+        try {
+          const token = await createRoundShareLink(endingRoundId)
+          setShareUrl(roundShareUrl(token))
+        } catch {
+          // share link optional until migration 024
+        }
+      }
       setRoundId(null)
       setRoundActive(false)
       setRoundThrows([])
@@ -379,7 +497,7 @@ export function HomePage() {
     } finally {
       setRoundBusy(false)
     }
-  }, [roundId])
+  }, [roundId, roundHostId, user?.id])
 
   const handleLogThrow = useCallback(
     async (rec: Rec) => {
@@ -430,10 +548,9 @@ export function HomePage() {
   }, [me, recommendOpts, holeMemory, discs, isPro])
 
   const holeMemoryMessage = useMemo(() => {
-    if (!holeMemory) return null
-    const inBag = resolveMemoryBagDiscId(holeMemory, discs) != null
-    return buildHoleMemoryMessage(holeMemory, inBag)
-  }, [holeMemory, discs])
+    if (holeMemories.length === 0) return null
+    return buildHoleMemoriesMessage(holeMemories, discs)
+  }, [holeMemories, discs])
 
   const memorySelection = useMemo(() => {
     if (!isPro || !holeMemory) return null
@@ -456,6 +573,51 @@ export function HomePage() {
 
   return (
     <div className="container">
+      <RoundInviteBanner
+        invites={pendingInvites}
+        onChange={async () => {
+          const invites = await listPendingRoundInvites().catch(() => [])
+          setPendingInvites(invites)
+          const active = await getActiveRound().catch(() => null)
+          if (active) {
+            setRoundId(active.id)
+            setRoundActive(true)
+            setRoundHostId(active.user_id)
+            if (active.course_id) setPickedCourseId(active.course_id)
+            await refreshRoundData(active.id)
+          }
+        }}
+      />
+      {shareUrl && (
+        <div className="card round-share-banner">
+          <strong>Round recap link</strong>
+          <p className="muted small">Share your finished round with friends.</p>
+          <div className="round-share-row">
+            <input type="text" readOnly value={shareUrl} className="round-share-input" />
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => {
+                navigator.clipboard.writeText(shareUrl).catch(() => {})
+              }}
+            >
+              Copy
+            </button>
+            <button
+              type="button"
+              className="link-button"
+              onClick={() => setShareUrl(null)}
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+      {offlineHint && (
+        <div className="card offline-banner">
+          <p className="muted small">{offlineHint}</p>
+        </div>
+      )}
       {isGroupParticipant && (
         <div className="card group-round-banner">
           <strong>Group scorecard</strong>
@@ -508,8 +670,10 @@ export function HomePage() {
           isHost={isRoundHost}
           onPlayersChange={() => refreshRoundData(roundId)}
           onScoresChange={() => refreshRoundData(roundId)}
+          onOptimisticScore={handleOptimisticScore}
         />
       )}
+      <HoleNoteEditor courseId={pickedCourseId} holeNumber={pickedHoleNumber} />
       {roundActive && roundId && roundPlayers.length === 0 && (
         <p className="muted small card scorecard-migration-hint">
           Scorecard unavailable — run{' '}

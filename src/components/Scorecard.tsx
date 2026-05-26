@@ -10,6 +10,15 @@ import {
   upsertHoleScore,
 } from '../lib/rounds'
 import { listFriends } from '../lib/friends'
+import {
+  fetchRoundHostScoringOnly,
+  invitePlayerToRound,
+  setRoundHostScoringOnly,
+} from '../lib/roundInvites'
+import {
+  isOnline,
+  queueOfflineScore,
+} from '../lib/offlineRound'
 import { Friend } from '../types'
 
 interface Props {
@@ -22,6 +31,13 @@ interface Props {
   isHost: boolean
   onPlayersChange: () => void | Promise<void>
   onScoresChange: () => void | Promise<void>
+  onOptimisticScore?: (score: {
+    roundPlayerId: string
+    holeNumber: number
+    strokes: number
+    putts: number | null
+    par: number | null
+  }) => void
 }
 
 export function Scorecard({
@@ -34,6 +50,7 @@ export function Scorecard({
   isHost,
   onPlayersChange,
   onScoresChange,
+  onOptimisticScore,
 }: Props) {
   const [addOpen, setAddOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -44,6 +61,10 @@ export function Scorecard({
   const [friends, setFriends] = useState<Friend[]>([])
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [info, setInfo] = useState<string | null>(null)
+  const [hostScoringOnly, setHostScoringOnlyState] = useState(false)
+  const [typingPlayerId, setTypingPlayerId] = useState<string | null>(null)
+  const [typedScore, setTypedScore] = useState('')
 
   const currentHole = holes.find(h => h.number === currentHoleNumber) ?? null
   const par = currentHole?.par ?? null
@@ -64,12 +85,16 @@ export function Scorecard({
   )
 
   const availableFriends = useMemo(
-    () =>
-      friends.filter(
-        f => !players.some(p => p.userId === f.userId),
-      ),
+    () => friends.filter(f => !players.some(p => p.userId === f.userId)),
     [friends, players],
   )
+
+  useEffect(() => {
+    if (!isHost) return
+    fetchRoundHostScoringOnly(roundId)
+      .then(setHostScoringOnlyState)
+      .catch(() => setHostScoringOnlyState(false))
+  }, [roundId, isHost])
 
   useEffect(() => {
     if (!addOpen || !isHost) return
@@ -79,7 +104,46 @@ export function Scorecard({
   }, [addOpen, isHost])
 
   function canEditPlayer(player: RoundPlayer): boolean {
+    if (hostScoringOnly) return isHost
     return isHost || player.userId === currentUserId
+  }
+
+  async function persistScore(
+    player: RoundPlayer,
+    strokes: number,
+    putts: number | null,
+  ) {
+    if (currentHoleNumber == null) return
+    const payload = {
+      roundId,
+      roundPlayerId: player.id,
+      holeNumber: currentHoleNumber,
+      strokes,
+      putts,
+      par,
+    }
+
+    if (!isOnline()) {
+      queueOfflineScore({
+        roundId,
+        roundPlayerId: player.id,
+        holeNumber: currentHoleNumber,
+        strokes,
+        putts,
+        par,
+      })
+      onOptimisticScore?.({
+        roundPlayerId: player.id,
+        holeNumber: currentHoleNumber,
+        strokes,
+        putts,
+        par,
+      })
+      return
+    }
+
+    await upsertHoleScore(payload)
+    await onScoresChange()
   }
 
   async function handleSearch(q: string) {
@@ -95,17 +159,18 @@ export function Scorecard({
     }
   }
 
-  async function handleAddRegistered(userId: string, displayName: string) {
+  async function handleInviteRegistered(userId: string, displayName: string) {
     setBusy(true)
     setError(null)
+    setInfo(null)
     try {
-      await addRoundPlayer({ roundId, userId, displayName })
-      await onPlayersChange()
+      await invitePlayerToRound(roundId, userId)
+      setInfo(`Invite sent to ${displayName}. They'll join after accepting.`)
       setAddOpen(false)
       setQuery('')
       setSearchResults([])
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not add player')
+      setError(err instanceof Error ? err.message : 'Could not send invite')
     } finally {
       setBusy(false)
     }
@@ -147,20 +212,80 @@ export function Scorecard({
     const existing = scores.find(
       s => s.roundPlayerId === player.id && s.holeNumber === currentHoleNumber,
     )
-    const next = Math.min(20, Math.max(1, (existing?.strokes ?? par ?? 3) + delta))
+    const basePar = par ?? 3
+    let next: number
+    if (!existing) {
+      next = delta > 0 ? basePar : Math.max(1, basePar - 1)
+    } else {
+      next = existing.strokes + delta
+    }
+    next = Math.min(20, Math.max(1, next))
     setBusy(true)
     try {
-      await upsertHoleScore({
-        roundId,
-        roundPlayerId: player.id,
-        holeNumber: currentHoleNumber,
-        strokes: next,
-        putts: existing?.putts ?? null,
-        par,
-      })
-      await onScoresChange()
+      await persistScore(player, next, existing?.putts ?? null)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not save score')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function changePutts(player: RoundPlayer, delta: number) {
+    if (currentHoleNumber == null || !canEditPlayer(player)) return
+    const existing = scores.find(
+      s => s.roundPlayerId === player.id && s.holeNumber === currentHoleNumber,
+    )
+    const strokes = existing?.strokes ?? par ?? 3
+    const currentPutts = existing?.putts ?? 0
+    const next = Math.min(strokes, Math.max(0, currentPutts + delta))
+    setBusy(true)
+    try {
+      await persistScore(player, strokes, next)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save putts')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  function startTyping(player: RoundPlayer) {
+    if (!canEditPlayer(player)) return
+    const existing = scores.find(
+      s => s.roundPlayerId === player.id && s.holeNumber === currentHoleNumber,
+    )
+    setTypingPlayerId(player.id)
+    setTypedScore(existing?.strokes != null ? String(existing.strokes) : '')
+  }
+
+  async function commitTypedScore(player: RoundPlayer) {
+    const parsed = Number(typedScore)
+    if (!Number.isFinite(parsed) || parsed < 1 || parsed > 20) {
+      setError('Enter a score between 1 and 20')
+      return
+    }
+    const existing = scores.find(
+      s => s.roundPlayerId === player.id && s.holeNumber === currentHoleNumber,
+    )
+    setTypingPlayerId(null)
+    setBusy(true)
+    try {
+      await persistScore(player, parsed, existing?.putts ?? null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not save score')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function toggleHostScoringOnly() {
+    if (!isHost) return
+    const next = !hostScoringOnly
+    setBusy(true)
+    try {
+      await setRoundHostScoringOnly(roundId, next)
+      setHostScoringOnlyState(next)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not update scoring mode')
     } finally {
       setBusy(false)
     }
@@ -187,13 +312,32 @@ export function Scorecard({
         )}
       </div>
 
+      {hostScoringOnly && !isHost && (
+        <p className="muted small scorecard-host-only-note">
+          Host is entering scores for everyone on this card.
+        </p>
+      )}
+
+      {isHost && players.length > 1 && (
+        <label className="scorecard-host-only-toggle">
+          <input
+            type="checkbox"
+            checked={hostScoringOnly}
+            onChange={toggleHostScoringOnly}
+            disabled={busy}
+          />
+          <span>Host enters all scores (one phone)</span>
+        </label>
+      )}
+
       {error && <div className="form-error small">{error}</div>}
+      {info && <div className="form-success small">{info}</div>}
 
       {addOpen && isHost && (
         <div className="scorecard-add-panel">
           {availableFriends.length > 0 && (
             <div className="scorecard-friends-quick">
-              <span className="muted small">Add a friend</span>
+              <span className="muted small">Invite a friend</span>
               <div className="scorecard-friends-chips">
                 {availableFriends.map(friend => (
                   <button
@@ -202,7 +346,7 @@ export function Scorecard({
                     className="btn-secondary scorecard-friend-chip"
                     disabled={busy}
                     onClick={() =>
-                      handleAddRegistered(friend.userId, friend.displayName)
+                      handleInviteRegistered(friend.userId, friend.displayName)
                     }
                   >
                     + {friend.displayName.split(' ')[0]}
@@ -212,7 +356,9 @@ export function Scorecard({
             </div>
           )}
           <label>
-            <span className="muted small">Find a Disc Caddy user (email or name)</span>
+            <span className="muted small">
+              Invite a Disc Caddy user (email or name)
+            </span>
             <input
               type="text"
               value={query}
@@ -228,10 +374,10 @@ export function Scorecard({
                   <button
                     type="button"
                     className="link-button"
-                    onClick={() => handleAddRegistered(r.userId, r.displayName)}
+                    onClick={() => handleInviteRegistered(r.userId, r.displayName)}
                     disabled={busy}
                   >
-                    {r.displayName}
+                    Invite {r.displayName}
                     <span className="muted small"> · {r.email}</span>
                   </button>
                 </li>
@@ -285,6 +431,7 @@ export function Scorecard({
             )
             const total = totals.get(player.id)
             const editable = canEditPlayer(player)
+            const typing = typingPlayerId === player.id
             return (
               <div key={player.id} className="scorecard-row">
                 <div className="scorecard-player">
@@ -311,9 +458,32 @@ export function Scorecard({
                   >
                     −
                   </button>
-                  <span className="scorecard-strokes">
-                    {score?.strokes ?? '—'}
-                  </span>
+                  {typing ? (
+                    <input
+                      type="number"
+                      min={1}
+                      max={20}
+                      className="scorecard-strokes-input"
+                      value={typedScore}
+                      autoFocus
+                      onChange={e => setTypedScore(e.target.value)}
+                      onBlur={() => commitTypedScore(player)}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') commitTypedScore(player)
+                        if (e.key === 'Escape') setTypingPlayerId(null)
+                      }}
+                    />
+                  ) : (
+                    <button
+                      type="button"
+                      className="scorecard-strokes scorecard-strokes-tap"
+                      onClick={() => startTyping(player)}
+                      disabled={!editable || busy}
+                      title="Tap to type score"
+                    >
+                      {score?.strokes ?? '—'}
+                    </button>
+                  )}
                   <button
                     type="button"
                     className="btn-icon scorecard-step"
@@ -323,6 +493,32 @@ export function Scorecard({
                   >
                     +
                   </button>
+                  <div className="scorecard-putts">
+                    <span className="muted small">Putts</span>
+                    <button
+                      type="button"
+                      className="btn-icon scorecard-step scorecard-putt-step"
+                      onClick={() => changePutts(player, -1)}
+                      disabled={
+                        !editable || busy || (score?.putts ?? 0) <= 0
+                      }
+                      aria-label="Fewer putts"
+                    >
+                      −
+                    </button>
+                    <span className="scorecard-putts-value">
+                      {score?.putts ?? '—'}
+                    </span>
+                    <button
+                      type="button"
+                      className="btn-icon scorecard-step scorecard-putt-step"
+                      onClick={() => changePutts(player, 1)}
+                      disabled={!editable || busy}
+                      aria-label="More putts"
+                    >
+                      +
+                    </button>
+                  </div>
                   {isHost && !player.isHost && (
                     <button
                       type="button"

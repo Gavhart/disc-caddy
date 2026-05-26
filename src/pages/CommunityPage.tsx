@@ -15,6 +15,8 @@ import {
   saveHomeCities,
   sendCommunityMessage,
 } from '../lib/community'
+import { getActiveRound } from '../lib/rounds'
+import { invitePlayerToRound } from '../lib/roundInvites'
 import { LocationError, resolveCurrentLocationPlace } from '../lib/geocode'
 import { CommunityMember, Course, HomeCity, COMMUNITY_RADIUS_OPTIONS } from '../types'
 import type { CommunitySetupStatus } from '../lib/community'
@@ -63,6 +65,9 @@ export function CommunityPage() {
   const [messageError, setMessageError] = useState<string | null>(null)
   const [setupStatus, setSetupStatus] = useState<CommunitySetupStatus | null>(null)
   const [membersError, setMembersError] = useState<string | null>(null)
+  const [activeRoundId, setActiveRoundId] = useState<string | null>(null)
+  const [inviteBusyId, setInviteBusyId] = useState<string | null>(null)
+  const [inviteOk, setInviteOk] = useState<string | null>(null)
 
   const loadAll = useCallback(async () => {
     setLoading(true)
@@ -104,6 +109,19 @@ export function CommunityPage() {
       loadAll()
     }
   }, [me, loadAll])
+
+  useEffect(() => {
+    if (!me?.isPro) {
+      setActiveRoundId(null)
+      return
+    }
+    getActiveRound()
+      .then(active => {
+        if (active && active.user_id === me.id) setActiveRoundId(active.id)
+        else setActiveRoundId(null)
+      })
+      .catch(() => setActiveRoundId(null))
+  }, [me?.isPro, me?.id])
 
   useEffect(() => {
     const q = courseQuery.trim()
@@ -296,6 +314,22 @@ export function CommunityPage() {
       setError(err instanceof Error ? err.message : 'Save failed')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleInviteToScorecard(member: CommunityMember) {
+    if (!activeRoundId) return
+    setInviteBusyId(member.userId)
+    setInviteOk(null)
+    try {
+      await invitePlayerToRound(activeRoundId, member.userId)
+      setInviteOk(`Invite sent to ${member.displayName}.`)
+    } catch (err) {
+      setMessageError(
+        err instanceof Error ? err.message : 'Could not invite to scorecard',
+      )
+    } finally {
+      setInviteBusyId(null)
     }
   }
 
@@ -631,6 +665,13 @@ export function CommunityPage() {
 
       <div className="card">
         <h2>Players at your courses</h2>
+        {inviteOk && <div className="form-success small">{inviteOk}</div>}
+        {activeRoundId && me.isPro && (
+          <p className="muted small community-live-round-hint">
+            You have a live scorecard — use <strong>Invite to scorecard</strong>{' '}
+            to pull looking players onto your card.
+          </p>
+        )}
         {membersError && <div className="form-error">{membersError}</div>}
         {!isSavedVisible ? (
           <p className="muted">
@@ -666,16 +707,30 @@ export function CommunityPage() {
                   Also plays in {m.sharedCityLabels.join(', ')}
                 </p>
                 {canMessage ? (
-                  <button
-                    type="button"
-                    className="btn-primary community-action-btn"
-                    onClick={() => {
-                      setMessageError(null)
-                      setMessageTarget(m)
-                    }}
-                  >
-                    Message {m.displayName.split(' ')[0]}
-                  </button>
+                  <div className="community-member-actions">
+                    <button
+                      type="button"
+                      className="btn-primary community-action-btn"
+                      onClick={() => {
+                        setMessageError(null)
+                        setMessageTarget(m)
+                      }}
+                    >
+                      Message {m.displayName.split(' ')[0]}
+                    </button>
+                    {activeRoundId && me.isPro && (
+                      <button
+                        type="button"
+                        className="btn-secondary community-action-btn"
+                        disabled={inviteBusyId === m.userId}
+                        onClick={() => handleInviteToScorecard(m)}
+                      >
+                        {inviteBusyId === m.userId
+                          ? 'Inviting…'
+                          : 'Invite to scorecard'}
+                      </button>
+                    )}
+                  </div>
                 ) : !me.isPro ? (
                   <ProGate feature="Community messaging" />
                 ) : (

@@ -243,6 +243,8 @@ export interface Me {
   avatarPath: string | null
   /** Miles to search for community members from saved coordinates. */
   communitySearchRadiusMiles: number
+  /** Email alerts for scorecard invites and messages. */
+  notifyEmail: boolean
 }
 
 /** Preset radius options for community search (miles). */
@@ -346,6 +348,57 @@ export interface HoleMemory {
   strokes: number | null
   par: number | null
   playedAt: string
+}
+
+export type AppNotificationKind =
+  | 'scorecard_invite'
+  | 'community_message'
+  | 'friend_activity'
+  | 'round_invite'
+
+export interface AppNotification {
+  id: string
+  kind: AppNotificationKind
+  title: string
+  body: string
+  linkPath: string | null
+  metadata: Record<string, unknown>
+  readAt: string | null
+  createdAt: string
+}
+
+export interface RoundInvite {
+  id: string
+  roundId: string
+  inviterName: string
+  courseName: string | null
+  courseId: string | null
+  createdAt: string
+}
+
+export interface FriendActivity {
+  userId: string
+  displayName: string
+  courseName: string | null
+  courseLocality: string | null
+  scoreToPar: number
+  totalStrokes: number
+  playedAt: string
+  roundId: string
+}
+
+export interface PublicRoundRecap {
+  courseName: string | null
+  courseLocality: string | null
+  playedAt: string | null
+  status: string
+  players: {
+    display_name: string
+    total_strokes: number
+    total_par: number
+    score_to_par: number
+    holes_scored: number
+  }[]
 }
 
 export interface RoundPlayer {

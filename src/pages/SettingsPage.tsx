@@ -7,6 +7,7 @@ import { isStripeConfigured, openBillingPortal, PRO_BILLING_COMING_SOON, syncSub
 import { isNativeApp, isWebCheckoutAvailable } from '../lib/platform'
 import { ProfileNameEditor } from '../components/ProfileNameEditor'
 import { ProfilePhotoUploader } from '../components/ProfilePhotoUploader'
+import { setNotifyEmail } from '../lib/notifications'
 import { updatePlayer } from '../lib/profile'
 import { Hand, ThrowStyle } from '../types'
 
@@ -26,6 +27,8 @@ export function SettingsPage() {
   const [putterDistance, setPutterDistance] = useState<string>('')
   const [midDistance, setMidDistance] = useState<string>('')
   const [fairwayDistance, setFairwayDistance] = useState<string>('')
+  const [notifyEmail, setNotifyEmailState] = useState(true)
+  const [savingNotify, setSavingNotify] = useState(false)
 
   // After Stripe Checkout redirects here, pull fresh subscription state.
   useEffect(() => {
@@ -70,6 +73,7 @@ export function SettingsPage() {
         ? String(me.forehandMaxDistance)
         : '',
     )
+    setNotifyEmailState(me.notifyEmail)
   }, [me])
 
   /** Parse one of the optional distance fields; throw with a labeled error. */
@@ -108,6 +112,19 @@ export function SettingsPage() {
       setPlayerError(err instanceof Error ? err.message : 'Save failed')
     } finally {
       setSavingPlayer(false)
+    }
+  }
+
+  async function handleNotifyEmailToggle(enabled: boolean) {
+    setSavingNotify(true)
+    try {
+      await setNotifyEmail(enabled)
+      setNotifyEmailState(enabled)
+      await refreshMe()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Could not save notification setting')
+    } finally {
+      setSavingNotify(false)
     }
   }
 
@@ -367,6 +384,27 @@ export function SettingsPage() {
         >
           {savingPlayer ? 'Saving…' : 'Save player settings'}
         </button>
+      </div>
+
+      <div className="card settings-section" id="notifications">
+        <h2>Notifications</h2>
+        <p className="muted small">
+          In-app alerts always show on Recommend when someone invites you to a
+          scorecard or sends a Community message. Optional email for the same
+          events.
+        </p>
+        <div className="setting-row">
+          <label className="setting-label" htmlFor="notify-email">
+            Email me for scorecard invites and messages
+          </label>
+          <input
+            id="notify-email"
+            type="checkbox"
+            checked={notifyEmail}
+            disabled={savingNotify}
+            onChange={e => handleNotifyEmailToggle(e.target.checked)}
+          />
+        </div>
       </div>
 
       <div className="card settings-section" id="subscription">

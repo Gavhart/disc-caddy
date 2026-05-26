@@ -1,5 +1,5 @@
 /** Bump when you ship a release users should see on next sign-in. */
-export const APP_VERSION = '0.3.4'
+export const APP_VERSION = '0.5.0'
 
 export interface ReleaseNote {
   version: string
@@ -11,16 +11,33 @@ export interface ReleaseNote {
 
 /** Planned features — edit anytime; shown on the updates page. */
 export const ROADMAP: string[] = [
-  'Pro checkout — Stripe billing live on the Upgrade page',
-  'Hole memory refinements — more history per hole and smarter tie-ins to your bag',
-  'Community notifications when someone messages you',
-  'Push notification when a friend adds you to a live scorecard',
+  'Push notifications (mobile) for scorecard invites and messages',
   'iOS & Android apps in the App Store and Google Play',
-  'Share a bag or round recap with friends',
-  'Offline mode for course stepping on spotty signal',
+  'Richer round recap images for social sharing',
+  'Smarter hole memory — wind/conditions tied to past throws',
+  'Course map overlays for hole notes',
 ]
 
 export const RELEASES: ReleaseNote[] = [
+  {
+    version: '0.5.0',
+    date: '2026-05-21',
+    title: 'Pro checkout, invites, notifications & on-course polish',
+    items: [
+      'Pro checkout live — Stripe billing on Upgrade and Settings (requires env + webhooks)',
+      'Scorecard invites — friends get “Join my round at X?” before appearing on your card',
+      'In-app alerts + optional email for scorecard invites and Community messages',
+      'Community nav badge for unread messages and notifications',
+      'Host-only scoring mode — one phone enters everyone’s scores',
+      'Tap a score to type a number; putt counter on the scorecard',
+      'Hole memory++ — last 3 rounds on a hole in the Recommend banner',
+      'Per-hole map notes (UDisc-style) saved to your account',
+      'Round recap share links — public page with score and group totals',
+      'Invite Community players to your live scorecard',
+      'Friend activity feed on Profile when friends finish rounds',
+      'Offline course stepping — cached holes and queued scores sync when signal returns',
+    ],
+  },
   {
     version: '0.3.4',
     date: '2026-05-21',

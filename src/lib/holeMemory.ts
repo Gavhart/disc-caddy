@@ -80,6 +80,36 @@ export function buildHoleMemoryMessage(
   return message
 }
 
+/** Summarize up to 3 prior rounds on this hole for the Recommend banner. */
+export function buildHoleMemoriesMessage(
+  memories: HoleMemory[],
+  bag: BagDisc[],
+): string | null {
+  if (memories.length === 0) return null
+  const latest = memories[0]
+  const inBag = resolveMemoryBagDiscId(latest, bag) != null
+  const lines = memories.slice(0, 3).map((m, i) => {
+    const disc =
+      m.throwStyle === 'forehand'
+        ? `${m.discName} (FH)`
+        : m.discName
+    const result =
+      m.strokes != null ? formatHoleResult(m.strokes, m.par) : null
+    const when = new Date(m.playedAt).toLocaleDateString(undefined, {
+      month: 'short',
+      day: 'numeric',
+    })
+    return result
+      ? `${i === 0 ? 'Latest' : when}: ${disc} — ${result}`
+      : `${when}: ${disc}`
+  })
+  let header = buildHoleMemoryMessage(latest, inBag)
+  if (memories.length > 1) {
+    header += ` Prior rounds: ${lines.slice(1).join(' · ')}.`
+  }
+  return header
+}
+
 /** Move the prior disc to #1 when it's still in the bag. */
 export function applyHoleMemory(
   recommendations: Recommendation[],
@@ -119,10 +149,19 @@ export async function fetchHoleMemory(
   courseId: string,
   holeNumber: number,
 ): Promise<HoleMemory | null> {
+  const list = await fetchHoleMemories(courseId, holeNumber, 1)
+  return list[0] ?? null
+}
+
+export async function fetchHoleMemories(
+  courseId: string,
+  holeNumber: number,
+  limit = 3,
+): Promise<HoleMemory[]> {
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) return null
+  if (!user) return []
 
   const { data: rounds, error: roundsErr } = await supabase
     .from('rounds')
@@ -134,11 +173,15 @@ export async function fetchHoleMemory(
 
   if (roundsErr) {
     console.warn('[holeMemory] load rounds failed', roundsErr)
-    return null
+    return []
   }
-  if (!rounds?.length) return null
+  if (!rounds?.length) return []
+
+  const memories: HoleMemory[] = []
 
   for (const round of rounds) {
+    if (memories.length >= limit) break
+
     const { data: throwRow, error: throwErr } = await supabase
       .from('round_throws')
       .select('*')
@@ -176,7 +219,7 @@ export async function fetchHoleMemory(
       par = score?.par ?? null
     }
 
-    return {
+    memories.push({
       courseId,
       holeNumber,
       roundId: row.round_id,
@@ -186,8 +229,8 @@ export async function fetchHoleMemory(
       strokes,
       par,
       playedAt: round.ended_at ?? row.created_at,
-    }
+    })
   }
 
-  return null
+  return memories
 }

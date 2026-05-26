@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { isSupabaseConfigured } from './lib/supabase'
 import { refreshDiscsFromSupabase } from './lib/discs'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
@@ -22,9 +22,12 @@ import { RoundsPage } from './pages/RoundsPage'
 import { CommunityPage } from './pages/CommunityPage'
 import { CommunityMessagesPage } from './pages/CommunityMessagesPage'
 import { ProfilePage } from './pages/ProfilePage'
+import { RoundSharePage } from './pages/RoundSharePage'
 
 function AppShell() {
   const { session, me, loading } = useAuth()
+  const location = useLocation()
+  const isSharePage = location.pathname.startsWith('/share/')
   if (loading) {
     return (
       <div className="auth-loading">
@@ -34,7 +37,7 @@ function AppShell() {
   }
   return (
     <>
-      {session && me?.onboardingComplete && <Navigation />}
+      {session && me?.onboardingComplete && !isSharePage && <Navigation />}
       <main className="main">
         <Routes>
           <Route
@@ -48,6 +51,7 @@ function AppShell() {
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
+          <Route path="/share/:token" element={<RoundSharePage />} />
 
           <Route
             path="/welcome"

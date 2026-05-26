@@ -6,7 +6,7 @@ const STRIPE_PRICE_ID = import.meta.env.VITE_STRIPE_PRICE_ID
 export const isStripeConfigured = Boolean(STRIPE_PRICE_ID)
 
 /** Flip to false when Stripe checkout is live. */
-export const PRO_BILLING_COMING_SOON = true
+export const PRO_BILLING_COMING_SOON = false
 
 /**
  * Free tier limits. Enforced in UI; server-side enforcement happens via

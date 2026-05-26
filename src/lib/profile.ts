@@ -40,6 +40,7 @@ export async function fetchMe(): Promise<Me | null> {
     lookingForPlayers: Boolean(data.looking_for_players),
     avatarPath: data.avatar_path ?? null,
     communitySearchRadiusMiles: data.community_search_radius_miles ?? 25,
+    notifyEmail: data.notify_email ?? true,
   }
 }
 
