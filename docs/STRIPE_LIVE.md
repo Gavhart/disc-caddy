@@ -81,34 +81,39 @@ supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_XXXXXXXXXXXXXXXXX
 
 ---
 
-## Step 6 — Clear test customer links (important)
+## Step 6 — Detach test Stripe customers (keep existing Pro users)
 
-Profiles store `stripe_customer_id` from test mode. Those IDs **do not exist in live mode** — checkout and webhooks will break for those users.
+Profiles store `stripe_customer_id` from test mode. Those IDs **do not exist in live mode** — checkout and billing portal will break if you leave them linked.
+
+**Do not** reset `subscription_tier` / `subscription_status`. Existing Pro users keep Pro in the app; only the stale Stripe link is cleared.
 
 Run in **Supabase SQL Editor** when you go live:
 
 ```sql
--- Reset subscription state tied to test-mode Stripe data.
--- Users re-subscribe via Upgrade after this.
+-- Drop test-mode Stripe customer links only. Pro access stays intact.
 update public.profiles
 set
   stripe_customer_id = null,
-  subscription_tier = 'free',
-  subscription_status = 'free',
-  subscription_period_end = null
+  updated_at = now()
 where stripe_customer_id is not null;
 ```
 
-If you only want to reset your own account during testing:
+Optional — preview who keeps Pro:
 
 ```sql
-update public.profiles
-set stripe_customer_id = null,
-    subscription_tier = 'free',
-    subscription_status = 'free',
-    subscription_period_end = null
-where email = 'your@email.com';
+select email, subscription_tier, subscription_status, stripe_customer_id
+from public.profiles
+where subscription_tier = 'pro'
+  and subscription_status in ('active', 'trialing');
 ```
+
+Grandfathered Pro users (no live Stripe subscription yet):
+
+- Keep full Pro features in the app
+- **Manage billing** won’t work until they subscribe again on live Stripe
+- **Sync status** in Settings will not strip their Pro access
+
+New subscribers and anyone who re-subscribes get a fresh live `stripe_customer_id` via checkout.
 
 ---
 
@@ -142,7 +147,7 @@ VITE_STRIPE_PRICE_ID=price_live_...
 supabase secrets set STRIPE_SECRET_KEY=sk_live_...
 supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_live_...
 
-# 3. SQL: clear test stripe_customer_id rows
+# 3. SQL: clear test stripe_customer_id only (Pro users keep access)
 
 # 4. Restart dev server / redeploy web app
 npm run dev

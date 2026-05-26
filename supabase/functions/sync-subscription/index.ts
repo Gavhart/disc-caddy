@@ -45,37 +45,70 @@ serve(async (req) => {
 
     const { data: profile } = await supabaseAdmin
       .from('profiles')
-      .select('stripe_customer_id, email')
+      .select('stripe_customer_id, email, subscription_tier, subscription_status')
       .eq('id', user.id)
       .single()
 
+    const hasActivePro =
+      profile?.subscription_tier === 'pro' &&
+      (profile?.subscription_status === 'active' ||
+        profile?.subscription_status === 'trialing')
+
+    const proResponse = () =>
+      new Response(
+        JSON.stringify({
+          tier: 'pro',
+          status: profile?.subscription_status ?? 'active',
+          isPro: true,
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      )
+
     let customerId = profile?.stripe_customer_id as string | null
     if (!customerId) {
-      const found = await stripe.customers.search({
-        query: `metadata['supabase_user_id']:'${user.id}'`,
-        limit: 1,
-      })
-      customerId = found.data[0]?.id ?? null
+      try {
+        const found = await stripe.customers.search({
+          query: `metadata['supabase_user_id']:'${user.id}'`,
+          limit: 1,
+        })
+        customerId = found.data[0]?.id ?? null
+      } catch {
+        if (hasActivePro) return proResponse()
+        throw new Error('stripe_customer_lookup_failed')
+      }
     }
 
     if (!customerId) {
+      if (hasActivePro) return proResponse()
       return new Response(JSON.stringify({ error: 'no_stripe_customer' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
-    const subs = await stripe.subscriptions.list({
-      customer: customerId,
-      status: 'all',
-      limit: 10,
-    })
+    let subs: Stripe.ApiList<Stripe.Subscription>
+    try {
+      subs = await stripe.subscriptions.list({
+        customer: customerId,
+        status: 'all',
+        limit: 10,
+      })
+    } catch {
+      // Stale test-mode customer IDs fail against live Stripe — keep Pro access.
+      if (hasActivePro) return proResponse()
+      return new Response(JSON.stringify({ error: 'no_stripe_customer' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
     const active = subs.data.find(s =>
       s.status === 'active' || s.status === 'trialing'
     )
     const latest = active ?? subs.data[0]
 
     if (!latest) {
+      if (hasActivePro) return proResponse()
+
       await supabaseAdmin
         .from('profiles')
         .update({

@@ -52,7 +52,24 @@ serve(async (req) => {
       .eq('id', user.id)
       .single()
 
-    let customerId = profile?.stripe_customer_id
+    let customerId = profile?.stripe_customer_id as string | null | undefined
+
+    if (customerId) {
+      try {
+        const customer = await stripe.customers.retrieve(customerId)
+        if (customer.deleted) {
+          customerId = null
+        } else if (!customer.metadata?.supabase_user_id) {
+          await stripe.customers.update(customerId, {
+            metadata: { supabase_user_id: user.id },
+          })
+        }
+      } catch {
+        // Test-mode customer IDs are invalid after switching to live Stripe.
+        customerId = null
+      }
+    }
+
     if (!customerId) {
       const customer = await stripe.customers.create({
         email: profile?.email ?? user.email,
@@ -69,15 +86,6 @@ serve(async (req) => {
       if (linkErr) {
         console.error('[checkout] link customer failed:', linkErr)
         throw linkErr
-      }
-    } else {
-      // Ensure metadata exists so webhooks can resolve the user if the
-      // profile link was ever missing.
-      const customer = await stripe.customers.retrieve(customerId)
-      if (!customer.deleted && !customer.metadata?.supabase_user_id) {
-        await stripe.customers.update(customerId, {
-          metadata: { supabase_user_id: user.id },
-        })
       }
     }
 
