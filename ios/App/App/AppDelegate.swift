@@ -1,6 +1,5 @@
 import UIKit
 import Capacitor
-import WebKit
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -8,29 +7,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-            self.enableWebViewSwipeBack()
-        }
         return true
-    }
-
-    func applicationDidBecomeActive(_ application: UIApplication) {
-        enableWebViewSwipeBack()
-    }
-
-    /// Safari-style edge swipe to go back through in-app history (React Router).
-    private func enableWebViewSwipeBack() {
-        guard let bridge = window?.rootViewController as? CAPBridgeViewController else { return }
-        bridge.webView?.allowsBackForwardNavigationGestures = true
-    }
-
-    func applicationWillResignActive(_ application: UIApplication) {
-    }
-
-    func applicationDidEnterBackground(_ application: UIApplication) {
-    }
-
-    func applicationWillEnterForeground(_ application: UIApplication) {
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
