@@ -208,10 +208,13 @@ For payments on mobile, you'll need In-App Purchases (Apple/Google take 30%) —
 
 The repo includes a **Capacitor** wrapper so the same web app ships to the App Store and Google Play.
 
+**Store launch guide:** **[docs/STORE_LAUNCH.md](docs/STORE_LAUNCH.md)**
+
 ```bash
-npm run build:mobile   # build web + sync to native projects
-npm run cap:ios        # open Xcode
-npm run cap:android    # open Android Studio
+npm run store:icons     # after adding public/logo.png
+npm run build:mobile    # production .env.local first
+npm run cap:ios         # open Xcode
+npm run cap:android     # open Android Studio
 ```
 
 **App ID:** `com.disccaddy.app`

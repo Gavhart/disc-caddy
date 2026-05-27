@@ -1,3 +1,4 @@
+import { getAppBaseUrl } from './invite'
 import { supabase } from './supabase'
 import { OnboardingInput, completeOnboarding } from './profile'
 
@@ -48,7 +49,7 @@ export async function signOut() {
 
 export async function sendPasswordReset(email: string) {
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${window.location.origin}/reset-password`,
+    redirectTo: `${getAppBaseUrl()}/reset-password`,
   })
   if (error) throw error
 }

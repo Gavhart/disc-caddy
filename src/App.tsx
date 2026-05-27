@@ -5,6 +5,7 @@ import { refreshDiscsFromSupabase } from './lib/discs'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { Navigation } from './components/Navigation'
+import { ScrollToTop } from './components/ScrollToTop'
 import { SetupScreen } from './components/SetupScreen'
 import { LoginPage } from './pages/LoginPage'
 import { SignupPage } from './pages/SignupPage'
@@ -46,6 +47,7 @@ function AppShell() {
   }
   return (
     <>
+      <ScrollToTop />
       {session && me?.onboardingComplete && !isSharePage && !isInvitePage && (
         <Navigation />
       )}

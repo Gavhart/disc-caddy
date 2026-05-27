@@ -1,5 +1,5 @@
 /** Bump when you ship a release users should see on next sign-in. */
-export const APP_VERSION = '0.6.5'
+export const APP_VERSION = '1.0.0'
 
 export interface ReleaseNote {
   version: string
@@ -19,6 +19,16 @@ export const ROADMAP: string[] = [
 ]
 
 export const RELEASES: ReleaseNote[] = [
+  {
+    version: '1.0.0',
+    date: '2026-05-21',
+    title: 'Ready for App Store & Play',
+    items: [
+      'iOS and Android apps — same account as the website, Pro syncs when you subscribe on thedisccaddy.com',
+      'Store-ready privacy policy, account deletion, and native permissions for photos & location',
+      'Password reset emails always link to the website (works from the mobile app too)',
+    ],
+  },
   {
     version: '0.6.5',
     date: '2026-05-21',

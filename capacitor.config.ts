@@ -5,8 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Disc Caddy',
   webDir: 'dist',
   server: {
-    // Allow live-reload against the Vite dev server during native development.
-    // Comment out or remove for production store builds.
+    // DEV ONLY — uncomment to live-reload against Vite. Must be off for store builds.
     // url: 'http://localhost:5173',
     androidScheme: 'https',
   },

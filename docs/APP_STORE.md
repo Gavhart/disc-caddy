@@ -1,8 +1,8 @@
 # App Store & Google Play — publish checklist
 
-**Android first:** see **[GOOGLE_PLAY.md](./GOOGLE_PLAY.md)** for the full step-by-step Play Store walkthrough.
+**Start here:** **[STORE_LAUNCH.md](./STORE_LAUNCH.md)** — unified checklist for both stores.
 
-Disc Caddy ships as a **Capacitor** app: your existing Vite + React web app wrapped in native iOS/Android shells. The free tier works fully in the stores; Pro billing stays on the **website** (required by Apple/Google for digital subscriptions unless you implement In-App Purchase).
+Disc Caddy ships as a **Capacitor** app: your existing Vite + React web app wrapped in native iOS/Android shells. The free tier works fully in the stores; Pro billing stays on **https://thedisccaddy.com** (required by Apple/Google for digital subscriptions unless you implement In-App Purchase).
 
 ---
 
@@ -12,12 +12,18 @@ Disc Caddy ships as a **Capacitor** app: your existing Vite + React web app wrap
 |------|--------|
 | Capacitor iOS + Android projects | `ios/`, `android/` |
 | Mobile build scripts | `npm run build:mobile`, `cap:ios`, `cap:android` |
+| Store icon generator | `npm run store:icons` (needs `public/logo.png`) |
 | Safe area / notch padding | CSS `env(safe-area-inset-*)` |
-| Privacy Policy page | `/privacy` |
+| Privacy Policy page | `/privacy` (updated for stores) |
 | Terms of Service page | `/terms` |
 | Account deletion in Settings | Calls `delete-account` edge function |
 | Stripe hidden in native app | App Store billing compliance |
+| Auth email links use `VITE_APP_URL` | Not `capacitor://` — set at mobile build time |
+| iOS photo + location permission strings | `Info.plist` |
+| iOS export compliance flag | `ITSAppUsesNonExemptEncryption = false` |
+| Android photo permission | `READ_MEDIA_IMAGES` in manifest |
 | App ID | `com.disccaddy.app` |
+| Store version | **1.0.0** (iOS Xcode + Android `build.gradle`) |
 
 ---
 
@@ -25,47 +31,39 @@ Disc Caddy ships as a **Capacitor** app: your existing Vite + React web app wrap
 
 ### 1. Deploy backend pieces
 
-```bash
-# Apply any pending SQL migrations (003–013) in Supabase SQL Editor
+Apply migrations **003 through 032** in Supabase SQL Editor, then:
 
-# Deploy account deletion (required for Apple)
+```bash
 supabase functions deploy delete-account
 ```
 
+See **STORE_LAUNCH.md** for the full function list.
+
 ### 2. Host public legal URLs
 
-App Store Connect and Play Console need **public HTTPS links** to your privacy policy (and often terms).
+App Store Connect and Play Console need **public HTTPS links**:
 
-Options:
-- Deploy the web app (Vercel, Netlify, etc.) and use `https://yourdomain.com/privacy` and `/terms`
-- Or host static copies of the legal pages on your marketing site
+- https://thedisccaddy.com/privacy
+- https://thedisccaddy.com/terms
 
-**Update** the support email in `src/pages/PrivacyPage.tsx` and `TermsPage.tsx` before publishing.
+Support: **support@disccaddy.app**
 
 ### 3. App icons & splash screens
 
-Capacitor defaults are generic. Replace before submission:
+```bash
+npm run store:icons
+```
 
-**iOS** — `ios/App/App/Assets.xcassets/AppIcon.appiconset/`  
-Use a 1024×1024 PNG (no transparency for App Store).
-
-**Android** — `android/app/src/main/res/mipmap-*`  
-Use Android Studio **Image Asset** wizard (Adaptive icon + legacy).
-
-**Splash** — configure in `capacitor.config.ts` (`SplashScreen` plugin) or replace native splash assets in Xcode / Android Studio.
-
-Tip: export from `public/logo.png` at required sizes using [appicon.co](https://www.appicon.co) or similar.
+Then verify iOS AppIcon in Xcode and Android launcher via Image Asset wizard.
 
 ### 4. Production env in the native bundle
 
-Capacitor ships your built `dist/` folder. Env vars are baked in at **build time**:
-
 ```bash
-# .env.local must have production Supabase keys before:
+# .env.local must include production Supabase + VITE_APP_URL before:
 npm run build:mobile
 ```
 
-Do **not** ship with localhost URLs. Stripe price ID is optional (native app doesn't open checkout anyway).
+See **`.env.example`**. Do **not** ship with localhost URLs or dev `server.url` in `capacitor.config.ts`.
 
 ---
 
@@ -81,23 +79,11 @@ Do **not** ship with localhost URLs. Stripe price ID is optional (native app doe
 ### Workflow
 
 ```bash
-npm run build:mobile    # vite build + cap sync
-npm run cap:ios         # opens Xcode
-npm run cap:android     # opens Android Studio
+npm run store:icons       # once, after adding public/logo.png
+npm run build:mobile      # vite build + cap sync
+npm run cap:ios           # opens Xcode
+npm run cap:android       # opens Android Studio
 ```
-
-In Xcode: select a simulator or device → **Run**.  
-In Android Studio: select emulator or device → **Run**.
-
-### Live reload during development (optional)
-
-Uncomment in `capacitor.config.ts`:
-
-```ts
-server: { url: 'http://YOUR_LAN_IP:5173' }
-```
-
-Run `npm run dev`, then rebuild/sync. Remove before store submission.
 
 ---
 
@@ -106,98 +92,46 @@ Run `npm run dev`, then rebuild/sync. Remove before store submission.
 ### App Store Connect setup
 
 1. [App Store Connect](https://appstoreconnect.apple.com) → **Apps** → **+** New App
-2. Bundle ID: `com.disccaddy.app` (must match Xcode)
+2. Bundle ID: `com.disccaddy.app`
 3. Category: **Sports**
-4. Age rating: complete questionnaire (likely 4+)
-5. **Privacy Policy URL:** your hosted `/privacy` link
-6. **App Privacy** (“nutrition labels”): declare email, user content (bag/course data), photos if uploaded
+4. **Privacy Policy URL:** https://thedisccaddy.com/privacy
+5. **App Privacy:** email, user content, photos, location (when in use)
 
 ### Xcode archive
 
-1. Open `ios/App/App.xcworkspace` (not `.xcodeproj`)
+1. Open `ios/App/App.xcworkspace`
 2. **Signing & Capabilities** → Team + automatic signing
-3. Version / build number in target settings
-4. **Product → Archive** → **Distribute App** → App Store Connect
+3. Version **1.0.0**, build **1** (increment build each upload)
+4. **Product → Archive** → **Distribute App** → TestFlight → App Review
 
 ### Apple-specific requirements (handled)
 
-- ✅ Account deletion in-app (Settings → Delete account)
-- ✅ No external payment links for digital subscriptions in the app
-- ✅ Privacy policy accessible
-
-### Optional later: Apple In-App Purchase
-
-To sell Pro **inside** the iOS app you need StoreKit + server validation (RevenueCat recommended). Until then, Pro is web-only; mobile app syncs Pro status via Supabase when signed in.
+- ✅ Account deletion in-app
+- ✅ No external payment for digital subscriptions in the app
+- ✅ Privacy policy URL
+- ✅ Photo library usage description
+- ✅ Standard encryption declaration
 
 ---
 
 ## Google Play Store
 
-### Play Console setup
-
-1. [Google Play Console](https://play.google.com/console) → Create app
-2. Package name: `com.disccaddy.app`
-3. **Store listing:** screenshots, short/full description, feature graphic
-4. **Privacy policy URL:** same hosted `/privacy` link
-5. **Data safety form:** align with Supabase/Stripe/Open-Meteo disclosures
-
-### Release build
-
-In Android Studio:
-
-1. **Build → Generate Signed Bundle / APK** → **Android App Bundle (.aab)**
-2. Create/upload keystore (keep backup — losing it blocks updates)
-3. Upload AAB to **Production** or **Internal testing** track
-
----
-
-## Store listing copy (starter)
-
-**Subtitle (iOS):** Disc golf disc recommendations  
-**Short description:** Pick the right disc for every hole based on your bag, arm speed, and conditions.
-
-**Keywords:** disc golf, disc caddy, frisbee golf, bag builder, course guide
-
-**Screenshots to capture:**
-1. Home — recommendation for a hole
-2. Bag editor with discs
-3. Course stepper / hole picker
-4. Player setup / settings
-5. (Optional) Pro features on web — don't show Stripe checkout in mobile screenshots
+See **[GOOGLE_PLAY.md](./GOOGLE_PLAY.md)** for signed AAB, Data safety, and internal testing track.
 
 ---
 
 ## Subscriptions strategy
 
-| Channel | Pro purchase | Notes |
-|---------|--------------|-------|
-| Website | Stripe Checkout | Full upgrade flow |
-| iOS / Android app | Not sold in-app | Free tier + synced Pro if subscribed on web |
-| Future | Apple IAP / Google Play Billing | Requires RevenueCat or custom StoreKit integration |
-
-This matches common indie patterns and passes review when you **don't** link to external purchase from the app.
-
----
-
-## Pre-submission checklist
-
-- [ ] Migrations 003–**013** applied in Supabase
-- [ ] `delete-account` edge function deployed
-- [ ] Support email updated in Privacy/Terms pages
-- [ ] Privacy policy hosted at public HTTPS URL
-- [ ] App icons + splash screens replaced
-- [ ] Production `npm run build:mobile` with correct env vars
-- [ ] Tested sign up, recommendations, bag CRUD, course picker on real device
-- [ ] Tested account deletion end-to-end
-- [ ] iOS: Archive + upload to TestFlight
-- [ ] Android: Signed AAB uploaded to internal test track
-- [ ] Store screenshots + descriptions prepared
+| Channel | Pro purchase |
+|---------|--------------|
+| Website | Stripe Checkout |
+| iOS / Android app | Not sold in-app — sync Pro when signed in |
+| Future | Apple IAP / Google Play Billing |
 
 ---
 
 ## Useful links
 
+- [STORE_LAUNCH.md](./STORE_LAUNCH.md)
 - [Capacitor iOS docs](https://capacitorjs.com/docs/ios)
-- [Capacitor Android docs](https://capacitorjs.com/docs/android)
-- [App Store Review Guidelines 3.1 (payments)](https://developer.apple.com/app-store/review/guidelines/#payments)
-- [Google Play payments policy](https://support.google.com/googleplay/android-developer/answer/9858738)
+- [App Store Review Guidelines 3.1](https://developer.apple.com/app-store/review/guidelines/#payments)

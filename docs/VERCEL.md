@@ -33,6 +33,7 @@ In Vercel → **Project → Settings → Environment Variables**, add for **Prod
 | `VITE_SUPABASE_ANON_KEY` | Supabase Dashboard → Settings → API → `anon` `public` key |
 | `VITE_STRIPE_PRICE_ID_MONTHLY` | Stripe → Products → Pro → **$2.99/mo** price ID |
 | `VITE_STRIPE_PRICE_ID_ANNUAL` | Stripe → Products → Pro → **$24.99/yr** price ID |
+| `VITE_APP_URL` | `https://thedisccaddy.com` — used for invite links; **set this for mobile builds too** |
 
 **Do not** add Stripe secret keys or webhook secrets here — those stay in Supabase Edge Function secrets only.
 
@@ -125,4 +126,5 @@ Do **not** use the Capacitor build for Vercel — use the normal `npm run build`
 
 - [GOOGLE_PLAY.md](./GOOGLE_PLAY.md) — Android store (use Vercel URLs for privacy policy)
 - [APP_STORE.md](./APP_STORE.md) — iOS later
+- [STORE_LAUNCH.md](./STORE_LAUNCH.md) — unified Play + App Store checklist
 - [STRIPE_LIVE.md](./STRIPE_LIVE.md) — switching Stripe to live mode

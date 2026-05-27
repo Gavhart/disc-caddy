@@ -46,7 +46,11 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
     <key>NSLocationWhenInUseUsageDescription</key>
-    <string>Disc Caddy uses your location to fetch live wind for disc recommendations.</string>
+    <string>Disc Caddy uses your location for live wind recommendations and to find nearby players and courses.</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Disc Caddy lets you choose photos for your profile and disc bag.</string>
+    <key>ITSAppUsesNonExemptEncryption</key>
+    <false/>
     <key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
 </dict>

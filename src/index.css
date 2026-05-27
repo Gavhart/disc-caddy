@@ -31,10 +31,20 @@
   box-sizing: border-box;
 }
 
+html {
+  width: 100%;
+  overflow-x: clip;
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
+  width: 100%;
+  overflow-x: clip;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
   background:
     radial-gradient(ellipse 90% 55% at 50% -15%, rgba(56, 189, 248, 0.14), transparent),
     radial-gradient(ellipse 55% 45% at 100% 90%, rgba(251, 146, 60, 0.1), transparent),
@@ -48,12 +58,9 @@ body {
   min-height: 100vh;
   width: 100%;
   max-width: 100%;
-}
-
-html,
-body {
+  min-width: 0;
+  overflow-x: clip;
   overflow-x: hidden;
-  max-width: 100%;
 }
 
 /* ---------- Layout shells ---------- */
@@ -63,6 +70,9 @@ body {
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  overflow-x: clip;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
 }
 
 .container {
@@ -116,6 +126,13 @@ body {
   border-radius: 12px;
 }
 
+img,
+video,
+iframe,
+svg:not(:root) {
+  max-width: 100%;
+}
+
 .auth-brand .logo {
   width: 100%;
 }
@@ -146,6 +163,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
   padding: max(10px, env(safe-area-inset-top)) 16px 10px;
   padding-left: max(16px, env(safe-area-inset-left));
   padding-right: max(16px, env(safe-area-inset-right));
@@ -245,6 +265,9 @@ body {
   right: 0;
   bottom: 0;
   z-index: 400;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
   background: color-mix(in srgb, var(--surface) 96%, transparent);
   border-top: 1px solid var(--border);
   padding-bottom: env(safe-area-inset-bottom);
@@ -456,6 +479,7 @@ body {
   inset: 0;
   z-index: 350;
   pointer-events: none;
+  overflow: hidden;
 }
 
 .nav-drawer-open {
@@ -951,13 +975,17 @@ body.nav-menu-open .main {
   box-shadow: var(--shadow);
   position: relative;
   overflow: hidden;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .card:has(.community-member-list),
 .card:has(.community-message-list),
 .card:has(.community-city-list),
 .community-page .card {
-  overflow: visible;
+  overflow-x: clip;
+  overflow-x: hidden;
+  overflow-y: visible;
 }
 
 .card::before {
@@ -3374,6 +3402,11 @@ tr.ranked td:first-child {
 /* ---------- Auth pages ---------- */
 .auth-shell {
   min-height: 100vh;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+  overflow-x: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3952,9 +3985,10 @@ tr.ranked td:first-child {
 /* ---------- Upgrade page ---------- */
 .plans {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 14px;
   margin-top: 16px;
+  max-width: 100%;
 }
 
 @media (max-width: 540px) {
@@ -4113,6 +4147,7 @@ footer code {
   margin: 8px 0 0;
   font-size: 12px;
   overflow-x: auto;
+  max-width: 100%;
 }
 
 footer {
@@ -4440,7 +4475,9 @@ footer {
 
 .scorecard-grid-scroll {
   overflow-x: auto;
+  max-width: 100%;
   margin-top: 8px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .scorecard-grid {
@@ -5259,10 +5296,16 @@ footer {
 .course-discovery-map {
   height: 280px;
   width: 100%;
+  max-width: 100%;
   border-radius: 8px;
   margin: 12px 0 16px;
   border: 1px solid var(--border);
   z-index: 0;
+  overflow: hidden;
+}
+
+.course-discovery-map .leaflet-container {
+  max-width: 100%;
 }
 
 .course-discovery-item-selected {
