@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import QRCode from 'qrcode'
 import { useAuth } from '../contexts/AuthContext'
 import { Logo } from '../components/Logo'
@@ -12,6 +12,7 @@ import {
 
 export function InvitePage() {
   const { me, session } = useAuth()
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
@@ -37,6 +38,15 @@ export function InvitePage() {
       .catch(() => setQrDataUrl(null))
   }, [inviteLink])
 
+  function goBack() {
+    const idx = window.history.state?.idx
+    if (typeof idx === 'number' && idx > 0) {
+      navigate(-1)
+      return
+    }
+    navigate(session ? '/profile' : '/login')
+  }
+
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(inviteLink)
@@ -59,6 +69,11 @@ export function InvitePage() {
 
   return (
     <div className="container invite-page">
+      <nav className="invite-nav" aria-label="Invite page">
+        <button type="button" className="page-back link-button" onClick={goBack}>
+          ← {session ? 'Back' : 'Sign in'}
+        </button>
+      </nav>
       <header className="invite-header">
         <Logo height={48} />
         <h1>Join Disc Caddy</h1>
