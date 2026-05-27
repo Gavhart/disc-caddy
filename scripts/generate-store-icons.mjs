@@ -12,9 +12,13 @@ const iosIconDir = path.join(
   root,
   'ios/App/App/Assets.xcassets/AppIcon.appiconset',
 )
+const iosSplashDir = path.join(
+  root,
+  'ios/App/App/Assets.xcassets/Splash.imageset',
+)
 const BG = { r: 15, g: 31, b: 20, alpha: 1 }
 
-async function fileExists(p: string): Promise<boolean> {
+async function fileExists(p) {
   try {
     await access(p)
     return true
@@ -23,44 +27,45 @@ async function fileExists(p: string): Promise<boolean> {
   }
 }
 
-async function makeSquareIcon(size: number, outPath: string, padding = 0.12) {
+async function logoOnBackground(width, height, outPath, padding = 0.12) {
   const logoMeta = await sharp(logoPath).metadata()
-  const inner = Math.round(size * (1 - padding * 2))
-  const scale = Math.min(inner / (logoMeta.width ?? 1), inner / (logoMeta.height ?? 1))
-  const width = Math.max(1, Math.round((logoMeta.width ?? 1) * scale))
-  const height = Math.max(1, Math.round((logoMeta.height ?? 1) * scale))
-  const left = Math.round((size - width) / 2)
-  const top = Math.round((size - height) / 2)
-  const logo = await sharp(logoPath).resize(width, height).png().toBuffer()
+  const innerW = Math.round(width * (1 - padding * 2))
+  const innerH = Math.round(height * (1 - padding * 2))
+  const scale = Math.min(
+    innerW / (logoMeta.width ?? 1),
+    innerH / (logoMeta.height ?? 1),
+  )
+  const logoW = Math.max(1, Math.round((logoMeta.width ?? 1) * scale))
+  const logoH = Math.max(1, Math.round((logoMeta.height ?? 1) * scale))
+  const left = Math.round((width - logoW) / 2)
+  const top = Math.round((height - logoH) / 2)
+  const logo = await sharp(logoPath).resize(logoW, logoH).png().toBuffer()
 
   await sharp({
-    create: { width: size, height: size, channels: 4, background: BG },
+    create: { width, height, channels: 4, background: BG },
   })
     .composite([{ input: logo, left, top }])
     .png()
     .toFile(outPath)
 
-  console.log(`wrote ${path.relative(root, outPath)} (${size}x${size})`)
+  console.log(`wrote ${path.relative(root, outPath)} (${width}x${height})`)
 }
 
-async function makeFeatureGraphic(outPath: string) {
-  const width = 1024
-  const height = 500
-  const logoMeta = await sharp(logoPath).metadata()
-  const targetHeight = 220
-  const scale = targetHeight / (logoMeta.height ?? 1)
-  const logoWidth = Math.max(1, Math.round((logoMeta.width ?? 1) * scale))
-  const logoHeight = Math.max(1, Math.round((logoMeta.height ?? 1) * scale))
-  const logo = await sharp(logoPath).resize(logoWidth, logoHeight).png().toBuffer()
+async function makeSquareIcon(size, outPath, padding = 0.12) {
+  await logoOnBackground(size, size, outPath, padding)
+}
 
-  await sharp({
-    create: { width, height, channels: 4, background: BG },
-  })
-    .composite([{ input: logo, left: Math.round((width - logoWidth) / 2), top: Math.round((height - logoHeight) / 2) }])
-    .png()
-    .toFile(outPath)
+async function makeFeatureGraphic(outPath) {
+  await logoOnBackground(1024, 500, outPath, 0.1)
+}
 
-  console.log(`wrote ${path.relative(root, outPath)} (${width}x${height})`)
+async function makeIosSplash() {
+  const size = 2732
+  const out = path.join(iosSplashDir, 'splash-2732x2732.png')
+  await logoOnBackground(size, size, out, 0.18)
+  // Storyboard references 1x/2x/3x — same asset scaled by iOS is fine for Capacitor default setup.
+  await logoOnBackground(size, size, path.join(iosSplashDir, 'splash-2732x2732-1.png'), 0.18)
+  await logoOnBackground(size, size, path.join(iosSplashDir, 'splash-2732x2732-2.png'), 0.18)
 }
 
 if (!(await fileExists(logoPath))) {
@@ -72,14 +77,18 @@ if (!(await fileExists(logoPath))) {
 
 await mkdir(storeDir, { recursive: true })
 await mkdir(iosIconDir, { recursive: true })
+await mkdir(iosSplashDir, { recursive: true })
 
 await makeSquareIcon(1024, path.join(iosIconDir, 'AppIcon-512@2x.png'))
+await makeIosSplash()
 await makeSquareIcon(512, path.join(storeDir, 'play-store-icon-512.png'))
 await makeSquareIcon(512, path.join(storeDir, 'app-store-marketing-512.png'))
 await makeFeatureGraphic(path.join(storeDir, 'play-feature-graphic-1024x500.png'))
 
 console.log('')
-console.log('Next steps:')
-console.log('  iOS — AppIcon is updated; open Xcode and verify Assets → AppIcon')
-console.log('  Android — Android Studio → Image Asset → import play-store-icon-512.png')
-console.log('  Play Console — upload play-feature-graphic-1024x500.png as feature graphic')
+console.log('iOS native assets updated from public/logo.png')
+console.log('')
+console.log('Next:')
+console.log('  1. npm run build:mobile   # copies logo into the in-app web bundle')
+console.log('  2. Xcode → Product → Clean Build Folder, then Run')
+console.log('  3. Delete the app from simulator/device if the home-screen icon looks cached')

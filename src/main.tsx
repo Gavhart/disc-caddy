@@ -6,6 +6,8 @@ import './index.css'
 
 async function initNativeShell() {
   if (!Capacitor.isNativePlatform()) return
+  document.documentElement.classList.add('native-app')
+  document.documentElement.classList.add(`native-${Capacitor.getPlatform()}`)
   const { StatusBar, Style } = await import('@capacitor/status-bar')
   await StatusBar.setStyle({ style: Style.Dark })
   if (Capacitor.getPlatform() === 'android') {

@@ -6,6 +6,7 @@ import { AuthProvider, useAuth } from './contexts/AuthContext'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { Navigation } from './components/Navigation'
 import { ScrollToTop } from './components/ScrollToTop'
+import { SwipeBackHandler } from './components/SwipeBackHandler'
 import { SetupScreen } from './components/SetupScreen'
 import { LoginPage } from './pages/LoginPage'
 import { SignupPage } from './pages/SignupPage'
@@ -47,7 +48,6 @@ function AppShell() {
   }
   return (
     <>
-      <ScrollToTop />
       {session && me?.onboardingComplete && !isSharePage && !isInvitePage && (
         <Navigation />
       )}
@@ -250,6 +250,8 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <ScrollToTop />
+        <SwipeBackHandler />
         <AppShell />
       </AuthProvider>
     </BrowserRouter>

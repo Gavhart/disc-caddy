@@ -33,7 +33,7 @@
 
 html {
   width: 100%;
-  overflow-x: clip;
+  max-width: 100%;
   overflow-x: hidden;
 }
 
@@ -42,9 +42,10 @@ body {
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   width: 100%;
-  overflow-x: clip;
+  max-width: 100%;
   overflow-x: hidden;
   overscroll-behavior-x: none;
+  touch-action: pan-y pinch-zoom;
   background:
     radial-gradient(ellipse 90% 55% at 50% -15%, rgba(56, 189, 248, 0.14), transparent),
     radial-gradient(ellipse 55% 45% at 100% 90%, rgba(251, 146, 60, 0.1), transparent),
@@ -59,7 +60,6 @@ body {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  overflow-x: clip;
   overflow-x: hidden;
 }
 
@@ -70,9 +70,9 @@ body {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  overflow-x: clip;
   overflow-x: hidden;
   overscroll-behavior-x: none;
+  touch-action: pan-y pinch-zoom;
 }
 
 .container {
@@ -85,6 +85,7 @@ body {
   flex-direction: column;
   gap: 16px;
   box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .app {
@@ -983,9 +984,7 @@ body.nav-menu-open .main {
 .card:has(.community-message-list),
 .card:has(.community-city-list),
 .community-page .card {
-  overflow-x: clip;
-  overflow-x: hidden;
-  overflow-y: visible;
+  overflow: hidden;
 }
 
 .card::before {
@@ -2944,14 +2943,23 @@ select {
 
 .bag-mods {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
+}
+
+@media (min-width: 420px) {
+  .bag-mods {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+  }
 }
 
 .bag-mods select {
   font-size: 13px;
   padding: 9px 12px;
   padding-right: 28px;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
 }
 
 .bag-weight-field {
@@ -3055,7 +3063,8 @@ select {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  min-width: 160px;
+  min-width: 0;
+  flex: 1 1 140px;
 }
 
 .pick-chooser-field > span {
@@ -5438,4 +5447,50 @@ footer {
 .playbook-edit input {
   width: 100%;
   margin: 8px 0;
+}
+
+/* ---------- No horizontal page scroll (iOS WKWebView / Capacitor) ---------- */
+input,
+select,
+textarea,
+button {
+  max-width: 100%;
+}
+
+.nav-top-inner {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.leaflet-container,
+.leaflet-pane,
+.leaflet-map-pane,
+.leaflet-tile-pane {
+  max-width: 100% !important;
+}
+
+.leaflet-container {
+  overflow: hidden;
+}
+
+html.native-app,
+html.native-app body,
+html.native-app #root,
+html.native-app .main {
+  overflow-x: hidden !important;
+  max-width: 100% !important;
+  touch-action: pan-y pinch-zoom;
+}
+
+html.native-ios .container,
+html.native-ios .card,
+html.native-ios .auth-card {
+  overflow-x: hidden;
+}
+
+.scorecard-grid-scroll,
+.setup-steps pre {
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
