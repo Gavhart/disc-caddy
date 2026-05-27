@@ -14,6 +14,7 @@
     "import-discs": "node scripts/import-discs.mjs",
     "icons": "node scripts/generate-icons.mjs",
     "store:icons": "node scripts/generate-store-icons.mjs",
+    "store:screenshots": "node scripts/resize-app-screenshots.mjs",
     "invite-qr": "node scripts/generate-invite-qr.mjs"
   },
   "dependencies": {

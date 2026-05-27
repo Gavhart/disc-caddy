@@ -1,0 +1,5 @@
+# Drop original screenshots here (PNG or JPG), then run:
+#
+#   npm run store:screenshots
+#
+# Resized files are written to ../ios/
