@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { summarizeHoleLayout } from '../lib/holeLabels'
 import { fetchLiveWind, getUserLocation } from '../lib/weather'
 import {
   Elevation,
@@ -67,7 +68,10 @@ type WindSource = 'live' | 'manual'
 interface Props {
   hole: Hole
   onChange: (hole: Hole) => void
-  /** When true, layout fields are locked (driven by a course-hole pick). */
+  /** Course hole drives layout; custom hole lets you edit everything. */
+  source?: 'course' | 'custom'
+  courseLabel?: string
+  /** @deprecated use source === 'course' */
   locked?: boolean
   /** Fallback weather coordinates when GPS is unavailable. */
   courseLat?: number | null
@@ -113,11 +117,14 @@ function ChipGroup<T extends string>({
 export function HoleInput({
   hole,
   onChange,
+  source = 'custom',
+  courseLabel,
   locked = false,
   courseLat = null,
   courseLon = null,
   onPersistTeeBearing,
 }: Props) {
+  const isCourseHole = source === 'course' || locked
   const [windLoading, setWindLoading] = useState(false)
   const [windError, setWindError] = useState<string | null>(null)
   const [windLabel, setWindLabel] = useState<string | null>(null)
@@ -245,66 +252,86 @@ export function HoleInput({
   }
 
   return (
-    <section className="card">
-      <h2>What hole are you playing?</h2>
+    <section className={'card hole-input' + (isCourseHole ? ' hole-input-course' : ' hole-input-custom')}>
+      {isCourseHole ? (
+        <>
+          <h2>Wind for this hole</h2>
+          <p className="muted small hole-input-intro">
+            {courseLabel ? (
+              <>
+                Layout for <strong>{courseLabel}</strong> comes from the course stepper
+                above.
+              </>
+            ) : (
+              <>Layout comes from your selected course hole.</>
+            )}{' '}
+            Recommendations use that layout — set wind and tee direction here.
+          </p>
+          <div className="hole-layout-summary">
+            <span className="hole-layout-summary-label">From course</span>
+            <p>{summarizeHoleLayout(hole)}</p>
+          </div>
+        </>
+      ) : (
+        <>
+          <h2>Custom hole</h2>
+          <p className="muted small hole-input-intro">
+            Enter any hole manually when you&apos;re not stepping through a saved course.
+            Pick a course above for full-round tracking and live scoring.
+          </p>
+          <div className="field-row">
+            <label htmlFor="dist">Distance</label>
+            <div className="input-group">
+              <input
+                id="dist"
+                type="number"
+                min={50}
+                max={800}
+                step={10}
+                value={hole.distance}
+                onChange={e => setHole('distance', Number(e.target.value) || 0)}
+              />
+              <span className="suffix">ft</span>
+            </div>
+          </div>
 
-      <div className="field-row">
-        <label htmlFor="dist">Distance</label>
-        <div className="input-group">
-          <input
-            id="dist"
-            type="number"
-            min={50}
-            max={800}
-            step={10}
-            value={hole.distance}
-            onChange={e => setHole('distance', Number(e.target.value) || 0)}
-            disabled={locked}
+          <ChipGroup
+            label="Direction"
+            value={hole.direction}
+            options={DIRECTION_OPTIONS}
+            onChange={v => setHole('direction', v)}
           />
-          <span className="suffix">ft</span>
-        </div>
-      </div>
 
-      <ChipGroup
-        label="Direction"
-        value={hole.direction}
-        options={DIRECTION_OPTIONS}
-        onChange={v => setHole('direction', v)}
-        disabled={locked}
-      />
+          <ChipGroup
+            label="Net elevation (tee → basket)"
+            value={hole.elevation}
+            options={ELEVATION_OPTIONS}
+            onChange={v => setHole('elevation', v)}
+          />
 
-      <ChipGroup
-        label="Net elevation (tee → basket)"
-        value={hole.elevation}
-        options={ELEVATION_OPTIONS}
-        onChange={v => setHole('elevation', v)}
-        disabled={locked}
-      />
+          <ChipGroup
+            label="Terrain"
+            value={hole.terrain}
+            options={TERRAIN_OPTIONS}
+            onChange={v => setHole('terrain', v)}
+          />
 
-      <ChipGroup
-        label="Terrain"
-        value={hole.terrain}
-        options={TERRAIN_OPTIONS}
-        onChange={v => setHole('terrain', v)}
-        disabled={locked}
-      />
+          <ChipGroup
+            label="Trees"
+            value={hole.treeCoverage}
+            options={TREE_COVERAGE_OPTIONS}
+            onChange={setTreeCoverage}
+          />
 
-      <ChipGroup
-        label="Trees"
-        value={hole.treeCoverage}
-        options={TREE_COVERAGE_OPTIONS}
-        onChange={setTreeCoverage}
-        disabled={locked}
-      />
-
-      {showTreeLayout && (
-        <ChipGroup
-          label="Tree layout"
-          value={hole.treeLayout}
-          options={TREE_LAYOUT_OPTIONS}
-          onChange={v => setHole('treeLayout', v)}
-          disabled={locked}
-        />
+          {showTreeLayout && (
+            <ChipGroup
+              label="Tree layout"
+              value={hole.treeLayout}
+              options={TREE_LAYOUT_OPTIONS}
+              onChange={v => setHole('treeLayout', v)}
+            />
+          )}
+        </>
       )}
 
       <div className="wind-section">

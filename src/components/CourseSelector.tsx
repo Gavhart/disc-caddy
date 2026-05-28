@@ -416,6 +416,10 @@ function RoundView({
               →
             </button>
           </div>
+          <p className="muted small round-hole-driven">
+            Disc recommendations below use this hole. Change wind under{' '}
+            <strong>Wind for this hole</strong>.
+          </p>
 
           <div className="round-jump">
             <label htmlFor="hole-jump" className="muted small">

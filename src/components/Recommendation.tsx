@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Recommendation as Rec, ThrowStyle } from '../types'
+import { Hand, Recommendation as Rec, ThrowStyle } from '../types'
 import { ProGate } from './ProGate'
 
 interface Props {
   recommendations: Rec[]
-  throwsForehand?: boolean
+  hand: Hand
+  primaryThrow: ThrowStyle
+  profileHand: Hand
+  profilePrimaryThrow: ThrowStyle
+  onHandChange: (hand: Hand) => void
+  onPrimaryThrowChange: (style: ThrowStyle) => void
   getDiscRecommendation?: (
     bagDiscId: string,
     throwStyle?: ThrowStyle,
@@ -29,9 +34,18 @@ function releaseLabel(release: Rec['release']): string {
   return 'Flat'
 }
 
+function handLabel(hand: Hand): string {
+  return hand === 'left' ? 'Left' : 'Right'
+}
+
 export function Recommendation({
   recommendations,
-  throwsForehand = false,
+  hand,
+  primaryThrow,
+  profileHand,
+  profilePrimaryThrow,
+  onHandChange,
+  onPrimaryThrowChange,
   getDiscRecommendation,
   roundActive = false,
   isPro = false,
@@ -43,18 +57,19 @@ export function Recommendation({
 }: Props) {
   const top = recommendations[0]
   const [selectedBagDiscId, setSelectedBagDiscId] = useState<string | null>(null)
-  const [throwStyleOverride, setThrowStyleOverride] = useState<ThrowStyle | null>(
-    null,
-  )
+  const [discThrowOverride, setDiscThrowOverride] = useState<ThrowStyle | null>(null)
+
+  const usingProfileDefaults =
+    hand === profileHand && primaryThrow === profilePrimaryThrow
 
   useEffect(() => {
     if (memorySelection) {
       setSelectedBagDiscId(memorySelection.bagDiscId)
-      setThrowStyleOverride(memorySelection.throwStyle)
+      setDiscThrowOverride(memorySelection.throwStyle)
       return
     }
     setSelectedBagDiscId(null)
-    setThrowStyleOverride(null)
+    setDiscThrowOverride(null)
   }, [
     memorySelection?.bagDiscId,
     memorySelection?.throwStyle,
@@ -63,14 +78,16 @@ export function Recommendation({
     top?.throwStyle,
   ])
 
+  const activeThrowStyle = discThrowOverride ?? primaryThrow
+
   const displayed = useMemo(() => {
     if (!top) return null
     if (!selectedBagDiscId || !getDiscRecommendation) return top
     return (
-      getDiscRecommendation(selectedBagDiscId, throwStyleOverride ?? undefined) ??
+      getDiscRecommendation(selectedBagDiscId, activeThrowStyle) ??
       top
     )
-  }, [top, selectedBagDiscId, throwStyleOverride, getDiscRecommendation])
+  }, [top, selectedBagDiscId, activeThrowStyle, getDiscRecommendation])
 
   if (!top || !displayed) {
     return (
@@ -84,7 +101,7 @@ export function Recommendation({
   const usingTopPick =
     selectedBagDiscId == null ||
     (selectedBagDiscId === top.bagDisc.id &&
-      throwStyleOverride == null &&
+      discThrowOverride == null &&
       displayed.throwStyle === top.throwStyle)
 
   const alreadyLogged =
@@ -102,17 +119,24 @@ export function Recommendation({
         ? `#${displayed.rank} in your bag`
         : 'YOUR PICK'
 
-  function selectDisc(bagDiscId: string) {
+  function selectDisc(bagDiscId: string, throwStyle?: ThrowStyle) {
+    if (bagDiscId === top.bagDisc.id && throwStyle == null) {
+      setSelectedBagDiscId(null)
+      setDiscThrowOverride(null)
+      return
+    }
     setSelectedBagDiscId(bagDiscId)
-    setThrowStyleOverride(null)
+    setDiscThrowOverride(throwStyle ?? null)
   }
 
-  function selectThrowStyle(style: ThrowStyle) {
-    if (!displayed) return
-    if (!selectedBagDiscId) {
-      setSelectedBagDiscId(displayed.bagDisc.id)
-    }
-    setThrowStyleOverride(style)
+  function handleHandChange(next: Hand) {
+    onHandChange(next)
+    setDiscThrowOverride(null)
+  }
+
+  function handlePrimaryThrowChange(next: ThrowStyle) {
+    onPrimaryThrowChange(next)
+    setDiscThrowOverride(null)
   }
 
   return (
@@ -134,6 +158,46 @@ export function Recommendation({
       )}
 
       <div className="pick-chooser">
+        <div className="pick-chooser-field">
+          <span>Hand</span>
+          <div className="segmented">
+            <button
+              type="button"
+              className={hand === 'right' ? 'segmented-on' : undefined}
+              onClick={() => handleHandChange('right')}
+            >
+              Right
+            </button>
+            <button
+              type="button"
+              className={hand === 'left' ? 'segmented-on' : undefined}
+              onClick={() => handleHandChange('left')}
+            >
+              Left
+            </button>
+          </div>
+        </div>
+
+        <div className="pick-chooser-field">
+          <span>Throw</span>
+          <div className="segmented">
+            <button
+              type="button"
+              className={primaryThrow === 'backhand' ? 'segmented-on' : undefined}
+              onClick={() => handlePrimaryThrowChange('backhand')}
+            >
+              Backhand
+            </button>
+            <button
+              type="button"
+              className={primaryThrow === 'forehand' ? 'segmented-on' : undefined}
+              onClick={() => handlePrimaryThrowChange('forehand')}
+            >
+              Forehand
+            </button>
+          </div>
+        </div>
+
         <label className="pick-chooser-field">
           <span>Using disc</span>
           <select
@@ -141,8 +205,7 @@ export function Recommendation({
             onChange={e => {
               const id = e.target.value
               if (id === top.bagDisc.id) {
-                setSelectedBagDiscId(null)
-                setThrowStyleOverride(null)
+                selectDisc(top.bagDisc.id)
               } else {
                 selectDisc(id)
               }
@@ -156,33 +219,17 @@ export function Recommendation({
             ))}
           </select>
         </label>
-
-        {throwsForehand && getDiscRecommendation && (
-          <div className="pick-chooser-field">
-            <span>Throw</span>
-            <div className="segmented">
-              <button
-                type="button"
-                className={
-                  displayed.throwStyle === 'backhand' ? 'segmented-on' : undefined
-                }
-                onClick={() => selectThrowStyle('backhand')}
-              >
-                Backhand
-              </button>
-              <button
-                type="button"
-                className={
-                  displayed.throwStyle === 'forehand' ? 'segmented-on' : undefined
-                }
-                onClick={() => selectThrowStyle('forehand')}
-              >
-                Forehand
-              </button>
-            </div>
-          </div>
-        )}
       </div>
+
+      {!usingProfileDefaults && (
+        <p className="muted small pick-profile-hint">
+          Using {handLabel(hand)} hand · {styleLabel(primaryThrow)} for this hole
+          {hand !== profileHand || primaryThrow !== profilePrimaryThrow
+            ? ` (profile: ${handLabel(profileHand)} · ${styleLabel(profilePrimaryThrow)})`
+            : ''}
+          . Change anytime — saved in Settings when you update your profile.
+        </p>
+      )}
 
       <div className="top-pick">
         <div className="pick-label">{pickLabel.toUpperCase()}</div>
@@ -236,10 +283,7 @@ export function Recommendation({
             <button
               type="button"
               className="link-button"
-              onClick={() => {
-                setSelectedBagDiscId(null)
-                setThrowStyleOverride(null)
-              }}
+              onClick={() => selectDisc(top.bagDisc.id)}
             >
               Back to top pick
             </button>
@@ -300,7 +344,7 @@ export function Recommendation({
                       <button
                         type="button"
                         className="link-button pick-row-btn"
-                        onClick={() => selectDisc(r.bagDisc.id)}
+                        onClick={() => selectDisc(r.bagDisc.id, r.throwStyle)}
                       >
                         <div>{r.bagDisc.discName}</div>
                         <div className="muted small">

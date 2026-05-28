@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { PlayerSetup, PerTypeDistancePatch } from '../components/PlayerSetup'
 import { BagSummary } from '../components/BagSummary'
 import { HoleInput } from '../components/HoleInput'
+import { RecommendContextBar } from '../components/RecommendContextBar'
 import { Recommendation } from '../components/Recommendation'
 import { BagPicker } from '../components/BagPicker'
 import { CourseSelector } from '../components/CourseSelector'
@@ -53,6 +54,7 @@ import {
   CourseHole,
   Hole,
   HoleMemory,
+  Hand,
   Recommendation as Rec,
   RoundThrow,
   RoundPlayer,
@@ -105,6 +107,8 @@ export function HomePage() {
   const [roundBusy, setRoundBusy] = useState(false)
   const [roundError, setRoundError] = useState<string | null>(null)
   const [holeMemory, setHoleMemory] = useState<HoleMemory | null>(null)
+  const [handOverride, setHandOverride] = useState<Hand | null>(null)
+  const [primaryThrowOverride, setPrimaryThrowOverride] = useState<ThrowStyle | null>(null)
   const [holeMemories, setHoleMemories] = useState<HoleMemory[]>([])
   const [holeMemoryVersion, setHoleMemoryVersion] = useState(0)
   const [pendingInvites, setPendingInvites] = useState<RoundInvite[]>([])
@@ -417,6 +421,8 @@ export function HomePage() {
           teeBearing: ch.teeBearing,
         }))
       }
+      setHandOverride(null)
+      setPrimaryThrowOverride(null)
     },
     [],
   )
@@ -542,8 +548,16 @@ export function HomePage() {
     [roundId, pickedHoleNumber],
   )
 
-  const recommendOpts = useMemo(
-    () => ({
+  const recommendOpts = useMemo(() => {
+    const profilePrimary = me?.primaryThrow ?? 'backhand'
+    const effectiveHand = handOverride ?? me?.dominantHand ?? 'right'
+    const effectivePrimary = primaryThrowOverride ?? profilePrimary
+    const throwsForehand =
+      effectivePrimary === 'forehand' ||
+      (primaryThrowOverride == null &&
+        ((me?.throwsForehand ?? false) || profilePrimary === 'forehand'))
+
+    return {
       bag: discs,
       hole,
       playerMaxDistance: me?.maxDistance ?? 280,
@@ -554,12 +568,11 @@ export function HomePage() {
       playerFairwayDistance:
         me?.fairwayMaxDistance ?? Math.round((me?.maxDistance ?? 280) * 0.85),
       playerForehandDistance: me?.forehandMaxDistance ?? me?.maxDistance ?? 280,
-      hand: me?.dominantHand,
-      throwsForehand: me?.throwsForehand,
-      primaryThrow: me?.primaryThrow,
-    }),
-    [discs, hole, me],
-  )
+      hand: effectiveHand,
+      throwsForehand,
+      primaryThrow: effectivePrimary,
+    }
+  }, [discs, hole, me, handOverride, primaryThrowOverride])
 
   const recommendations = useMemo(() => {
     if (!me) return []
@@ -586,8 +599,32 @@ export function HomePage() {
     [recommendOpts],
   )
 
+  const profileHand = me?.dominantHand ?? 'right'
+  const profilePrimaryThrow = me?.primaryThrow ?? 'backhand'
+  const effectiveHand = handOverride ?? profileHand
+  const effectivePrimaryThrow = primaryThrowOverride ?? profilePrimaryThrow
+
+  const handleRecommendHandChange = useCallback(
+    (hand: Hand) => {
+      setHandOverride(hand === profileHand ? null : hand)
+    },
+    [profileHand],
+  )
+
+  const handleRecommendPrimaryThrowChange = useCallback(
+    (style: ThrowStyle) => {
+      setPrimaryThrowOverride(style === profilePrimaryThrow ? null : style)
+    },
+    [profilePrimaryThrow],
+  )
+
   const activeBag = bags.find(b => b.id === activeBagId) ?? null
-  const locked = pickedHoleNumber !== null
+  const holeSource =
+    pickedCourseId != null && pickedHoleNumber != null ? 'course' : 'custom'
+  const courseHoleLabel =
+    pickedCourse && pickedHoleNumber != null
+      ? `${pickedCourse.name} · Hole ${pickedHoleNumber}`
+      : undefined
   const isRoundHost = roundHostId != null && user?.id === roundHostId
   const hostPlayer = roundPlayers.find(p => p.isHost)
   const isGroupParticipant = roundActive && !isRoundHost && roundPlayers.length > 0
@@ -716,10 +753,18 @@ export function HomePage() {
           <code>013_scorecard_social.sql</code> in Supabase to enable group scoring.
         </p>
       )}
-        <HoleInput
+      <RecommendContextBar
+        mode={holeSource}
+        courseName={pickedCourse?.name}
+        holeNumber={pickedHoleNumber}
+        hole={hole}
+        roundActive={roundActive}
+      />
+      <HoleInput
         hole={hole}
         onChange={setHole}
-        locked={locked}
+        source={holeSource}
+        courseLabel={courseHoleLabel}
         courseLat={pickedCourse?.lat ?? null}
         courseLon={pickedCourse?.lon ?? null}
         onPersistTeeBearing={
@@ -728,7 +773,12 @@ export function HomePage() {
       />
       <Recommendation
         recommendations={recommendations}
-        throwsForehand={me?.throwsForehand ?? false}
+        hand={effectiveHand}
+        primaryThrow={effectivePrimaryThrow}
+        profileHand={profileHand}
+        profilePrimaryThrow={profilePrimaryThrow}
+        onHandChange={handleRecommendHandChange}
+        onPrimaryThrowChange={handleRecommendPrimaryThrowChange}
         getDiscRecommendation={getDiscRecommendation}
         roundActive={roundActive && pickedCourseId != null && isRoundHost}
         isPro={isPro}
