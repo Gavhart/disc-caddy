@@ -1,6 +1,8 @@
 import { FormEvent, useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { CommunityCheckInSection } from '../components/CommunityCheckInSection'
 import { CommunityMessageModal } from '../components/CommunityMessageModal'
+import { PlayingTodayPanel } from '../components/PlayingTodayPanel'
 import { PageHeader } from '../components/PageHeader'
 import { ProGate } from '../components/ProGate'
 import { useAuth } from '../contexts/AuthContext'
@@ -401,6 +403,10 @@ export function CommunityPage() {
           </p>
         )}
       </div>
+
+      <PlayingTodayPanel />
+
+      <CommunityCheckInSection />
 
       <form className="card community-settings-card" onSubmit={handleSave}>
         <h2 className="section-title">Visibility &amp; home areas</h2>

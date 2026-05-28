@@ -1,8 +1,18 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { getDiscPhotoUrl } from '../lib/photos'
 import { FriendActivity } from '../types'
 import { listFriendActivity } from '../lib/roundInvites'
 import { formatScoreToPar } from '../lib/rounds'
+
+function ActivityThumb({ path }: { path: string }) {
+  const [url, setUrl] = useState<string | null>(null)
+  useEffect(() => {
+    getDiscPhotoUrl(path).then(setUrl)
+  }, [path])
+  if (!url) return null
+  return <img src={url} alt="" className="friend-activity-thumb" />
+}
 
 export function FriendActivityFeed() {
   const [items, setItems] = useState<FriendActivity[]>([])
@@ -39,22 +49,25 @@ export function FriendActivityFeed() {
             day: 'numeric',
           })
           return (
-            <li key={`${item.roundId}-${item.userId}`}>
-              <strong>{item.displayName}</strong> finished a round
-              {place ? (
-                <>
-                  {' '}
-                  at <span>{place}</span>
-                </>
-              ) : null}{' '}
-              — {item.totalStrokes} ({formatScoreToPar(item.scoreToPar)}) ·{' '}
-              <span className="muted small">{when}</span>
-              <Link
-                to={`/rounds/${item.roundId}`}
-                className="link-button friend-activity-link"
-              >
-                View
-              </Link>
+            <li key={`${item.roundId}-${item.userId}`} className="friend-activity-item">
+              {item.highlightPath && <ActivityThumb path={item.highlightPath} />}
+              <div>
+                <strong>{item.displayName}</strong> finished a round
+                {place ? (
+                  <>
+                    {' '}
+                    at <span>{place}</span>
+                  </>
+                ) : null}{' '}
+                — {item.totalStrokes} ({formatScoreToPar(item.scoreToPar)}) ·{' '}
+                <span className="muted small">{when}</span>
+                <Link
+                  to={`/rounds/${item.roundId}`}
+                  className="link-button friend-activity-link"
+                >
+                  View
+                </Link>
+              </div>
             </li>
           )
         })}

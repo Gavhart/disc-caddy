@@ -1,6 +1,7 @@
 import { PageHeader } from '../components/PageHeader'
 import { HubCard } from '../components/HubCard'
 import { ActivityNotificationsPanel } from '../components/ActivityNotificationsPanel'
+import { PlayingTodayPanel } from '../components/PlayingTodayPanel'
 import { useAuth } from '../contexts/AuthContext'
 import { useAppNotifications } from '../hooks/useAppNotifications'
 
@@ -16,6 +17,8 @@ export function SocialHubPage() {
       />
 
       <ActivityNotificationsPanel onChange={refresh} />
+
+      <PlayingTodayPanel />
 
       <div className="hub-grid">
         <HubCard

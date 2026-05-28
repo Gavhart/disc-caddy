@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { PlayerSetup, PerTypeDistancePatch } from '../components/PlayerSetup'
 import { BagSummary } from '../components/BagSummary'
 import { HoleInput } from '../components/HoleInput'
+import { CourseCheckInPanel } from '../components/CourseCheckInPanel'
 import { RecommendContextBar } from '../components/RecommendContextBar'
 import { Recommendation } from '../components/Recommendation'
 import { BagPicker } from '../components/BagPicker'
@@ -42,6 +43,7 @@ import {
 } from '../lib/roundInvites'
 import { createRoundShareLink, roundShareUrl } from '../lib/roundShare'
 import { refreshChallengeProgress } from '../lib/challenges'
+import { refreshProgression } from '../lib/progression'
 import { autoSubmitRoundToLeagues } from '../lib/leagues'
 import { updateCourseHole, listCourses, listHolesForCourse } from '../lib/courses'
 import { Scorecard } from '../components/Scorecard'
@@ -504,6 +506,7 @@ export function HomePage() {
       if (wasHost) {
         notifyFriendsRoundCompleted(endingRoundId).catch(() => {})
         refreshChallengeProgress().catch(() => {})
+        refreshProgression().catch(() => {})
         try {
           const token = await createRoundShareLink(endingRoundId)
           setShareUrl(roundShareUrl(token))
@@ -729,6 +732,11 @@ export function HomePage() {
         activeBagReady={activeBagId != null}
         onStartRound={handleStartRound}
         onEndRound={handleEndRound}
+      />
+      <CourseCheckInPanel
+        courseId={pickedCourseId}
+        courseName={pickedCourse?.name ?? null}
+        courseLocality={pickedCourse?.locality ?? null}
       />
       {roundActive && roundId && pickedHoleNumber != null && (
         <Scorecard

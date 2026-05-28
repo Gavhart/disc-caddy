@@ -7,6 +7,7 @@ import { ProfilePhotoUploader } from '../components/ProfilePhotoUploader'
 import { FriendsSection } from '../components/FriendsSection'
 import { FriendActivityFeed } from '../components/FriendActivityFeed'
 import { WeeklyChallengesPanel } from '../components/WeeklyChallengesPanel'
+import { PlayerProgressPanel } from '../components/PlayerProgressPanel'
 import { fetchMyHomeCities, formatCityLabel } from '../lib/community'
 import { isWebCheckoutAvailable } from '../lib/platform'
 import { HomeCity } from '../types'
@@ -113,6 +114,8 @@ export function ProfilePage() {
       )}
 
       <FriendsSection />
+
+      <PlayerProgressPanel />
 
       <FriendActivityFeed />
 

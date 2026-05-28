@@ -657,6 +657,7 @@ export interface FriendActivity {
   totalStrokes: number
   playedAt: string
   roundId: string
+  highlightPath: string | null
 }
 
 export interface PublicRoundRecap {
@@ -671,6 +672,53 @@ export interface PublicRoundRecap {
     score_to_par: number
     holes_scored: number
   }[]
+}
+
+export interface PlayerStatsSummary {
+  roundsCompleted: number
+  birdies: number
+  eagles: number
+  bestScoreToPar: number | null
+  leagueRounds: number
+  leagueCount: number
+  groupRounds: number
+  challengesCompleted: number
+  activeDaysLast7: number
+  highlightCount: number
+}
+
+export interface PlayerBadge {
+  slug: string
+  title: string
+  description: string
+  icon: string
+  earnedAt: string
+}
+
+export interface CourseCheckin {
+  userId: string
+  displayName: string
+  courseId: string
+  courseName: string
+  courseLocality: string | null
+  note: string | null
+  checkedInAt: string
+}
+
+export interface MyCourseCheckin {
+  courseId: string
+  courseName: string
+  courseLocality: string | null
+  note: string | null
+  checkedInAt: string
+}
+
+export interface RoundHighlight {
+  id: string
+  storagePath: string
+  caption: string | null
+  createdAt: string
+  userId: string
 }
 
 export interface RoundPlayer {

@@ -98,6 +98,7 @@ export async function listFriendActivity(limit = 15): Promise<FriendActivity[]> 
       total_strokes: number
       played_at: string
       round_id: string
+      highlight_path: string | null
     }[]) ?? []
   ).map(r => ({
     userId: r.user_id,
@@ -108,5 +109,6 @@ export async function listFriendActivity(limit = 15): Promise<FriendActivity[]> 
     totalStrokes: r.total_strokes,
     playedAt: r.played_at,
     roundId: r.round_id,
+    highlightPath: r.highlight_path ?? null,
   }))
 }

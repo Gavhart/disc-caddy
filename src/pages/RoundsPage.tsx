@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { RoundHighlightsSection } from '../components/RoundHighlightsSection'
+import { useAuth } from '../contexts/AuthContext'
 import {
   formatScoreToPar,
   getCourseLeaderboard,
@@ -193,6 +195,7 @@ function RoundListView() {
 
 function RoundDetailView({ roundId }: { roundId: string }) {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [detail, setDetail] = useState<RoundDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -343,6 +346,13 @@ function RoundDetailView({ roundId }: { roundId: string }) {
           </details>
         )}
       </div>
+
+      {detail.status === 'completed' && (
+        <RoundHighlightsSection
+          roundId={detail.id}
+          canEdit={user?.id === detail.hostUserId}
+        />
+      )}
 
       {detail.courseId && (
         <div className="card">

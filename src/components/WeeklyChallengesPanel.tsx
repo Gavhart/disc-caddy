@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { fetchActiveChallenges, refreshChallengeProgress } from '../lib/challenges'
+import { refreshProgression } from '../lib/progression'
 import { Challenge } from '../types'
 
 export function WeeklyChallengesPanel() {
@@ -8,6 +9,7 @@ export function WeeklyChallengesPanel() {
 
   useEffect(() => {
     refreshChallengeProgress()
+      .then(() => refreshProgression())
       .then(() => fetchActiveChallenges())
       .then(setChallenges)
       .catch(() => setChallenges([]))
