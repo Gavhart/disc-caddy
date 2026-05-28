@@ -110,6 +110,9 @@ export type TreeLayout =
   | 'right'
   | 'canopy'
 
+/** Mandatory route the disc must pass on the way to the basket. */
+export type MandoRoute = 'none' | 'left' | 'right' | 'double' | 'triple'
+
 export type Hand = 'left' | 'right'
 export type ThrowStyle = 'backhand' | 'forehand'
 
@@ -148,6 +151,8 @@ export interface Hole {
   terrain: Terrain
   treeCoverage: TreeCoverage
   treeLayout: TreeLayout
+  /** Mandatory route, if any. */
+  mando: MandoRoute
   /** Compass direction the tee faces toward the basket (live wind mapping). */
   teeBearing: TeeBearing
   windDirection: WindDirection
@@ -196,6 +201,7 @@ export interface CourseHole {
   terrain: Terrain
   treeCoverage: TreeCoverage
   treeLayout: TreeLayout
+  mando: MandoRoute
   /** Compass direction tee faces toward basket (live wind mapping). */
   teeBearing: TeeBearing
   notes: string | null

@@ -10,6 +10,7 @@ import {
   Terrain,
   TreeCoverage,
   TreeLayout,
+  MandoRoute,
 } from '../types'
 
 interface CourseRow {
@@ -38,6 +39,7 @@ interface CourseHoleRow {
   terrain: Terrain | null
   tree_coverage: TreeCoverage | null
   tree_layout: TreeLayout | null
+  mando: MandoRoute | null
   tee_bearing: TeeBearing | null
   notes: string | null
   created_by: string | null
@@ -75,6 +77,7 @@ function rowToHole(r: CourseHoleRow): CourseHole {
     terrain: r.terrain ?? 'flat',
     treeCoverage: r.tree_coverage ?? 'open',
     treeLayout: r.tree_layout ?? 'none',
+    mando: r.mando ?? 'none',
     teeBearing: r.tee_bearing ?? 'north',
     notes: r.notes,
     createdBy: r.created_by,
@@ -274,6 +277,7 @@ export interface NewCourseHoleInput {
   terrain?: Terrain
   treeCoverage?: TreeCoverage
   treeLayout?: TreeLayout
+  mando?: MandoRoute
   teeBearing?: TeeBearing
   notes?: string | null
 }
@@ -299,6 +303,7 @@ export async function createCourseHole(input: NewCourseHoleInput): Promise<Cours
     terrain: input.terrain ?? 'flat',
     tree_coverage: input.treeCoverage ?? 'open',
     tree_layout: input.treeLayout ?? 'none',
+    mando: input.mando ?? 'none',
   }
 
   const full = {
@@ -320,6 +325,7 @@ export async function updateCourseHole(
     terrain: Terrain
     treeCoverage: TreeCoverage
     treeLayout: TreeLayout
+    mando: MandoRoute
     teeBearing: TeeBearing
     notes: string | null
   }>,
@@ -334,6 +340,7 @@ export async function updateCourseHole(
   if (patch.terrain !== undefined) update.terrain = patch.terrain
   if (patch.treeCoverage !== undefined) update.tree_coverage = patch.treeCoverage
   if (patch.treeLayout !== undefined) update.tree_layout = patch.treeLayout
+  if (patch.mando !== undefined) update.mando = patch.mando
   if (patch.teeBearing !== undefined) update.tee_bearing = patch.teeBearing
   if (patch.notes !== undefined) update.notes = patch.notes
 
@@ -343,6 +350,7 @@ export async function updateCourseHole(
     delete update.terrain
     delete update.tree_coverage
     delete update.tree_layout
+    delete update.mando
     ;({ error } = await supabase.from('course_holes').update(update).eq('id', holeId))
   }
   if (error) throw error

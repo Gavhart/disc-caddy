@@ -1,26 +1,28 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { summarizeHoleLayout } from '../lib/holeLabels'
+import {
+  DIRECTION_OPTIONS,
+  MANDO_OPTIONS,
+  nextTreeLayoutForCoverage,
+  TREE_COVERAGE_OPTIONS,
+  TREE_LAYOUT_OPTIONS,
+} from '../lib/holeLayoutOptions'
+import { clampHoleDistanceFeet } from '../lib/geo'
 import { fetchLiveWind, getUserLocation } from '../lib/weather'
+import { HoleDistanceMeasure } from './HoleDistanceMeasure'
+import { LieLayoutInput, LieLayoutValue } from './LieLayoutInput'
 import {
   Elevation,
   Hole,
-  HoleDirection,
   TeeBearing,
   TEE_BEARING_DEG,
   TEE_BEARING_OPTIONS,
   Terrain,
   TreeCoverage,
-  TreeLayout,
   WindDirection,
 } from '../types'
 
-const DIRECTION_OPTIONS: { value: HoleDirection; label: string }[] = [
-  { value: 'hard_left', label: 'Hard left' },
-  { value: 'dogleg_left', label: 'Dogleg left' },
-  { value: 'straight', label: 'Straight' },
-  { value: 'dogleg_right', label: 'Dogleg right' },
-  { value: 'hard_right', label: 'Hard right' },
-]
+const DIRECTION_OPTIONS_LOCAL = DIRECTION_OPTIONS
 
 const ELEVATION_OPTIONS: { value: Elevation; label: string }[] = [
   { value: 'uphill', label: 'Uphill' },
@@ -33,22 +35,6 @@ const TERRAIN_OPTIONS: { value: Terrain; label: string }[] = [
   { value: 'rolling', label: 'Rolling' },
   { value: 'hilly', label: 'Hilly' },
   { value: 'mountainous', label: 'Mountainous' },
-]
-
-const TREE_COVERAGE_OPTIONS: { value: TreeCoverage; label: string }[] = [
-  { value: 'open', label: 'Open' },
-  { value: 'light', label: 'Light' },
-  { value: 'wooded', label: 'Wooded' },
-  { value: 'heavily_wooded', label: 'Heavy' },
-]
-
-const TREE_LAYOUT_OPTIONS: { value: TreeLayout; label: string }[] = [
-  { value: 'throughout', label: 'Throughout' },
-  { value: 'front_half', label: 'Front half' },
-  { value: 'back_half', label: 'Back half' },
-  { value: 'left', label: 'Left' },
-  { value: 'right', label: 'Right' },
-  { value: 'canopy', label: 'Canopy' },
 ]
 
 const WIND_ROSE: ({ value: WindDirection; label: string; sub: string } | null)[] = [
@@ -78,6 +64,9 @@ interface Props {
   courseLon?: number | null
   /** When set, tee bearing changes are saved back to this course hole. */
   onPersistTeeBearing?: (bearing: TeeBearing) => void | Promise<void>
+  /** Session-only layout tweaks on course holes (mandos, updated tree line). */
+  lieLayout?: Partial<LieLayoutValue>
+  onLieLayoutChange?: (patch: Partial<LieLayoutValue>) => void
 }
 
 function ChipGroup<T extends string>({
@@ -123,6 +112,8 @@ export function HoleInput({
   courseLat = null,
   courseLon = null,
   onPersistTeeBearing,
+  lieLayout = {},
+  onLieLayoutChange,
 }: Props) {
   const isCourseHole = source === 'course' || locked
   const [windLoading, setWindLoading] = useState(false)
@@ -143,6 +134,48 @@ export function HoleInput({
     Number.isFinite(courseLon)
 
   const showTreeLayout = hole.treeCoverage !== 'open'
+
+  const [distanceText, setDistanceText] = useState(() => String(hole.distance))
+
+  useEffect(() => {
+    setDistanceText(String(hole.distance))
+  }, [hole.distance])
+
+  function commitDistance(raw: string) {
+    const trimmed = raw.trim()
+    if (trimmed === '') {
+      setDistanceText(String(hole.distance))
+      return
+    }
+    const n = Math.round(Number(trimmed))
+    if (Number.isNaN(n)) {
+      setDistanceText(String(hole.distance))
+      return
+    }
+    const clamped = clampHoleDistanceFeet(n)
+    setDistanceText(String(clamped))
+    if (clamped !== hole.distance) {
+      setHole('distance', clamped)
+    }
+  }
+
+  function applyGpsMeasurement(result: { distanceFt: number; teeBearing: TeeBearing }) {
+    setDistanceText(String(result.distanceFt))
+    onChange({ ...hole, distance: result.distanceFt, teeBearing: result.teeBearing })
+    void onPersistTeeBearing?.(result.teeBearing)
+  }
+
+  function handleDistanceChange(raw: string) {
+    if (!/^\d*$/.test(raw)) return
+    setDistanceText(raw)
+    if (raw === '') return
+    const n = Number(raw)
+    if (Number.isNaN(n)) return
+    // Commit live once the value is a plausible full distance (avoids "5" → 5 ft).
+    if (n >= 100 && n <= 1500) {
+      setHole('distance', clampHoleDistanceFeet(n))
+    }
+  }
 
   function setHole<K extends keyof Hole>(key: K, value: Hole[K]) {
     onChange({ ...hole, [key]: value })
@@ -173,13 +206,26 @@ export function HoleInput({
     onChange({
       ...hole,
       treeCoverage: value,
-      treeLayout:
-        value === 'open'
-          ? 'none'
-          : hole.treeLayout === 'none'
-            ? 'throughout'
-            : hole.treeLayout,
+      treeLayout: nextTreeLayoutForCoverage(value, hole.treeLayout),
     })
+  }
+
+  const mergedLieLayout: LieLayoutValue = {
+    direction: lieLayout.direction ?? hole.direction,
+    treeCoverage: lieLayout.treeCoverage ?? hole.treeCoverage,
+    treeLayout: lieLayout.treeLayout ?? hole.treeLayout,
+    mando: lieLayout.mando ?? hole.mando ?? 'none',
+  }
+
+  const hasLieOverride =
+    Object.keys(lieLayout).length > 0 &&
+    (lieLayout.direction != null ||
+      lieLayout.treeCoverage != null ||
+      lieLayout.treeLayout != null ||
+      lieLayout.mando != null)
+
+  function clearLieLayout() {
+    onLieLayoutChange?.({})
   }
 
   async function applyWindFromCoords(
@@ -271,6 +317,29 @@ export function HoleInput({
             <span className="hole-layout-summary-label">From course</span>
             <p>{summarizeHoleLayout(hole)}</p>
           </div>
+          <div className="lie-layout-section">
+            <div className="lie-layout-section-head">
+              <h3>Fine-tune layout</h3>
+              {hasLieOverride && onLieLayoutChange && (
+                <button type="button" className="link-button small" onClick={clearLieLayout}>
+                  Reset to course
+                </button>
+              )}
+            </div>
+            <p className="muted small">
+              Override trees or mandos for this round only — does not change the saved course
+              hole.
+            </p>
+            {onLieLayoutChange ? (
+              <LieLayoutInput
+                value={mergedLieLayout}
+                onChange={patch => onLieLayoutChange(patch)}
+              />
+            ) : (
+              <p className="muted small">Sign in to adjust layout for this hole.</p>
+            )}
+          </div>
+          <HoleDistanceMeasure onMeasured={applyGpsMeasurement} />
         </>
       ) : (
         <>
@@ -284,21 +353,27 @@ export function HoleInput({
             <div className="input-group">
               <input
                 id="dist"
-                type="number"
-                min={50}
-                max={800}
-                step={10}
-                value={hole.distance}
-                onChange={e => setHole('distance', Number(e.target.value) || 0)}
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={distanceText}
+                onChange={e => handleDistanceChange(e.target.value)}
+                onBlur={() => commitDistance(distanceText)}
+                aria-describedby="dist-hint"
               />
               <span className="suffix">ft</span>
             </div>
+            <p id="dist-hint" className="muted small hole-distance-hint">
+              50–1,500 ft. Clear the field to retype, or measure tee → basket with GPS below.
+            </p>
           </div>
+
+          <HoleDistanceMeasure onMeasured={applyGpsMeasurement} />
 
           <ChipGroup
             label="Direction"
             value={hole.direction}
-            options={DIRECTION_OPTIONS}
+            options={DIRECTION_OPTIONS_LOCAL}
             onChange={v => setHole('direction', v)}
           />
 
@@ -331,6 +406,13 @@ export function HoleInput({
               onChange={v => setHole('treeLayout', v)}
             />
           )}
+
+          <ChipGroup
+            label="Mando"
+            value={hole.mando ?? 'none'}
+            options={MANDO_OPTIONS}
+            onChange={v => setHole('mando', v)}
+          />
         </>
       )}
 

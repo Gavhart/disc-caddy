@@ -104,7 +104,7 @@ export function UpdatesPage() {
         <p className="muted">
           Version <strong>{APP_VERSION}</strong>
           {unread
-            ? ' — leagues, doubles live scoring, badges, and a smarter invite experience just shipped.'
+            ? ' — multi-shot Caddy, field practice, GPS distance, lie layout, and mandos just shipped.'
             : " — everything in Disc Caddy today, what's next, and full release history."}
         </p>
         <div className="updates-hero-stats">
@@ -123,7 +123,8 @@ export function UpdatesPage() {
       <div className="card updates-highlights">
         <h2>What&apos;s in Disc Caddy</h2>
         <p className="muted small">
-          Six pillars — from hole-by-hole disc picks to full league seasons with live scorecards.
+          Seven pillars — from hole-by-hole disc picks and multi-shot progress to full league seasons
+          and field practice.
         </p>
         <ul className="updates-highlight-grid">
           {PRODUCT_HIGHLIGHTS.map(h => (

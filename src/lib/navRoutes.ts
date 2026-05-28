@@ -25,7 +25,8 @@ export function isLibraryRoute(pathname: string): boolean {
     pathname === '/courses' ||
     pathname.startsWith('/rounds') ||
     pathname === '/stats' ||
-    pathname === '/playbook'
+    pathname === '/playbook' ||
+    pathname === '/practice'
   )
 }
 

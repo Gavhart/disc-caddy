@@ -43,6 +43,12 @@ export function LibraryHubPage() {
           }
         />
         <HubCard
+          to="/practice"
+          icon="🏟️"
+          title="Field practice"
+          description="Throw in a field, measure distance per disc, and spot gaps in your bag."
+        />
+        <HubCard
           to="/playbook"
           icon="📖"
           title="Course playbook"

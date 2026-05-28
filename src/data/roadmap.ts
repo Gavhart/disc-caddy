@@ -69,6 +69,30 @@ export const ROADMAP_ITEMS: RoadmapItem[] = [
     status: 'shipped',
   },
   {
+    id: 'hole-progress',
+    title: 'Multi-shot hole progress',
+    description: 'Log throws, shrink remaining distance, and get NEXT SHOT picks tuned to your lie.',
+    status: 'shipped',
+  },
+  {
+    id: 'gps-distance',
+    title: 'GPS hole & throw measurement',
+    description: 'Mark tee → basket for hole length; mark release → landing in field practice.',
+    status: 'shipped',
+  },
+  {
+    id: 'field-practice',
+    title: 'Field practice & bag gap map',
+    description: 'Measure throws per disc in an open field and spot distance gaps in your bag.',
+    status: 'shipped',
+  },
+  {
+    id: 'lie-layout',
+    title: 'Lie layout — trees & mandos',
+    description: 'Describe what’s in front of you on upshots; mandos shift aim and disc stability scoring.',
+    status: 'shipped',
+  },
+  {
     id: 'native-push',
     title: 'Native push notifications',
     description: 'Scorecard invites, league news, and friend activity on iOS & Android.',

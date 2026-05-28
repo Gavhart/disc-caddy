@@ -22,6 +22,9 @@ interface Props {
   onLogThrow?: (rec: Rec) => Promise<void>
   holeMemoryMessage?: string | null
   memorySelection?: { bagDiscId: string; throwStyle: ThrowStyle } | null
+  holeDistance?: number
+  remainingDistance?: number
+  shotCount?: number
 }
 
 function styleLabel(style: Rec['throwStyle']): string {
@@ -54,6 +57,9 @@ export function Recommendation({
   onLogThrow,
   holeMemoryMessage = null,
   memorySelection = null,
+  holeDistance,
+  remainingDistance,
+  shotCount = 0,
 }: Props) {
   const top = recommendations[0]
   const [selectedBagDiscId, setSelectedBagDiscId] = useState<string | null>(null)
@@ -90,6 +96,14 @@ export function Recommendation({
   }, [top, selectedBagDiscId, activeThrowStyle, getDiscRecommendation])
 
   if (!top || !displayed) {
+    if (holeDistance != null && holeDistance < 50) {
+      return (
+        <section className="card">
+          <h2>Recommendation</h2>
+          <p className="muted">Enter a hole distance (50–1,500 ft) to see disc picks.</p>
+        </section>
+      )
+    }
     return (
       <section className="card">
         <h2>Recommendation</h2>
@@ -112,9 +126,11 @@ export function Recommendation({
   const pickLabel = displayed.pick === 'MEMORY'
     ? 'RECOMMENDED AGAIN'
     : usingTopPick
-      ? top.pick === 'MEMORY'
-        ? 'RECOMMENDED AGAIN'
-        : top.pick ?? 'TOP PICK'
+      ? shotCount > 0
+        ? 'NEXT SHOT'
+        : top.pick === 'MEMORY'
+          ? 'RECOMMENDED AGAIN'
+          : top.pick ?? 'TOP PICK'
       : displayed.rank > 0
         ? `#${displayed.rank} in your bag`
         : 'YOUR PICK'
@@ -143,7 +159,14 @@ export function Recommendation({
     <section className="card recommendation">
       <h2>Recommendation</h2>
 
-      {isPro && holeMemoryMessage && (
+      {shotCount > 0 && remainingDistance != null && (
+        <p className="recommendation-lie-banner muted small">
+          Picking for <strong>{remainingDistance.toLocaleString()} ft</strong> remaining
+          {remainingDistance <= 120 ? ' — upshot range' : ''}.
+        </p>
+      )}
+
+      {isPro && holeMemoryMessage && shotCount === 0 && (
         <div className="hole-memory-banner">
           <span className="hole-memory-badge">Hole memory</span>
           <p>{holeMemoryMessage}</p>

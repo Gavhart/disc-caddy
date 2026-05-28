@@ -7,6 +7,8 @@ interface Props {
   holeNumber?: number | null
   hole: Hole
   roundActive?: boolean
+  remainingDistance?: number
+  shotCount?: number
 }
 
 export function RecommendContextBar({
@@ -15,8 +17,14 @@ export function RecommendContextBar({
   holeNumber,
   hole,
   roundActive = false,
+  remainingDistance,
+  shotCount = 0,
 }: Props) {
   const layout = summarizeHoleLayout(hole)
+  const lieNote =
+    shotCount > 0 && remainingDistance != null
+      ? `${remainingDistance.toLocaleString()} ft left after ${shotCount} throw${shotCount === 1 ? '' : 's'}`
+      : null
 
   if (mode === 'course' && courseName && holeNumber != null) {
     return (
@@ -30,6 +38,7 @@ export function RecommendContextBar({
             {courseName} · Hole {holeNumber}
           </strong>
           <span className="muted small">{layout}</span>
+          {lieNote && <span className="recommend-context-lie">{lieNote}</span>}
         </div>
         <p className="muted small recommend-context-note">
           Recommendations follow this hole from the course stepper above. Adjust wind
@@ -45,6 +54,7 @@ export function RecommendContextBar({
         <span className="recommend-context-badge">Custom hole</span>
         <strong>One-off hole setup</strong>
         <span className="muted small">{layout}</span>
+        {lieNote && <span className="recommend-context-lie">{lieNote}</span>}
       </div>
       <p className="muted small recommend-context-note">
         Recommendations use the custom hole panel below — not a saved course. Pick a

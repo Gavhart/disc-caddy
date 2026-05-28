@@ -1,4 +1,4 @@
-import { Hole, HoleDirection, Elevation, Terrain, TreeCoverage, TreeLayout } from '../types'
+import { Hole, HoleDirection, Elevation, Terrain, TreeCoverage, TreeLayout, MandoRoute } from '../types'
 
 export function formatDirection(d: HoleDirection): string {
   switch (d) {
@@ -59,6 +59,21 @@ function formatTrees(c: TreeCoverage, layout: TreeLayout): string | null {
   return where ? `${density} (${where})` : density
 }
 
+function formatMando(m: MandoRoute): string | null {
+  switch (m) {
+    case 'left':
+      return 'Mando left'
+    case 'right':
+      return 'Mando right'
+    case 'double':
+      return 'Double mando'
+    case 'triple':
+      return 'Triple mando'
+    case 'none':
+      return null
+  }
+}
+
 /** One-line hole layout for banners and summaries. */
 export function summarizeHoleLayout(hole: Hole): string {
   const parts = [
@@ -69,5 +84,7 @@ export function summarizeHoleLayout(hole: Hole): string {
   if (hole.terrain !== 'flat') parts.push(formatTerrain(hole.terrain))
   const trees = formatTrees(hole.treeCoverage, hole.treeLayout)
   if (trees) parts.push(trees)
+  const mando = formatMando(hole.mando ?? 'none')
+  if (mando) parts.push(mando)
   return parts.join(' · ')
 }

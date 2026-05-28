@@ -6,6 +6,7 @@ import {
   Hole,
   HoleDirection,
   ExplanationSection,
+  MandoRoute,
   Recommendation,
   ThrowStyle,
   TreeCoverage,
@@ -141,6 +142,29 @@ const TARGET_LATERAL: Record<HoleDirection, number> = {
   hard_right: 120,
 }
 
+/** Lateral target in feet when a mandatory route is in play. */
+const MANDO_TARGET_LATERAL: Record<Exclude<MandoRoute, 'none'>, number> = {
+  left: -90,
+  right: 90,
+  double: 0,
+  triple: 0,
+}
+
+const MANDO_COMPLEX_PENALTY: Record<MandoRoute, number> = {
+  none: 0,
+  left: 0,
+  right: 0,
+  double: 18,
+  triple: 28,
+}
+
+/** Basket lateral target — mando overrides dogleg when set. */
+export function targetLateralForHole(hole: Hole): number {
+  const mando = hole.mando ?? 'none'
+  if (mando !== 'none') return MANDO_TARGET_LATERAL[mando]
+  return TARGET_LATERAL[hole.direction]
+}
+
 /**
  * Decompose a compass wind direction into head and cross components
  * (each ranges -1..+1). Multiply by `windSpeed` to get the mph along each
@@ -237,6 +261,27 @@ interface ScoredAttempt {
   distError: number
   directionError: number
   score: number
+}
+
+/**
+ * Distance fit score — undershooting a long hole is much worse than overshooting.
+ * Prevents putters from winning bomber holes when `|eff - hole|` alone would tie.
+ */
+function holeDistanceScore(effDistance: number, holeDistance: number): number {
+  if (holeDistance <= 0) {
+    return effDistance * MODEL.DISTANCE_PENALTY_PER_FT
+  }
+
+  const delta = effDistance - holeDistance
+
+  if (delta < 0) {
+    const shortfall = -delta
+    const reachRatio = effDistance / holeDistance
+    const shortMultiplier = 2 + (1 - reachRatio) * 3
+    return shortfall * MODEL.DISTANCE_PENALTY_PER_FT * shortMultiplier
+  }
+
+  return delta * MODEL.DISTANCE_PENALTY_PER_FT * 0.65
 }
 
 function scoreAttempt(
@@ -341,9 +386,8 @@ function scoreAttempt(
   const predictedLateral = stabilityLateral + crossDrift
 
   const distError = Math.abs(effDistance - hole.distance)
-  const directionError = Math.abs(
-    predictedLateral - TARGET_LATERAL[hole.direction],
-  )
+  const targetLateral = targetLateralForHole(hole)
+  const directionError = Math.abs(predictedLateral - targetLateral)
 
   // Tree-coverage penalty: prefer controllable molds when the fairway is
   // tight. Distance drivers cost more to navigate; very high (or very low)
@@ -353,9 +397,10 @@ function scoreAttempt(
   if (disc.speed >= 10) treePenalty += treeCfg.driver
   if (stability > 2)   treePenalty += treeCfg.highStab
   if (stability < -2)  treePenalty += treeCfg.flippy
+  treePenalty += MANDO_COMPLEX_PENALTY[hole.mando ?? 'none']
 
   const score =
-    distError * MODEL.DISTANCE_PENALTY_PER_FT +
+    holeDistanceScore(effDistance, hole.distance) +
     directionError * MODEL.DIRECTION_PENALTY_PER_FT +
     treePenalty
 
@@ -468,7 +513,7 @@ function explain(scored: ScoredAttempt, hole: Hole, hand: Hand): ExplanationDeta
       const blowingTo: 'left' | 'right' = cmp.cross > 0 ? 'right' : 'left'
       const blowingFrom: 'left' | 'right' = blowingTo === 'right' ? 'left' : 'right'
       // Whether the wind helps the disc reach the target laterally or fights it.
-      const targetLateral = TARGET_LATERAL[hole.direction]
+      const targetLateral = targetLateralForHole(hole)
       const drift = cmp.cross * hole.windSpeed
       const helpsTarget = (drift > 0 && targetLateral > 0) || (drift < 0 && targetLateral < 0)
       if (hole.direction === 'straight') {
@@ -522,6 +567,23 @@ function explain(scored: ScoredAttempt, hole: Hole, hand: Hand): ExplanationDeta
 
   // Tree clauses: density first, then where they sit (so the player knows
   // *when* in the flight the gap closes).
+  if (hole.mando && hole.mando !== 'none') {
+    switch (hole.mando) {
+      case 'left':
+        clauses.push('mando left — route must pass left of the marker')
+        break
+      case 'right':
+        clauses.push('mando right — route must pass right of the marker')
+        break
+      case 'double':
+        clauses.push('double mando — hit both sides; control beats distance')
+        break
+      case 'triple':
+        clauses.push('triple mando — tight S-line; pick a disc you can place')
+        break
+    }
+  }
+
   if (hole.treeCoverage === 'wooded' || hole.treeCoverage === 'heavily_wooded') {
     const tight = hole.treeCoverage === 'heavily_wooded'
     clauses.push(
@@ -545,12 +607,13 @@ function explain(scored: ScoredAttempt, hole: Hole, hand: Hand): ExplanationDeta
 
   // Direction-miss warning when nothing in the bag actually fits.
   if (directionError > 80 && release !== 'anhyzer') {
+    const wantLat = targetLateralForHole(hole)
     clauses.push(
       `predicted landing ~${Math.round(Math.abs(predictedLateral))} ft ${
         predictedLateral < 0 ? 'left' : 'right'
       } of straight (hole wants ${
-        Math.round(Math.abs(TARGET_LATERAL[hole.direction]))
-      } ft ${holeLeft ? 'left' : holeRight ? 'right' : ''})`,
+        Math.round(Math.abs(wantLat))
+      } ft ${holeLeft ? 'left' : holeRight ? 'right' : wantLat < 0 ? 'left' : wantLat > 0 ? 'right' : ''})`,
     )
   }
 
@@ -559,7 +622,7 @@ function explain(scored: ScoredAttempt, hole: Hole, hand: Hand): ExplanationDeta
   const bodyCap = body.length > 0 ? body[0].toUpperCase() + body.slice(1) : body
   const summary = `${head} — ${bodyCap}.`
 
-  const targetLateral = TARGET_LATERAL[hole.direction]
+  const targetLateral = targetLateralForHole(hole)
   const aimOffsetFt =
     Math.abs(predictedLateral - targetLateral) > 12
       ? Math.round(targetLateral - predictedLateral)

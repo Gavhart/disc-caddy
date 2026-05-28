@@ -3082,6 +3082,414 @@ select {
   margin: 0;
 }
 
+.recommend-context-lie {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent-bright);
+}
+
+.hole-shot-tracker {
+  margin-bottom: 12px;
+}
+
+.hole-shot-tracker-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.hole-shot-tracker-head h2 {
+  margin: 0 0 4px;
+}
+
+.hole-shot-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.hole-shot-summary strong {
+  display: block;
+  font-size: 1.15rem;
+}
+
+.hole-shot-at-basket {
+  color: var(--accent-bright);
+}
+
+.hole-shot-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hole-shot-list li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.hole-shot-num {
+  font-weight: 800;
+  color: var(--accent-bright);
+  min-width: 1.25rem;
+}
+
+.hole-shot-mode {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.hole-shot-form label {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.hole-shot-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hole-shot-error {
+  color: #ef4444;
+  margin-top: 8px;
+}
+
+.hole-shot-done-msg {
+  margin: 0;
+}
+
+.recommendation-lie-banner {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, var(--border));
+}
+
+/* Field practice + bag gap map */
+.practice-page .card + .card {
+  margin-top: 12px;
+}
+
+.practice-log-intro {
+  margin: 0 0 12px;
+}
+
+.practice-disc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.practice-disc-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  text-align: left;
+}
+
+.practice-disc-chip-active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, var(--bg));
+}
+
+.practice-disc-chip-name {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.practice-throw-form {
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.practice-selected-disc {
+  margin: 0 0 12px;
+}
+
+.practice-style-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.segmented-toggle {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.segmented-toggle button {
+  padding: 6px 14px;
+  font-size: 13px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.segmented-toggle button.active {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+
+.practice-distance-field {
+  display: block;
+  margin: 12px 0;
+}
+
+.practice-distance-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.practice-distance-input-row input {
+  flex: 1;
+  max-width: 160px;
+}
+
+.practice-throw-actions {
+  margin-top: 8px;
+}
+
+.practice-log-error {
+  color: #ef4444;
+  margin-top: 8px;
+}
+
+.practice-session-head,
+.practice-gap-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.practice-session-head h2,
+.practice-gap-head h2 {
+  margin: 0;
+}
+
+.practice-estimates-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.practice-throw-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.practice-throw-list li {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.bag-gap-chart {
+  margin-top: 12px;
+}
+
+.bag-gap-track-wrap {
+  position: relative;
+  padding: 48px 0 28px;
+}
+
+.bag-gap-track {
+  position: relative;
+  height: 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--border) 60%, var(--bg));
+  overflow: visible;
+}
+
+.bag-gap-zone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, #ef4444 35%, transparent);
+  border: 1px dashed color-mix(in srgb, #ef4444 55%, transparent);
+  pointer-events: none;
+}
+
+.bag-gap-marker {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: max-content;
+  max-width: 88px;
+  text-align: center;
+}
+
+.bag-gap-marker-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--text-muted);
+  background: var(--surface);
+  box-shadow: 0 0 0 2px var(--bg);
+}
+
+.bag-gap-marker-measured .bag-gap-marker-dot {
+  border-color: var(--accent-bright);
+  background: var(--accent);
+}
+
+.bag-gap-marker-label {
+  margin-top: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.bag-gap-marker-ft {
+  font-size: 10px;
+}
+
+.bag-gap-axis {
+  position: relative;
+  height: 18px;
+  margin-top: 6px;
+}
+
+.bag-gap-axis span {
+  position: absolute;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.bag-gap-legend {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+
+.bag-gap-legend li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bag-gap-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.bag-gap-swatch-measured {
+  background: var(--accent);
+}
+
+.bag-gap-swatch-estimated {
+  background: var(--surface);
+  border: 2px solid var(--text-muted);
+}
+
+.bag-gap-swatch-gap {
+  border-radius: 4px;
+  background: color-mix(in srgb, #ef4444 35%, transparent);
+}
+
+.bag-gap-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bag-gap-list li {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, #ef4444 30%, var(--border));
+  background: color-mix(in srgb, #ef4444 8%, var(--bg));
+}
+
+.bag-gap-ok {
+  margin: 0;
+}
+
+.lie-layout-section {
+  margin: 16px 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.lie-layout-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.lie-layout-section-head h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.lie-layout-section-upsot {
+  margin-bottom: 16px;
+  padding: 14px 0 0;
+}
+
+.lie-layout-hint {
+  margin: 4px 0 8px;
+}
+
 .hole-input-intro {
   margin-top: 0;
 }
@@ -3107,6 +3515,71 @@ select {
 .hole-layout-summary p {
   margin: 0;
   font-size: 14px;
+}
+
+.hole-distance-hint {
+  margin-top: 6px;
+}
+
+.hole-distance-measure {
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px dashed var(--border);
+  background: color-mix(in srgb, var(--sky) 6%, transparent);
+}
+
+.hole-distance-measure-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: baseline;
+  margin-bottom: 6px;
+}
+
+.hole-distance-measure-copy {
+  margin: 0 0 12px;
+}
+
+.hole-distance-measure-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hole-distance-measure-steps li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.hole-distance-step-active {
+  border-color: color-mix(in srgb, var(--sky) 45%, var(--border));
+}
+
+.hole-distance-step-done {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
+}
+
+.hole-distance-measure-result {
+  margin: 12px 0 0;
+  font-weight: 600;
+  color: var(--accent-bright);
+}
+
+.hole-distance-measure-error {
+  margin: 8px 0 0;
+  color: #ef4444;
 }
 
 .round-hole-driven {

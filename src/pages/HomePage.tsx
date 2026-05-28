@@ -5,6 +5,8 @@ import { BagSummary } from '../components/BagSummary'
 import { HoleInput } from '../components/HoleInput'
 import { CourseCheckInPanel } from '../components/CourseCheckInPanel'
 import { RecommendContextBar } from '../components/RecommendContextBar'
+import { HoleShotTracker } from '../components/HoleShotTracker'
+import { LieLayoutValue } from '../components/LieLayoutInput'
 import { Recommendation } from '../components/Recommendation'
 import { BagPicker } from '../components/BagPicker'
 import { CourseSelector } from '../components/CourseSelector'
@@ -45,6 +47,16 @@ import { createRoundShareLink, roundShareUrl } from '../lib/roundShare'
 import { refreshChallengeProgress } from '../lib/challenges'
 import { refreshProgression, listPlayerBadges } from '../lib/progression'
 import { autoSubmitRoundToLeagues } from '../lib/leagues'
+import {
+  applyLieLayout,
+  holeToLieLayout,
+} from '../lib/lieLayout'
+import {
+  createHoleShot,
+  effectiveHoleForShots,
+  HoleShot,
+  remainingHoleDistance,
+} from '../lib/holeShots'
 import { updateCourseHole, listCourses, listHolesForCourse } from '../lib/courses'
 import { Scorecard } from '../components/Scorecard'
 import { RoundInviteBanner } from '../components/RoundInviteBanner'
@@ -77,6 +89,7 @@ const DEFAULT_HOLE: Hole = {
   terrain: 'flat',
   treeCoverage: 'open',
   treeLayout: 'none',
+  mando: 'none',
   teeBearing: 'north',
   windDirection: 'none',
   windSpeed: 0,
@@ -122,10 +135,17 @@ export function HomePage() {
   const [roundFormat, setRoundFormat] = useState<RoundFormat>('stroke')
   const [leagueSubmitMsg, setLeagueSubmitMsg] = useState<string | null>(null)
   const [newBadges, setNewBadges] = useState<PlayerBadge[]>([])
+  const [holeShots, setHoleShots] = useState<HoleShot[]>([])
+  const [lieLayout, setLieLayout] = useState<Partial<LieLayoutValue>>({})
 
   const isPro = me?.isPro ?? false
 
   useEffect(() => localState.saveHole(hole), [hole])
+
+  useEffect(() => {
+    setHoleShots([])
+    setLieLayout({})
+  }, [pickedCourseId, pickedHoleNumber])
 
   useEffect(() => {
     if (pickedCourseId == null && pickedHoleNumber == null && !roundActive) {
@@ -424,6 +444,7 @@ export function HomePage() {
           terrain: ch.terrain,
           treeCoverage: ch.treeCoverage,
           treeLayout: ch.treeLayout,
+          mando: ch.mando ?? 'none',
           teeBearing: ch.teeBearing,
         }))
       }
@@ -557,6 +578,14 @@ export function HomePage() {
           usedRecommendation: rec.rank === 1,
         })
         setRoundThrows(prev => [...prev, t])
+        setHoleShots(prev => [
+          ...prev,
+          createHoleShot({
+            distanceFt: rec.effDistance,
+            discName: rec.bagDisc.discName,
+            throwStyle: rec.throwStyle,
+          }),
+        ])
       } catch (err) {
         console.error('[home] log throw failed', err)
         alert(err instanceof Error ? err.message : 'Could not log throw')
@@ -564,6 +593,23 @@ export function HomePage() {
     },
     [roundId, pickedHoleNumber],
   )
+
+  const remainingDist = remainingHoleDistance(hole.distance, holeShots)
+  const effectiveHole = useMemo(() => {
+    const fromShots =
+      holeShots.length > 0 ? effectiveHoleForShots(hole, holeShots) : hole
+    return Object.keys(lieLayout).length > 0
+      ? applyLieLayout(fromShots, lieLayout)
+      : fromShots
+  }, [hole, holeShots, lieLayout])
+
+  const handleLieLayoutChange = useCallback((patch: Partial<LieLayoutValue>) => {
+    if (Object.keys(patch).length === 0) {
+      setLieLayout({})
+      return
+    }
+    setLieLayout(prev => ({ ...prev, ...patch }))
+  }, [])
 
   const recommendOpts = useMemo(() => {
     const profilePrimary = me?.primaryThrow ?? 'backhand'
@@ -576,7 +622,7 @@ export function HomePage() {
 
     return {
       bag: discs,
-      hole,
+      hole: effectiveHole,
       playerMaxDistance: me?.maxDistance ?? 280,
       playerPutterDistance:
         me?.putterMaxDistance ?? Math.round((me?.maxDistance ?? 280) * 0.5),
@@ -589,14 +635,20 @@ export function HomePage() {
       throwsForehand,
       primaryThrow: effectivePrimary,
     }
-  }, [discs, hole, me, handOverride, primaryThrowOverride])
+  }, [discs, effectiveHole, me, handOverride, primaryThrowOverride])
 
   const recommendations = useMemo(() => {
-    if (!me) return []
+    if (!me || hole.distance < 50) return []
     const base = recommend(recommendOpts)
-    if (!isPro || !holeMemory) return base
+    if (holeShots.length > 0 || !isPro || !holeMemory) return base
     return applyHoleMemory(base, holeMemory, discs)
-  }, [me, recommendOpts, holeMemory, discs, isPro])
+  }, [me, recommendOpts, holeMemory, discs, isPro, holeShots.length, hole.distance])
+
+  const suggestedThrow = useMemo(() => {
+    const top = recommendations[0]
+    if (!top) return null
+    return { discName: top.bagDisc.discName, distanceFt: top.effDistance }
+  }, [recommendations])
 
   const holeMemoryMessage = useMemo(() => {
     if (holeMemories.length === 0) return null
@@ -785,8 +837,10 @@ export function HomePage() {
         mode={holeSource}
         courseName={pickedCourse?.name}
         holeNumber={pickedHoleNumber}
-        hole={hole}
+        hole={effectiveHole}
         roundActive={roundActive}
+        remainingDistance={remainingDist}
+        shotCount={holeShots.length}
       />
       <HoleInput
         hole={hole}
@@ -798,6 +852,17 @@ export function HomePage() {
         onPersistTeeBearing={
           pickedCourseHoleId ? handlePersistTeeBearing : undefined
         }
+        lieLayout={lieLayout}
+        onLieLayoutChange={handleLieLayoutChange}
+      />
+      <HoleShotTracker
+        holeDistance={hole.distance}
+        shots={holeShots}
+        onChange={setHoleShots}
+        suggestedThrow={suggestedThrow}
+        baseLayout={holeToLieLayout(hole)}
+        lieLayout={lieLayout}
+        onLieLayoutChange={handleLieLayoutChange}
       />
       <Recommendation
         recommendations={recommendations}
@@ -815,6 +880,9 @@ export function HomePage() {
         onLogThrow={handleLogThrow}
         holeMemoryMessage={holeMemoryMessage}
         memorySelection={memorySelection}
+        holeDistance={hole.distance}
+        remainingDistance={remainingDist}
+        shotCount={holeShots.length}
       />
     </div>
   )

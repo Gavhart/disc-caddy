@@ -475,7 +475,25 @@ function prettyLayoutSuffix(hole: CourseHole): string {
   if (hole.treeCoverage && hole.treeCoverage !== 'open') {
     parts.push(prettyTreeCoverage(hole.treeCoverage, hole.treeLayout))
   }
+  if (hole.mando && hole.mando !== 'none') {
+    parts.push(prettyMando(hole.mando))
+  }
   return parts.length ? ' · ' + parts.join(' · ') : ''
+}
+
+function prettyMando(m: CourseHole['mando']): string {
+  switch (m) {
+    case 'left':
+      return 'Mando L'
+    case 'right':
+      return 'Mando R'
+    case 'double':
+      return 'Dbl mando'
+    case 'triple':
+      return 'Tpl mando'
+    default:
+      return ''
+  }
 }
 
 function prettyTerrain(t: CourseHole['terrain']): string {

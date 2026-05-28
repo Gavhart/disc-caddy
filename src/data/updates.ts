@@ -1,5 +1,5 @@
 /** Bump when you ship a release users should see on next sign-in. */
-export const APP_VERSION = '1.1.0'
+export const APP_VERSION = '1.2.0'
 
 export interface ReleaseNote {
   version: string
@@ -27,7 +27,7 @@ export const PRODUCT_HIGHLIGHTS: ProductHighlight[] = [
     icon: '🎯',
     title: 'Smart Caddy',
     summary:
-      'Arm-speed-aware disc picks for every hole — top pick, ranked bag, aim guidance, and hole memory on course holes.',
+      'Arm-speed-aware picks every throw — hole progress updates what’s left, lie layout (trees & mandos), GPS distance, and hole memory on course holes.',
     href: '/',
   },
   {
@@ -67,12 +67,35 @@ export const PRODUCT_HIGHLIGHTS: ProductHighlight[] = [
     icon: '🗺️',
     title: 'Courses & bags',
     summary:
-      'Multiple bags, course stepper, discovery map, playbook notes, stats dashboard, and nearby auto-import.',
+      'Multiple bags, course stepper, discovery map, playbook notes, stats dashboard, field practice with bag gap map, and nearby auto-import.',
     href: '/library',
+  },
+  {
+    id: 'practice',
+    icon: '🏟️',
+    title: 'Field practice',
+    summary:
+      'Throw in an open field, measure distance per disc with GPS or manual entry, and see where your bag has coverage gaps.',
+    href: '/practice',
   },
 ]
 
 export const RELEASES: ReleaseNote[] = [
+  {
+    version: '1.2.0',
+    date: '2026-05-21',
+    title: 'Multi-shot Caddy, field practice & mandos',
+    items: [
+      'Hole progress — log each throw (distance or remaining ft); recommendations update for what’s left with a NEXT SHOT pick',
+      'Lie layout on upshots — set trees, line shape, and mandos after your tee shot; course holes get a round-only fine-tune panel too',
+      'Mando support — left, right, double, and triple mandos on custom holes, course editor, and the recommender (aim + stability bias)',
+      'GPS hole length — mark tee → walk to basket/target → measured distance and tee bearing on Play',
+      'Custom hole distance fixes — clear and retype distance; long holes no longer snap to bad picks when the field is empty',
+      'Field practice (Library) — pick a disc, measure throw distance, log a session, and see a bag distance map with gap callouts',
+      'Throw-distance GPS in field practice — mark release → mark landing for open-field sessions',
+      'One-tap “Use last pick” and “In the basket” shortcuts in hole progress; Pro live rounds auto-log throws to the stack',
+    ],
+  },
   {
     version: '1.1.0',
     date: '2026-05-21',

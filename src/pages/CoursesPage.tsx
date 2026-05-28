@@ -6,6 +6,7 @@ import {
   CourseSummary,
   Elevation,
   HoleDirection,
+  MandoRoute,
   TeeBearing,
   TEE_BEARING_OPTIONS,
   Terrain,
@@ -29,6 +30,7 @@ import {
   loadAllForCountry,
 } from '../lib/discgolfapi'
 import { CourseDiscoveryPanel } from '../components/CourseDiscoveryPanel'
+import { MANDO_OPTIONS } from '../lib/holeLayoutOptions'
 
 const DIRECTION_OPTIONS: { value: HoleDirection; label: string }[] = [
   { value: 'hard_left', label: 'Hard left' },
@@ -290,6 +292,7 @@ export function CoursesPage() {
     terrain: Terrain
     treeCoverage: TreeCoverage
     treeLayout: TreeLayout
+    mando: MandoRoute
     teeBearing: TeeBearing
     notes: string | null
   }) {
@@ -306,6 +309,7 @@ export function CoursesPage() {
         terrain: input.terrain,
         treeCoverage: input.treeCoverage,
         treeLayout: input.treeLayout,
+        mando: input.mando,
         teeBearing: input.teeBearing,
         notes: input.notes,
       })
@@ -331,6 +335,7 @@ export function CoursesPage() {
         terrain: patch.terrain,
         treeCoverage: patch.treeCoverage,
         treeLayout: patch.treeLayout,
+        mando: patch.mando,
         teeBearing: patch.teeBearing,
         notes: patch.notes,
       })
@@ -817,6 +822,19 @@ function HoleEditor({ hole, onChange, onDelete }: HoleEditorProps) {
             </select>
           </label>
         )}
+        <label>
+          <span>Mando</span>
+          <select
+            value={hole.mando ?? 'none'}
+            onChange={e => onChange({ mando: e.target.value as MandoRoute })}
+          >
+            {MANDO_OPTIONS.map(o => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="hole-editor-notes">
           <span>Notes</span>
           <input
@@ -842,6 +860,7 @@ interface AddHoleFormProps {
     terrain: Terrain
     treeCoverage: TreeCoverage
     treeLayout: TreeLayout
+    mando: MandoRoute
     teeBearing: TeeBearing
     notes: string | null
   }) => Promise<boolean>
@@ -856,6 +875,7 @@ function AddHoleForm({ nextNumber, onAdd }: AddHoleFormProps) {
   const [terrain, setTerrain] = useState<Terrain>('flat')
   const [treeCoverage, setTreeCoverage] = useState<TreeCoverage>('open')
   const [treeLayout, setTreeLayout] = useState<TreeLayout>('none')
+  const [mando, setMando] = useState<MandoRoute>('none')
   const [teeBearing, setTeeBearing] = useState<TeeBearing>('north')
   const [notes, setNotes] = useState<string>('')
   const [formError, setFormError] = useState<string | null>(null)
@@ -898,6 +918,7 @@ function AddHoleForm({ nextNumber, onAdd }: AddHoleFormProps) {
       terrain,
       treeCoverage,
       treeLayout,
+      mando,
       teeBearing,
       notes: notes.trim() || null,
     })
@@ -1022,6 +1043,16 @@ function AddHoleForm({ nextNumber, onAdd }: AddHoleFormProps) {
             </select>
           </label>
         )}
+        <label>
+          <span>Mando</span>
+          <select value={mando} onChange={e => setMando(e.target.value as MandoRoute)}>
+            {MANDO_OPTIONS.map(o => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="hole-editor-notes">
           <span>Notes</span>
           <input

@@ -32,6 +32,7 @@ export const DEMO_HOLE: Hole = {
   terrain: 'rolling',
   treeCoverage: 'wooded',
   treeLayout: 'throughout',
+  mando: 'none',
   teeBearing: 'north',
   windDirection: 'headwind',
   windSpeed: 8,

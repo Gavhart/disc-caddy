@@ -33,6 +33,7 @@ import { EventsPage } from './pages/EventsPage'
 import { NotificationsPage } from './pages/NotificationsPage'
 import { SocialHubPage } from './pages/SocialHubPage'
 import { LibraryHubPage } from './pages/LibraryHubPage'
+import { PracticePage } from './pages/PracticePage'
 
 function AppShell() {
   const { session, me, loading } = useAuth()
@@ -208,6 +209,14 @@ function AppShell() {
           <Route
             path="/community/scheduled"
             element={<Navigate to="/community/events" replace />}
+          />
+          <Route
+            path="/practice"
+            element={
+              <ProtectedRoute>
+                <PracticePage />
+              </ProtectedRoute>
+            }
           />
           <Route
             path="/settings"

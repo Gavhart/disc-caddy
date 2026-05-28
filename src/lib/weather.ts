@@ -14,6 +14,50 @@ export class LocationError extends Error {
   }
 }
 
+export interface PreciseLocation {
+  lat: number
+  lon: number
+  /** Horizontal accuracy radius in meters, when provided by the device. */
+  accuracyMeters: number | null
+}
+
+function readGeolocationError(err: GeolocationPositionError): LocationError {
+  switch (err.code) {
+    case err.PERMISSION_DENIED:
+      return new LocationError(
+        'Location permission denied. Enable location for this site in your browser or device settings.',
+      )
+    case err.POSITION_UNAVAILABLE:
+      return new LocationError('Could not determine your location.')
+    case err.TIMEOUT:
+      return new LocationError('Location request timed out. Try again.')
+    default:
+      return new LocationError('Could not get your location.')
+  }
+}
+
+/** High-accuracy fix — use when marking tee/basket pins on the course. */
+export async function getPreciseLocation(): Promise<PreciseLocation> {
+  if (typeof navigator === 'undefined' || !navigator.geolocation) {
+    throw new LocationError('Location is not available on this device.')
+  }
+
+  return new Promise((resolve, reject) => {
+    navigator.geolocation.getCurrentPosition(
+      pos =>
+        resolve({
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude,
+          accuracyMeters: Number.isFinite(pos.coords.accuracy)
+            ? pos.coords.accuracy
+            : null,
+        }),
+      err => reject(readGeolocationError(err)),
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 0 },
+    )
+  })
+}
+
 /** Current device location (browser or Capacitor WebView). */
 export async function getUserLocation(): Promise<{ lat: number; lon: number }> {
   if (typeof navigator === 'undefined' || !navigator.geolocation) {
@@ -27,25 +71,7 @@ export async function getUserLocation(): Promise<{ lat: number; lon: number }> {
           lat: pos.coords.latitude,
           lon: pos.coords.longitude,
         }),
-      err => {
-        switch (err.code) {
-          case err.PERMISSION_DENIED:
-            reject(
-              new LocationError(
-                'Location permission denied. Enable location for this site in your browser or device settings.',
-              ),
-            )
-            break
-          case err.POSITION_UNAVAILABLE:
-            reject(new LocationError('Could not determine your location.'))
-            break
-          case err.TIMEOUT:
-            reject(new LocationError('Location request timed out. Try again.'))
-            break
-          default:
-            reject(new LocationError('Could not get your location.'))
-        }
-      },
+      err => reject(readGeolocationError(err)),
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 120_000 },
     )
   })
