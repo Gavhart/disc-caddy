@@ -3859,13 +3859,23 @@ select {
   margin-top: 14px;
 }
 
-.alternatives summary {
-  cursor: pointer;
-  color: var(--text-muted);
-  font-size: 13px;
-  user-select: none;
+.alternatives-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
   margin-bottom: 8px;
-  font-weight: 600;
+}
+
+.alternatives-head h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.alternatives-more-btn {
+  margin-top: 12px;
+  width: 100%;
 }
 
 table {

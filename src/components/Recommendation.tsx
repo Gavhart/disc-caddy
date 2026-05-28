@@ -64,9 +64,20 @@ export function Recommendation({
   const top = recommendations[0]
   const [selectedBagDiscId, setSelectedBagDiscId] = useState<string | null>(null)
   const [discThrowOverride, setDiscThrowOverride] = useState<ThrowStyle | null>(null)
+  const [showAllPicks, setShowAllPicks] = useState(false)
+
+  const VISIBLE_PICKS = 5
+  const visibleRecommendations = showAllPicks
+    ? recommendations
+    : recommendations.slice(0, VISIBLE_PICKS)
+  const hiddenPickCount = Math.max(0, recommendations.length - VISIBLE_PICKS)
 
   const usingProfileDefaults =
     hand === profileHand && primaryThrow === profilePrimaryThrow
+
+  useEffect(() => {
+    setShowAllPicks(false)
+  }, [recommendations, currentHoleNumber, shotCount, remainingDistance])
 
   useEffect(() => {
     if (memorySelection) {
@@ -339,8 +350,13 @@ export function Recommendation({
         )}
       </div>
       {recommendations.length > 1 && (
-        <details className="alternatives" open>
-          <summary>All picks ranked</summary>
+        <div className="alternatives">
+          <div className="alternatives-head">
+            <h3>Ranked picks</h3>
+            <span className="muted small">
+              Top {Math.min(VISIBLE_PICKS, recommendations.length)} of {recommendations.length}
+            </span>
+          </div>
           <table>
             <thead>
               <tr>
@@ -353,7 +369,7 @@ export function Recommendation({
               </tr>
             </thead>
             <tbody>
-              {recommendations.map(r => {
+              {visibleRecommendations.map(r => {
                 const selected =
                   displayed.bagDisc.id === r.bagDisc.id &&
                   displayed.throwStyle === r.throwStyle
@@ -384,7 +400,18 @@ export function Recommendation({
               })}
             </tbody>
           </table>
-        </details>
+          {hiddenPickCount > 0 && (
+            <button
+              type="button"
+              className="btn-secondary alternatives-more-btn"
+              onClick={() => setShowAllPicks(prev => !prev)}
+            >
+              {showAllPicks
+                ? 'Show top 5 only'
+                : `Show ${hiddenPickCount} more pick${hiddenPickCount === 1 ? '' : 's'}`}
+            </button>
+          )}
+        </div>
       )}
     </section>
   )
