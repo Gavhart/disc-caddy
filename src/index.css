@@ -4939,6 +4939,93 @@ footer {
   margin: 0 0 10px;
 }
 
+.league-card-blurb {
+  margin: 0 0 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-align: left;
+}
+
+.league-card-location {
+  margin: 0 0 8px;
+  text-align: left;
+}
+
+.league-about-panel {
+  margin: 16px 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.league-about-panel h3,
+.league-about-panel h4 {
+  margin: 0 0 8px;
+}
+
+.league-about-creator {
+  margin: 0 0 12px;
+}
+
+.league-about-list {
+  margin: 0 0 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.league-about-list div {
+  margin: 0;
+}
+
+.league-about-list dt {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--accent-bright);
+}
+
+.league-about-list dd {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.45;
+}
+
+.league-how-it-works {
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.league-how-it-works ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.league-how-it-works li + li {
+  margin-top: 6px;
+}
+
+.league-info-fields label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.league-info-fields textarea,
+.league-info-fields input {
+  width: 100%;
+  margin-top: 6px;
+}
+
+.league-info-fields textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
 .league-card-stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -5070,7 +5157,8 @@ footer {
 }
 
 .league-edit-form input,
-.league-edit-form select {
+.league-edit-form select,
+.league-edit-form textarea {
   width: 100%;
   margin-top: 4px;
 }

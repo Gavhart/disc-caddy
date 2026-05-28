@@ -13,12 +13,18 @@ export async function createLeague(input: {
   seasonStart: string
   seasonEnd: string
   format?: RoundFormat
+  description?: string
+  location?: string
+  rules?: string
 }): Promise<{ id: string; inviteCode: string }> {
   const { data, error } = await supabase.rpc('create_league', {
     p_name: input.name,
     p_season_start: input.seasonStart,
     p_season_end: input.seasonEnd,
     p_format: input.format ?? 'stroke',
+    p_description: input.description?.trim() || null,
+    p_location: input.location?.trim() || null,
+    p_rules: input.rules?.trim() || null,
   })
   if (error) throw error
   const row = data as { id: string; invite_code: string }
@@ -47,6 +53,10 @@ export async function listMyLeagues(): Promise<League[]> {
       member_count: number
       created_by: string
       created_at: string
+      creator_name: string | null
+      description: string | null
+      location: string | null
+      rules: string | null
       my_role: 'admin' | 'member'
       rounds_submitted: number
       players_with_rounds: number
@@ -63,6 +73,10 @@ export async function listMyLeagues(): Promise<League[]> {
     memberCount: l.member_count,
     createdBy: l.created_by,
     createdAt: l.created_at,
+    creatorName: l.creator_name ?? null,
+    description: l.description ?? null,
+    location: l.location ?? null,
+    rules: l.rules ?? null,
     myRole: l.my_role ?? 'member',
     isAdmin: l.my_role === 'admin',
     roundsSubmitted: Number(l.rounds_submitted ?? 0),
@@ -80,6 +94,9 @@ export async function updateLeague(
     seasonStart?: string
     seasonEnd?: string
     format?: 'stroke' | 'stableford'
+    description?: string | null
+    location?: string | null
+    rules?: string | null
   },
 ): Promise<void> {
   const { error } = await supabase.rpc('update_league', {
@@ -88,6 +105,10 @@ export async function updateLeague(
     p_season_start: patch.seasonStart ?? null,
     p_season_end: patch.seasonEnd ?? null,
     p_format: patch.format ?? null,
+    p_description: patch.description ?? null,
+    p_location: patch.location ?? null,
+    p_rules: patch.rules ?? null,
+    p_update_info: patch.description !== undefined,
   })
   if (error) throw error
 }

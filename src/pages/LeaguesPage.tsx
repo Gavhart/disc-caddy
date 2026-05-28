@@ -39,6 +39,127 @@ function formatLabel(format: string): string {
   return format === 'stableford' ? 'Stableford' : 'Stroke'
 }
 
+function LeagueInfoFields({
+  description,
+  location,
+  rules,
+  onDescriptionChange,
+  onLocationChange,
+  onRulesChange,
+  idPrefix,
+}: {
+  description: string
+  location: string
+  rules: string
+  onDescriptionChange: (v: string) => void
+  onLocationChange: (v: string) => void
+  onRulesChange: (v: string) => void
+  idPrefix: string
+}) {
+  return (
+    <div className="league-info-fields">
+      <label htmlFor={`${idPrefix}-description`}>
+        About this league
+        <textarea
+          id={`${idPrefix}-description`}
+          value={description}
+          onChange={e => onDescriptionChange(e.target.value)}
+          placeholder="Weekly doubles at Pier Park, casual season with friends…"
+          rows={3}
+          maxLength={2000}
+        />
+      </label>
+      <label htmlFor={`${idPrefix}-location`}>
+        Where you play
+        <input
+          id={`${idPrefix}-location`}
+          value={location}
+          onChange={e => onLocationChange(e.target.value)}
+          placeholder="Vancouver, WA · Pier Park · home courses"
+          maxLength={200}
+        />
+      </label>
+      <label htmlFor={`${idPrefix}-rules`}>
+        House rules (optional)
+        <textarea
+          id={`${idPrefix}-rules`}
+          value={rules}
+          onChange={e => onRulesChange(e.target.value)}
+          placeholder="Best 8 rounds count, min 9 holes, casual OB…"
+          rows={3}
+          maxLength={2000}
+        />
+      </label>
+    </div>
+  )
+}
+
+function LeagueAboutPanel({ league }: { league: League }) {
+  const hasCustomInfo = Boolean(league.description || league.location || league.rules)
+
+  return (
+    <div className="league-about-panel">
+      <h3>About this league</h3>
+      {league.creatorName && (
+        <p className="muted small league-about-creator">
+          Organized by <strong>{league.creatorName}</strong>
+        </p>
+      )}
+      {hasCustomInfo ? (
+        <dl className="league-about-list">
+          {league.description && (
+            <div>
+              <dt>Overview</dt>
+              <dd>{league.description}</dd>
+            </div>
+          )}
+          {league.location && (
+            <div>
+              <dt>Where we play</dt>
+              <dd>{league.location}</dd>
+            </div>
+          )}
+          {league.rules && (
+            <div>
+              <dt>House rules</dt>
+              <dd>{league.rules}</dd>
+            </div>
+          )}
+        </dl>
+      ) : (
+        <p className="muted small">
+          No league details yet
+          {league.isAdmin ? ' — tap Edit league to add an overview, location, and house rules.' : '.'}
+        </p>
+      )}
+
+      <div className="league-how-it-works">
+        <h4>How this league works</h4>
+        <ul className="muted small">
+          <li>
+            <strong>{formatLabel(league.format)}</strong> scoring — standings rank players by average
+            score to par across submitted rounds.
+          </li>
+          <li>
+            Season runs <strong>{formatSeasonRange(league.seasonStart, league.seasonEnd)}</strong>
+            {league.seasonStatus === 'active'
+              ? ' (in season now).'
+              : league.seasonStatus === 'upcoming'
+                ? ' (not started yet).'
+                : ' (season ended).'}
+          </li>
+          <li>
+            Finished rounds (9+ holes) during an active season can auto-submit to this league when you
+            complete a scorecard.
+          </li>
+          <li>You can also manually submit any completed round from the list below.</li>
+          <li>Share the invite code so friends can join and compete on the same standings.</li>
+        </ul>
+      </div>
+    </div>
+  )
+}
+
 export function LeaguesPage() {
   const [leagues, setLeagues] = useState<League[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -46,10 +167,16 @@ export function LeaguesPage() {
   const [rounds, setRounds] = useState<RoundSummary[]>([])
   const [showCreate, setShowCreate] = useState(false)
   const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [location, setLocation] = useState('')
+  const [rules, setRules] = useState('')
   const [seasonStart, setSeasonStart] = useState(() => new Date().toISOString().slice(0, 10))
   const [seasonEnd, setSeasonEnd] = useState(defaultSeasonEnd)
   const [inviteCode, setInviteCode] = useState('')
   const [editName, setEditName] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editLocation, setEditLocation] = useState('')
+  const [editRules, setEditRules] = useState('')
   const [editSeasonStart, setEditSeasonStart] = useState('')
   const [editSeasonEnd, setEditSeasonEnd] = useState('')
   const [editFormat, setEditFormat] = useState<'stroke' | 'stableford'>('stroke')
@@ -94,6 +221,9 @@ export function LeaguesPage() {
       return
     }
     setEditName(selected.name)
+    setEditDescription(selected.description ?? '')
+    setEditLocation(selected.location ?? '')
+    setEditRules(selected.rules ?? '')
     setEditSeasonStart(selected.seasonStart)
     setEditSeasonEnd(selected.seasonEnd)
     setEditFormat(selected.format === 'stableford' ? 'stableford' : 'stroke')
@@ -118,8 +248,14 @@ export function LeaguesPage() {
         name: name.trim(),
         seasonStart,
         seasonEnd,
+        description: description.trim() || undefined,
+        location: location.trim() || undefined,
+        rules: rules.trim() || undefined,
       })
       setName('')
+      setDescription('')
+      setLocation('')
+      setRules('')
       setShowCreate(false)
       reload()
       setSelectedId(id)
@@ -171,6 +307,9 @@ export function LeaguesPage() {
         seasonStart: editSeasonStart,
         seasonEnd: editSeasonEnd,
         format: editFormat,
+        description: editDescription.trim(),
+        location: editLocation.trim(),
+        rules: editRules.trim(),
       })
       reload()
       setShowEdit(false)
@@ -207,7 +346,7 @@ export function LeaguesPage() {
     <div className="container leagues-page">
       <PageHeader
         title="Leagues"
-        description="Season standings with your group. Completed rounds auto-submit when you finish."
+        description="Season standings with your group. Add league details so members know what you're playing for."
         backTo="/social"
         backLabel="Social"
       />
@@ -244,6 +383,14 @@ export function LeaguesPage() {
                   <p className="league-card-season muted small">
                     {formatSeasonRange(l.seasonStart, l.seasonEnd)}
                   </p>
+
+                  {l.description && (
+                    <p className="league-card-blurb muted small">{l.description}</p>
+                  )}
+
+                  {l.location && (
+                    <p className="league-card-location muted small">📍 {l.location}</p>
+                  )}
 
                   <dl className="league-card-stats">
                     <div>
@@ -328,6 +475,8 @@ export function LeaguesPage() {
             )}
           </div>
 
+          <LeagueAboutPanel league={selected} />
+
           {showEdit && selected.isAdmin && (
             <form onSubmit={handleSaveEdit} className="league-edit-form">
               <label>
@@ -338,6 +487,15 @@ export function LeaguesPage() {
                   required
                 />
               </label>
+              <LeagueInfoFields
+                idPrefix="edit"
+                description={editDescription}
+                location={editLocation}
+                rules={editRules}
+                onDescriptionChange={setEditDescription}
+                onLocationChange={setEditLocation}
+                onRulesChange={setEditRules}
+              />
               <div className="league-form-row league-form-dates">
                 <label>
                   Season start
@@ -487,6 +645,15 @@ export function LeaguesPage() {
                 />
               </label>
             </div>
+            <LeagueInfoFields
+              idPrefix="create"
+              description={description}
+              location={location}
+              rules={rules}
+              onDescriptionChange={setDescription}
+              onLocationChange={setLocation}
+              onRulesChange={setRules}
+            />
             <button
               type="button"
               className="btn-secondary"

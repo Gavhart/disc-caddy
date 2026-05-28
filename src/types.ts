@@ -471,6 +471,10 @@ export interface League {
   memberCount: number
   createdBy: string
   createdAt: string
+  creatorName: string | null
+  description: string | null
+  location: string | null
+  rules: string | null
   myRole: 'admin' | 'member'
   isAdmin: boolean
   roundsSubmitted: number
