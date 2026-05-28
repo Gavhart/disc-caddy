@@ -6,13 +6,19 @@ import {
   Hole,
   HoleDirection,
   ExplanationSection,
-  MandoRoute,
+  ActiveMandoRoute,
+  ActiveTreeLayout,
   Recommendation,
   ThrowStyle,
   TreeCoverage,
   WindDirection,
 } from '../types'
 import { DISC_BY_NAME } from './discs'
+import {
+  holeMandos,
+  holeTreeLayouts,
+  mandoComplexPenalty,
+} from './holeLayoutOptions'
 import {
   PLASTIC_MODS,
   WEAR_MODS,
@@ -142,26 +148,19 @@ const TARGET_LATERAL: Record<HoleDirection, number> = {
   hard_right: 120,
 }
 
-/** Lateral target in feet when a mandatory route is in play. */
-const MANDO_TARGET_LATERAL: Record<Exclude<MandoRoute, 'none'>, number> = {
-  left: -90,
-  right: 90,
-  double: 0,
-  triple: 0,
-}
-
-const MANDO_COMPLEX_PENALTY: Record<MandoRoute, number> = {
-  none: 0,
-  left: 0,
-  right: 0,
-  double: 18,
-  triple: 28,
-}
-
-/** Basket lateral target — mando overrides dogleg when set. */
+/** Basket lateral target — mandos override dogleg when set. */
 export function targetLateralForHole(hole: Hole): number {
-  const mando = hole.mando ?? 'none'
-  if (mando !== 'none') return MANDO_TARGET_LATERAL[mando]
+  const mandos = holeMandos(hole)
+  if (mandos.length === 0) return TARGET_LATERAL[hole.direction]
+
+  const left = mandos.filter(m => m === 'left').length
+  const right = mandos.filter(m => m === 'right').length
+  const hasDouble = mandos.includes('double')
+  const hasTriple = mandos.includes('triple')
+
+  if (hasTriple || hasDouble || (left >= 1 && right >= 1)) return 0
+  if (left > 0) return -90 * Math.min(left, 2)
+  if (right > 0) return 90 * Math.min(right, 2)
   return TARGET_LATERAL[hole.direction]
 }
 
@@ -397,7 +396,7 @@ function scoreAttempt(
   if (disc.speed >= 10) treePenalty += treeCfg.driver
   if (stability > 2)   treePenalty += treeCfg.highStab
   if (stability < -2)  treePenalty += treeCfg.flippy
-  treePenalty += MANDO_COMPLEX_PENALTY[hole.mando ?? 'none']
+  treePenalty += mandoComplexPenalty(holeMandos(hole))
 
   const score =
     holeDistanceScore(effDistance, hole.distance) +
@@ -567,20 +566,26 @@ function explain(scored: ScoredAttempt, hole: Hole, hand: Hand): ExplanationDeta
 
   // Tree clauses: density first, then where they sit (so the player knows
   // *when* in the flight the gap closes).
-  if (hole.mando && hole.mando !== 'none') {
-    switch (hole.mando) {
-      case 'left':
-        clauses.push('mando left — route must pass left of the marker')
-        break
-      case 'right':
-        clauses.push('mando right — route must pass right of the marker')
-        break
-      case 'double':
-        clauses.push('double mando — hit both sides; control beats distance')
-        break
-      case 'triple':
-        clauses.push('triple mando — tight S-line; pick a disc you can place')
-        break
+  const mandos = holeMandos(hole)
+  if (mandos.length > 0) {
+    const counts = new Map<ActiveMandoRoute, number>()
+    for (const m of mandos) counts.set(m, (counts.get(m) ?? 0) + 1)
+    for (const [m, n] of counts) {
+      const suffix = n > 1 ? ` (×${n})` : ''
+      switch (m) {
+        case 'left':
+          clauses.push(`mando left${suffix} — route must pass left of the marker`)
+          break
+        case 'right':
+          clauses.push(`mando right${suffix} — route must pass right of the marker`)
+          break
+        case 'double':
+          clauses.push(`double mando${suffix} — hit both sides; control beats distance`)
+          break
+        case 'triple':
+          clauses.push(`triple mando${suffix} — tight S-line; pick a disc you can place`)
+          break
+      }
     }
   }
 
@@ -591,14 +596,23 @@ function explain(scored: ScoredAttempt, hole: Hole, hand: Hand): ExplanationDeta
         ? 'tight tree gauntlet — predictability beats power'
         : 'wooded line — a controllable mid usually beats forcing a driver',
     )
-    if (hole.treeLayout === 'back_half') {
-      clauses.push('trees crowd the back half — pick a disc that lands soft')
-    } else if (hole.treeLayout === 'front_half') {
-      clauses.push('trees up front — open release window, then it clears')
-    } else if (hole.treeLayout === 'canopy') {
-      clauses.push('low canopy — keep it flat and under the ceiling')
-    } else if (hole.treeLayout === 'left' || hole.treeLayout === 'right') {
-      clauses.push(`trees crowd the ${hole.treeLayout} side — bias the other way`)
+    const layouts = holeTreeLayouts(hole)
+    const layoutCounts = new Map<ActiveTreeLayout, number>()
+    for (const l of layouts) layoutCounts.set(l, (layoutCounts.get(l) ?? 0) + 1)
+
+    for (const [layout, n] of layoutCounts) {
+      const suffix = n > 1 ? ` (×${n})` : ''
+      if (layout === 'back_half') {
+        clauses.push(`trees crowd the back half${suffix} — pick a disc that lands soft`)
+      } else if (layout === 'front_half') {
+        clauses.push(`trees up front${suffix} — open release window, then it clears`)
+      } else if (layout === 'canopy') {
+        clauses.push(`low canopy${suffix} — keep it flat and under the ceiling`)
+      } else if (layout === 'left' || layout === 'right') {
+        clauses.push(`trees crowd the ${layout} side${suffix} — bias the other way`)
+      } else if (layout === 'throughout') {
+        clauses.push(`trees throughout${suffix} — stay on your line`)
+      }
     }
   }
 

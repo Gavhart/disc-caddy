@@ -1,17 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import {
+  ActiveMandoRoute,
+  ActiveTreeLayout,
   Course,
   CourseHole,
   CourseSummary,
   Elevation,
   HoleDirection,
-  MandoRoute,
   TeeBearing,
   TEE_BEARING_OPTIONS,
   Terrain,
   TreeCoverage,
-  TreeLayout,
 } from '../types'
 import {
   createCourse,
@@ -30,7 +30,7 @@ import {
   loadAllForCountry,
 } from '../lib/discgolfapi'
 import { CourseDiscoveryPanel } from '../components/CourseDiscoveryPanel'
-import { MANDO_OPTIONS } from '../lib/holeLayoutOptions'
+import { LieLayoutInput } from '../components/LieLayoutInput'
 
 const DIRECTION_OPTIONS: { value: HoleDirection; label: string }[] = [
   { value: 'hard_left', label: 'Hard left' },
@@ -51,22 +51,6 @@ const TERRAIN_OPTIONS: { value: Terrain; label: string }[] = [
   { value: 'rolling', label: 'Rolling' },
   { value: 'hilly', label: 'Hilly' },
   { value: 'mountainous', label: 'Mountainous' },
-]
-
-const TREE_COVERAGE_OPTIONS: { value: TreeCoverage; label: string }[] = [
-  { value: 'open', label: 'Open' },
-  { value: 'light', label: 'Light' },
-  { value: 'wooded', label: 'Wooded' },
-  { value: 'heavily_wooded', label: 'Heavy' },
-]
-
-const TREE_LAYOUT_OPTIONS: { value: TreeLayout; label: string }[] = [
-  { value: 'throughout', label: 'Throughout' },
-  { value: 'front_half', label: 'Front half' },
-  { value: 'back_half', label: 'Back half' },
-  { value: 'left', label: 'Left side' },
-  { value: 'right', label: 'Right side' },
-  { value: 'canopy', label: 'Canopy' },
 ]
 
 /** How many DiscGolfAPI matches to show in the live filter list. */
@@ -291,8 +275,8 @@ export function CoursesPage() {
     elevation: Elevation
     terrain: Terrain
     treeCoverage: TreeCoverage
-    treeLayout: TreeLayout
-    mando: MandoRoute
+    treeLayouts: ActiveTreeLayout[]
+    mandos: ActiveMandoRoute[]
     teeBearing: TeeBearing
     notes: string | null
   }) {
@@ -308,8 +292,8 @@ export function CoursesPage() {
         elevation: input.elevation,
         terrain: input.terrain,
         treeCoverage: input.treeCoverage,
-        treeLayout: input.treeLayout,
-        mando: input.mando,
+        treeLayouts: input.treeLayouts,
+        mandos: input.mandos,
         teeBearing: input.teeBearing,
         notes: input.notes,
       })
@@ -334,8 +318,8 @@ export function CoursesPage() {
         elevation: patch.elevation,
         terrain: patch.terrain,
         treeCoverage: patch.treeCoverage,
-        treeLayout: patch.treeLayout,
-        mando: patch.mando,
+        treeLayouts: patch.treeLayouts,
+        mandos: patch.mandos,
         teeBearing: patch.teeBearing,
         notes: patch.notes,
       })
@@ -781,60 +765,25 @@ function HoleEditor({ hole, onChange, onDelete }: HoleEditorProps) {
             ))}
           </select>
         </label>
-        <label>
-          <span>Trees</span>
-          <select
-            value={hole.treeCoverage}
-            onChange={e => {
-              const next = e.target.value as TreeCoverage
-              onChange({
-                treeCoverage: next,
-                treeLayout:
-                  next === 'open'
-                    ? 'none'
-                    : hole.treeLayout === 'none'
-                      ? 'throughout'
-                      : hole.treeLayout,
-              })
+        <div className="hole-editor-layout-full">
+          <LieLayoutInput
+            showDirection={false}
+            compact
+            value={{
+              direction: hole.direction,
+              treeCoverage: hole.treeCoverage,
+              treeLayouts: hole.treeLayouts ?? [],
+              mandos: hole.mandos ?? [],
             }}
-          >
-            {TREE_COVERAGE_OPTIONS.map(o => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        {hole.treeCoverage !== 'open' && (
-          <label>
-            <span>Tree layout</span>
-            <select
-              value={hole.treeLayout === 'none' ? 'throughout' : hole.treeLayout}
-              onChange={e =>
-                onChange({ treeLayout: e.target.value as TreeLayout })
-              }
-            >
-              {TREE_LAYOUT_OPTIONS.map(o => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-        <label>
-          <span>Mando</span>
-          <select
-            value={hole.mando ?? 'none'}
-            onChange={e => onChange({ mando: e.target.value as MandoRoute })}
-          >
-            {MANDO_OPTIONS.map(o => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </label>
+            onChange={patch =>
+              onChange({
+                treeCoverage: patch.treeCoverage,
+                treeLayouts: patch.treeLayouts,
+                mandos: patch.mandos,
+              })
+            }
+          />
+        </div>
         <label className="hole-editor-notes">
           <span>Notes</span>
           <input
@@ -859,8 +808,8 @@ interface AddHoleFormProps {
     elevation: Elevation
     terrain: Terrain
     treeCoverage: TreeCoverage
-    treeLayout: TreeLayout
-    mando: MandoRoute
+    treeLayouts: ActiveTreeLayout[]
+    mandos: ActiveMandoRoute[]
     teeBearing: TeeBearing
     notes: string | null
   }) => Promise<boolean>
@@ -874,8 +823,8 @@ function AddHoleForm({ nextNumber, onAdd }: AddHoleFormProps) {
   const [elevation, setElevation] = useState<Elevation>('flat')
   const [terrain, setTerrain] = useState<Terrain>('flat')
   const [treeCoverage, setTreeCoverage] = useState<TreeCoverage>('open')
-  const [treeLayout, setTreeLayout] = useState<TreeLayout>('none')
-  const [mando, setMando] = useState<MandoRoute>('none')
+  const [treeLayouts, setTreeLayouts] = useState<ActiveTreeLayout[]>([])
+  const [mandos, setMandos] = useState<ActiveMandoRoute[]>([])
   const [teeBearing, setTeeBearing] = useState<TeeBearing>('north')
   const [notes, setNotes] = useState<string>('')
   const [formError, setFormError] = useState<string | null>(null)
@@ -884,17 +833,6 @@ function AddHoleForm({ nextNumber, onAdd }: AddHoleFormProps) {
   useEffect(() => {
     setNumber(String(nextNumber))
   }, [nextNumber])
-
-  function changeTreeCoverage(next: TreeCoverage) {
-    setTreeCoverage(next)
-    setTreeLayout(
-      next === 'open'
-        ? 'none'
-        : treeLayout === 'none'
-          ? 'throughout'
-          : treeLayout,
-    )
-  }
 
   async function submit() {
     const numN = Number(number)
@@ -917,8 +855,8 @@ function AddHoleForm({ nextNumber, onAdd }: AddHoleFormProps) {
       elevation,
       terrain,
       treeCoverage,
-      treeLayout,
-      mando,
+      treeLayouts,
+      mandos,
       teeBearing,
       notes: notes.trim() || null,
     })
@@ -1015,44 +953,18 @@ function AddHoleForm({ nextNumber, onAdd }: AddHoleFormProps) {
             ))}
           </select>
         </label>
-        <label>
-          <span>Trees</span>
-          <select
-            value={treeCoverage}
-            onChange={e => changeTreeCoverage(e.target.value as TreeCoverage)}
-          >
-            {TREE_COVERAGE_OPTIONS.map(o => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </label>
-        {treeCoverage !== 'open' && (
-          <label>
-            <span>Tree layout</span>
-            <select
-              value={treeLayout === 'none' ? 'throughout' : treeLayout}
-              onChange={e => setTreeLayout(e.target.value as TreeLayout)}
-            >
-              {TREE_LAYOUT_OPTIONS.map(o => (
-                <option key={o.value} value={o.value}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-        <label>
-          <span>Mando</span>
-          <select value={mando} onChange={e => setMando(e.target.value as MandoRoute)}>
-            {MANDO_OPTIONS.map(o => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="hole-editor-layout-full">
+          <LieLayoutInput
+            showDirection={false}
+            compact
+            value={{ direction, treeCoverage, treeLayouts, mandos }}
+            onChange={patch => {
+              if (patch.treeCoverage != null) setTreeCoverage(patch.treeCoverage)
+              if (patch.treeLayouts != null) setTreeLayouts(patch.treeLayouts)
+              if (patch.mandos != null) setMandos(patch.mandos)
+            }}
+          />
+        </div>
         <label className="hole-editor-notes">
           <span>Notes</span>
           <input

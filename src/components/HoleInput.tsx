@@ -2,11 +2,8 @@ import { useEffect, useState } from 'react'
 import { summarizeHoleLayout } from '../lib/holeLabels'
 import {
   DIRECTION_OPTIONS,
-  MANDO_OPTIONS,
-  nextTreeLayoutForCoverage,
-  TREE_COVERAGE_OPTIONS,
-  TREE_LAYOUT_OPTIONS,
 } from '../lib/holeLayoutOptions'
+import { holeToLieLayout } from '../lib/lieLayout'
 import { clampHoleDistanceFeet } from '../lib/geo'
 import { fetchLiveWind, getUserLocation } from '../lib/weather'
 import { HoleDistanceMeasure } from './HoleDistanceMeasure'
@@ -18,7 +15,6 @@ import {
   TEE_BEARING_DEG,
   TEE_BEARING_OPTIONS,
   Terrain,
-  TreeCoverage,
   WindDirection,
 } from '../types'
 
@@ -133,8 +129,6 @@ export function HoleInput({
     Number.isFinite(courseLat) &&
     Number.isFinite(courseLon)
 
-  const showTreeLayout = hole.treeCoverage !== 'open'
-
   const [distanceText, setDistanceText] = useState(() => String(hole.distance))
 
   useEffect(() => {
@@ -202,27 +196,19 @@ export function HoleInput({
     setWindError(null)
   }
 
-  function setTreeCoverage(value: TreeCoverage) {
-    onChange({
-      ...hole,
-      treeCoverage: value,
-      treeLayout: nextTreeLayoutForCoverage(value, hole.treeLayout),
-    })
-  }
-
+  const baseLieLayout = holeToLieLayout(hole)
   const mergedLieLayout: LieLayoutValue = {
-    direction: lieLayout.direction ?? hole.direction,
-    treeCoverage: lieLayout.treeCoverage ?? hole.treeCoverage,
-    treeLayout: lieLayout.treeLayout ?? hole.treeLayout,
-    mando: lieLayout.mando ?? hole.mando ?? 'none',
+    direction: lieLayout.direction ?? baseLieLayout.direction,
+    treeCoverage: lieLayout.treeCoverage ?? baseLieLayout.treeCoverage,
+    treeLayouts: lieLayout.treeLayouts ?? baseLieLayout.treeLayouts,
+    mandos: lieLayout.mandos ?? baseLieLayout.mandos,
   }
 
   const hasLieOverride =
-    Object.keys(lieLayout).length > 0 &&
-    (lieLayout.direction != null ||
-      lieLayout.treeCoverage != null ||
-      lieLayout.treeLayout != null ||
-      lieLayout.mando != null)
+    lieLayout.direction != null ||
+    lieLayout.treeCoverage != null ||
+    lieLayout.treeLayouts != null ||
+    lieLayout.mandos != null
 
   function clearLieLayout() {
     onLieLayoutChange?.({})
@@ -391,27 +377,15 @@ export function HoleInput({
             onChange={v => setHole('terrain', v)}
           />
 
-          <ChipGroup
-            label="Trees"
-            value={hole.treeCoverage}
-            options={TREE_COVERAGE_OPTIONS}
-            onChange={setTreeCoverage}
-          />
-
-          {showTreeLayout && (
-            <ChipGroup
-              label="Tree layout"
-              value={hole.treeLayout}
-              options={TREE_LAYOUT_OPTIONS}
-              onChange={v => setHole('treeLayout', v)}
-            />
-          )}
-
-          <ChipGroup
-            label="Mando"
-            value={hole.mando ?? 'none'}
-            options={MANDO_OPTIONS}
-            onChange={v => setHole('mando', v)}
+          <LieLayoutInput
+            showDirection={false}
+            value={{
+              direction: hole.direction,
+              treeCoverage: hole.treeCoverage,
+              treeLayouts: hole.treeLayouts ?? [],
+              mandos: hole.mandos ?? [],
+            }}
+            onChange={patch => onChange({ ...hole, ...patch })}
           />
         </>
       )}

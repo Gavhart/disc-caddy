@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Course, CourseHole, CourseSummary } from '../types'
+import { Course, CourseHole, CourseSummary, ActiveMandoRoute, ActiveTreeLayout } from '../types'
 import {
   listCourses,
   listCourseSummaries,
@@ -473,15 +473,26 @@ function prettyLayoutSuffix(hole: CourseHole): string {
     parts.push(prettyTerrain(hole.terrain))
   }
   if (hole.treeCoverage && hole.treeCoverage !== 'open') {
-    parts.push(prettyTreeCoverage(hole.treeCoverage, hole.treeLayout))
+    parts.push(prettyTreeCoverage(hole.treeCoverage, hole.treeLayouts ?? []))
   }
-  if (hole.mando && hole.mando !== 'none') {
-    parts.push(prettyMando(hole.mando))
+  if ((hole.mandos ?? []).length > 0) {
+    parts.push(prettyMandos(hole.mandos ?? []))
   }
   return parts.length ? ' · ' + parts.join(' · ') : ''
 }
 
-function prettyMando(m: CourseHole['mando']): string {
+function prettyMandos(mandos: ActiveMandoRoute[]): string {
+  const counts = new Map<ActiveMandoRoute, number>()
+  for (const m of mandos) counts.set(m, (counts.get(m) ?? 0) + 1)
+  return [...counts.entries()]
+    .map(([m, n]) => {
+      const base = prettyMandoLabel(m)
+      return n > 1 ? `${base}×${n}` : base
+    })
+    .join('+')
+}
+
+function prettyMandoLabel(m: ActiveMandoRoute): string {
   switch (m) {
     case 'left':
       return 'Mando L'
@@ -507,22 +518,30 @@ function prettyTerrain(t: CourseHole['terrain']): string {
 
 function prettyTreeCoverage(
   c: CourseHole['treeCoverage'],
-  layout: CourseHole['treeLayout'],
+  layouts: ActiveTreeLayout[],
 ): string {
   const density =
     c === 'light'           ? 'Light trees'
     : c === 'wooded'        ? 'Wooded'
     : c === 'heavily_wooded' ? 'Heavily wooded'
     : 'Open'
-  if (!layout || layout === 'none' || layout === 'throughout') return density
-  const where =
-    layout === 'front_half' ? 'front half'
-    : layout === 'back_half' ? 'back half'
-    : layout === 'left'      ? 'left side'
-    : layout === 'right'     ? 'right side'
-    : layout === 'canopy'    ? 'canopy'
-    : ''
-  return where ? `${density} (${where})` : density
+  if (layouts.length === 0) return density
+  const counts = new Map<ActiveTreeLayout, number>()
+  for (const l of layouts) counts.set(l, (counts.get(l) ?? 0) + 1)
+  const where = [...counts.entries()]
+    .map(([layout, n]) => {
+      const label =
+        layout === 'throughout' ? 'throughout'
+        : layout === 'front_half' ? 'front half'
+        : layout === 'back_half' ? 'back half'
+        : layout === 'left' ? 'left'
+        : layout === 'right' ? 'right'
+        : layout === 'canopy' ? 'canopy'
+        : layout
+      return n > 1 ? `${label}×${n}` : label
+    })
+    .join('+')
+  return `${density} (${where})`
 }
 
 /**

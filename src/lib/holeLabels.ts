@@ -1,4 +1,13 @@
-import { Hole, HoleDirection, Elevation, Terrain, TreeCoverage, TreeLayout, MandoRoute } from '../types'
+import {
+  Hole,
+  HoleDirection,
+  Elevation,
+  Terrain,
+  TreeCoverage,
+  ActiveTreeLayout,
+  ActiveMandoRoute,
+} from '../types'
+import { normalizeHoleLayoutFields } from './holeLayoutOptions'
 
 export function formatDirection(d: HoleDirection): string {
   switch (d) {
@@ -39,52 +48,67 @@ function formatTerrain(t: Terrain): string {
   }
 }
 
-function formatTrees(c: TreeCoverage, layout: TreeLayout): string | null {
+const TREE_LAYOUT_LABELS: Record<ActiveTreeLayout, string> = {
+  throughout: 'throughout',
+  front_half: 'front half',
+  back_half: 'back half',
+  left: 'left side',
+  right: 'right side',
+  canopy: 'canopy',
+}
+
+function formatTreeLayoutItem(layout: ActiveTreeLayout): string {
+  return TREE_LAYOUT_LABELS[layout] ?? layout
+}
+
+function formatTrees(c: TreeCoverage, layouts: ActiveTreeLayout[]): string | null {
   if (c === 'open') return null
   const density =
     c === 'light' ? 'Light trees' : c === 'wooded' ? 'Wooded' : 'Heavily wooded'
-  if (!layout || layout === 'none' || layout === 'throughout') return density
-  const where =
-    layout === 'front_half'
-      ? 'front half'
-      : layout === 'back_half'
-        ? 'back half'
-        : layout === 'left'
-          ? 'left side'
-          : layout === 'right'
-            ? 'right side'
-            : layout === 'canopy'
-              ? 'Canopy'
-              : ''
-  return where ? `${density} (${where})` : density
+  if (layouts.length === 0) return density
+
+  const counts = new Map<ActiveTreeLayout, number>()
+  for (const l of layouts) {
+    counts.set(l, (counts.get(l) ?? 0) + 1)
+  }
+  const where = [...counts.entries()]
+    .map(([layout, n]) =>
+      n > 1 ? `${formatTreeLayoutItem(layout)} ×${n}` : formatTreeLayoutItem(layout),
+    )
+    .join(', ')
+  return `${density} (${where})`
 }
 
-function formatMando(m: MandoRoute): string | null {
-  switch (m) {
-    case 'left':
-      return 'Mando left'
-    case 'right':
-      return 'Mando right'
-    case 'double':
-      return 'Double mando'
-    case 'triple':
-      return 'Triple mando'
-    case 'none':
-      return null
+const MANDO_LABELS: Record<ActiveMandoRoute, string> = {
+  left: 'Mando left',
+  right: 'Mando right',
+  double: 'Double mando',
+  triple: 'Triple mando',
+}
+
+function formatMandos(mandos: ActiveMandoRoute[]): string | null {
+  if (mandos.length === 0) return null
+  const counts = new Map<ActiveMandoRoute, number>()
+  for (const m of mandos) {
+    counts.set(m, (counts.get(m) ?? 0) + 1)
   }
+  return [...counts.entries()]
+    .map(([m, n]) => (n > 1 ? `${MANDO_LABELS[m]} ×${n}` : MANDO_LABELS[m]))
+    .join(', ')
 }
 
 /** One-line hole layout for banners and summaries. */
 export function summarizeHoleLayout(hole: Hole): string {
+  const { treeLayouts, mandos } = normalizeHoleLayoutFields(hole)
   const parts = [
     `${hole.distance} ft`,
     formatDirection(hole.direction),
     formatElevation(hole.elevation),
   ]
   if (hole.terrain !== 'flat') parts.push(formatTerrain(hole.terrain))
-  const trees = formatTrees(hole.treeCoverage, hole.treeLayout)
+  const trees = formatTrees(hole.treeCoverage, treeLayouts)
   if (trees) parts.push(trees)
-  const mando = formatMando(hole.mando ?? 'none')
+  const mando = formatMandos(mandos)
   if (mando) parts.push(mando)
   return parts.join(' · ')
 }

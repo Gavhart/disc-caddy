@@ -113,6 +113,12 @@ export type TreeLayout =
 /** Mandatory route the disc must pass on the way to the basket. */
 export type MandoRoute = 'none' | 'left' | 'right' | 'double' | 'triple'
 
+/** Selected mando markers (multi-select; duplicates allowed for repeated mandos). */
+export type ActiveMandoRoute = Exclude<MandoRoute, 'none'>
+
+/** Tree positions that can stack (multi-select). Excludes `none`. */
+export type ActiveTreeLayout = Exclude<TreeLayout, 'none'>
+
 export type Hand = 'left' | 'right'
 export type ThrowStyle = 'backhand' | 'forehand'
 
@@ -150,9 +156,10 @@ export interface Hole {
   elevation: Elevation
   terrain: Terrain
   treeCoverage: TreeCoverage
-  treeLayout: TreeLayout
-  /** Mandatory route, if any. */
-  mando: MandoRoute
+  /** Where trees/obstacles sit — tap multiple; repeat a chip for multiples of the same. */
+  treeLayouts: ActiveTreeLayout[]
+  /** Mandatory routes — tap multiple; repeat for extra mandos on the hole. */
+  mandos: ActiveMandoRoute[]
   /** Compass direction the tee faces toward the basket (live wind mapping). */
   teeBearing: TeeBearing
   windDirection: WindDirection
@@ -200,8 +207,8 @@ export interface CourseHole {
   elevation: Elevation
   terrain: Terrain
   treeCoverage: TreeCoverage
-  treeLayout: TreeLayout
-  mando: MandoRoute
+  treeLayouts: ActiveTreeLayout[]
+  mandos: ActiveMandoRoute[]
   /** Compass direction tee faces toward basket (live wind mapping). */
   teeBearing: TeeBearing
   notes: string | null

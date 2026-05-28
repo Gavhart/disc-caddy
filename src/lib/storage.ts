@@ -3,6 +3,7 @@
 // persisting across devices.
 
 import { Hole, WindDirection } from '../types'
+import { normalizeHoleLayoutFields } from './holeLayoutOptions'
 
 const KEY_HOLE = 'disc-caddy:hole'
 const KEY_ROUND = 'disc-caddy:round'
@@ -14,8 +15,8 @@ const KEY_ROUND = 'disc-caddy:round'
 const HOLE_DEFAULTS = {
   terrain: 'flat' as const,
   treeCoverage: 'open' as const,
-  treeLayout: 'none' as const,
-  mando: 'none' as const,
+  treeLayouts: [] as const,
+  mandos: [] as const,
   teeBearing: 'north' as const,
   windDirection: 'none' as const,
 }
@@ -69,6 +70,7 @@ export const localState = {
       ...HOLE_DEFAULTS,
       ...raw,
       windDirection: migrateWind(raw.windDirection),
+      ...normalizeHoleLayoutFields(raw as Partial<Hole>),
     } as Hole
   },
   saveHole: (h: Hole) => saveJSON(KEY_HOLE, h),

@@ -37,16 +37,16 @@ export function HoleShotTracker({
   const mergedLieLayout: LieLayoutValue = {
     direction: lieLayout?.direction ?? baseLayout.direction,
     treeCoverage: lieLayout?.treeCoverage ?? baseLayout.treeCoverage,
-    treeLayout: lieLayout?.treeLayout ?? baseLayout.treeLayout,
-    mando: lieLayout?.mando ?? baseLayout.mando,
+    treeLayouts: lieLayout?.treeLayouts ?? baseLayout.treeLayouts,
+    mandos: lieLayout?.mandos ?? baseLayout.mandos,
   }
 
   const hasLieOverride = Boolean(
     lieLayout &&
       (lieLayout.direction != null ||
         lieLayout.treeCoverage != null ||
-        lieLayout.treeLayout != null ||
-        lieLayout.mando != null),
+        lieLayout.treeLayouts != null ||
+        lieLayout.mandos != null),
   )
 
   function resetShots() {

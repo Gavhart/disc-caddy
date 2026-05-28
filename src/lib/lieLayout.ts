@@ -1,23 +1,27 @@
 import { Hole } from '../types'
+import { normalizeHoleLayoutFields } from './holeLayoutOptions'
 import type { LieLayoutValue } from '../components/LieLayoutInput'
 
 export function holeToLieLayout(hole: Hole): LieLayoutValue {
+  const { treeLayouts, mandos } = normalizeHoleLayoutFields(hole)
   return {
     direction: hole.direction,
     treeCoverage: hole.treeCoverage,
-    treeLayout: hole.treeLayout,
-    mando: hole.mando ?? 'none',
+    treeLayouts,
+    mandos,
   }
 }
 
 export function applyLieLayout(hole: Hole, lieLayout: Partial<LieLayoutValue>): Hole {
-  return {
-    ...hole,
-    ...(lieLayout.direction != null ? { direction: lieLayout.direction } : {}),
-    ...(lieLayout.treeCoverage != null ? { treeCoverage: lieLayout.treeCoverage } : {}),
-    ...(lieLayout.treeLayout != null ? { treeLayout: lieLayout.treeLayout } : {}),
-    ...(lieLayout.mando != null ? { mando: lieLayout.mando } : {}),
+  const next = { ...hole }
+  if (lieLayout.direction != null) next.direction = lieLayout.direction
+  if (lieLayout.treeCoverage != null) {
+    next.treeCoverage = lieLayout.treeCoverage
+    if (lieLayout.treeCoverage === 'open') next.treeLayouts = []
   }
+  if (lieLayout.treeLayouts != null) next.treeLayouts = lieLayout.treeLayouts
+  if (lieLayout.mandos != null) next.mandos = lieLayout.mandos
+  return next
 }
 
 /** Whether a lie-layout override object has any active fields. */
@@ -25,7 +29,7 @@ export function hasLieLayoutOverride(lieLayout: Partial<LieLayoutValue>): boolea
   return (
     lieLayout.direction != null ||
     lieLayout.treeCoverage != null ||
-    lieLayout.treeLayout != null ||
-    lieLayout.mando != null
+    lieLayout.treeLayouts != null ||
+    lieLayout.mandos != null
   )
 }

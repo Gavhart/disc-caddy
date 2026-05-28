@@ -88,8 +88,8 @@ const DEFAULT_HOLE: Hole = {
   elevation: 'flat',
   terrain: 'flat',
   treeCoverage: 'open',
-  treeLayout: 'none',
-  mando: 'none',
+  treeLayouts: [],
+  mandos: [],
   teeBearing: 'north',
   windDirection: 'none',
   windSpeed: 0,
@@ -443,8 +443,8 @@ export function HomePage() {
           elevation: ch.elevation,
           terrain: ch.terrain,
           treeCoverage: ch.treeCoverage,
-          treeLayout: ch.treeLayout,
-          mando: ch.mando ?? 'none',
+          treeLayouts: ch.treeLayouts ?? [],
+          mandos: ch.mandos ?? [],
           teeBearing: ch.teeBearing,
         }))
       }

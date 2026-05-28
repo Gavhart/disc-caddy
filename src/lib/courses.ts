@@ -1,6 +1,8 @@
 import { supabase } from './supabase'
 import type { DgApiCourse } from './discgolfapi'
 import {
+  ActiveMandoRoute,
+  ActiveTreeLayout,
   Course,
   CourseHole,
   CourseSummary,
@@ -12,6 +14,7 @@ import {
   TreeLayout,
   MandoRoute,
 } from '../types'
+import { normalizeHoleLayoutFields } from './holeLayoutOptions'
 
 interface CourseRow {
   id: string
@@ -39,7 +42,9 @@ interface CourseHoleRow {
   terrain: Terrain | null
   tree_coverage: TreeCoverage | null
   tree_layout: TreeLayout | null
+  tree_layouts: ActiveTreeLayout[] | null
   mando: MandoRoute | null
+  mandos: ActiveMandoRoute[] | null
   tee_bearing: TeeBearing | null
   notes: string | null
   created_by: string | null
@@ -63,6 +68,13 @@ function rowToCourse(r: CourseRow): Course {
 }
 
 function rowToHole(r: CourseHoleRow): CourseHole {
+  const { treeLayouts, mandos } = normalizeHoleLayoutFields({
+    treeCoverage: r.tree_coverage ?? 'open',
+    treeLayouts: r.tree_layouts ?? undefined,
+    treeLayout: r.tree_layout ?? undefined,
+    mandos: r.mandos ?? undefined,
+    mando: r.mando ?? undefined,
+  })
   return {
     id: r.id,
     courseId: r.course_id,
@@ -71,13 +83,10 @@ function rowToHole(r: CourseHoleRow): CourseHole {
     par: r.par,
     direction: r.direction,
     elevation: r.elevation,
-    // The columns have NOT NULL DB defaults from migration 006, but rows
-    // inserted by older clients (or before the migration was applied) may
-    // still come back null — fall back to the sensible "no data" values.
     terrain: r.terrain ?? 'flat',
     treeCoverage: r.tree_coverage ?? 'open',
-    treeLayout: r.tree_layout ?? 'none',
-    mando: r.mando ?? 'none',
+    treeLayouts,
+    mandos,
     teeBearing: r.tee_bearing ?? 'north',
     notes: r.notes,
     createdBy: r.created_by,
@@ -276,8 +285,8 @@ export interface NewCourseHoleInput {
   elevation?: Elevation
   terrain?: Terrain
   treeCoverage?: TreeCoverage
-  treeLayout?: TreeLayout
-  mando?: MandoRoute
+  treeLayouts?: ActiveTreeLayout[]
+  mandos?: ActiveMandoRoute[]
   teeBearing?: TeeBearing
   notes?: string | null
 }
@@ -286,6 +295,9 @@ export async function createCourseHole(input: NewCourseHoleInput): Promise<Cours
   const { data: userData } = await supabase.auth.getUser()
   const user = userData.user
   if (!user) throw new Error('Not signed in')
+
+  const treeLayouts = input.treeLayouts ?? []
+  const mandos = input.mandos ?? []
 
   const base = {
     course_id: input.courseId,
@@ -302,8 +314,10 @@ export async function createCourseHole(input: NewCourseHoleInput): Promise<Cours
     ...base,
     terrain: input.terrain ?? 'flat',
     tree_coverage: input.treeCoverage ?? 'open',
-    tree_layout: input.treeLayout ?? 'none',
-    mando: input.mando ?? 'none',
+    tree_layout: treeLayouts[0] ?? 'none',
+    tree_layouts: treeLayouts,
+    mando: mandos[0] ?? 'none',
+    mandos,
   }
 
   const full = {
@@ -324,8 +338,8 @@ export async function updateCourseHole(
     elevation: Elevation
     terrain: Terrain
     treeCoverage: TreeCoverage
-    treeLayout: TreeLayout
-    mando: MandoRoute
+    treeLayouts: ActiveTreeLayout[]
+    mandos: ActiveMandoRoute[]
     teeBearing: TeeBearing
     notes: string | null
   }>,
@@ -339,8 +353,14 @@ export async function updateCourseHole(
   if (patch.elevation !== undefined) update.elevation = patch.elevation
   if (patch.terrain !== undefined) update.terrain = patch.terrain
   if (patch.treeCoverage !== undefined) update.tree_coverage = patch.treeCoverage
-  if (patch.treeLayout !== undefined) update.tree_layout = patch.treeLayout
-  if (patch.mando !== undefined) update.mando = patch.mando
+  if (patch.treeLayouts !== undefined) {
+    update.tree_layouts = patch.treeLayouts
+    update.tree_layout = patch.treeLayouts[0] ?? 'none'
+  }
+  if (patch.mandos !== undefined) {
+    update.mandos = patch.mandos
+    update.mando = patch.mandos[0] ?? 'none'
+  }
   if (patch.teeBearing !== undefined) update.tee_bearing = patch.teeBearing
   if (patch.notes !== undefined) update.notes = patch.notes
 
@@ -350,7 +370,9 @@ export async function updateCourseHole(
     delete update.terrain
     delete update.tree_coverage
     delete update.tree_layout
+    delete update.tree_layouts
     delete update.mando
+    delete update.mandos
     ;({ error } = await supabase.from('course_holes').update(update).eq('id', holeId))
   }
   if (error) throw error
