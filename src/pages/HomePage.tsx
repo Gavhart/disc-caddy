@@ -43,12 +43,14 @@ import {
 } from '../lib/roundInvites'
 import { createRoundShareLink, roundShareUrl } from '../lib/roundShare'
 import { refreshChallengeProgress } from '../lib/challenges'
-import { refreshProgression } from '../lib/progression'
+import { refreshProgression, listPlayerBadges } from '../lib/progression'
 import { autoSubmitRoundToLeagues } from '../lib/leagues'
 import { updateCourseHole, listCourses, listHolesForCourse } from '../lib/courses'
 import { Scorecard } from '../components/Scorecard'
 import { RoundInviteBanner } from '../components/RoundInviteBanner'
 import { HoleNoteEditor } from '../components/HoleNoteEditor'
+import { HomeProgressStrip } from '../components/HomeProgressStrip'
+import { BadgeUnlockBanner } from '../components/BadgeUnlockBanner'
 import {
   Bag,
   BagDisc,
@@ -65,6 +67,7 @@ import {
   RoundFormat,
   TeeBearing,
   ThrowStyle,
+  PlayerBadge,
 } from '../types'
 
 const DEFAULT_HOLE: Hole = {
@@ -118,6 +121,7 @@ export function HomePage() {
   const [offlineHint, setOfflineHint] = useState<string | null>(null)
   const [roundFormat, setRoundFormat] = useState<RoundFormat>('stroke')
   const [leagueSubmitMsg, setLeagueSubmitMsg] = useState<string | null>(null)
+  const [newBadges, setNewBadges] = useState<PlayerBadge[]>([])
 
   const isPro = me?.isPro ?? false
 
@@ -506,7 +510,17 @@ export function HomePage() {
       if (wasHost) {
         notifyFriendsRoundCompleted(endingRoundId).catch(() => {})
         refreshChallengeProgress().catch(() => {})
-        refreshProgression().catch(() => {})
+        try {
+          const beforeBadges = await listPlayerBadges()
+          await refreshProgression()
+          const afterBadges = await listPlayerBadges()
+          const unlocked = afterBadges.filter(
+            b => !beforeBadges.some(prev => prev.slug === b.slug),
+          )
+          if (unlocked.length > 0) setNewBadges(unlocked)
+        } catch {
+          refreshProgression().catch(() => {})
+        }
         try {
           const token = await createRoundShareLink(endingRoundId)
           setShareUrl(roundShareUrl(token))
@@ -649,6 +663,9 @@ export function HomePage() {
           }
         }}
       />
+      {newBadges.length > 0 && (
+        <BadgeUnlockBanner badges={newBadges} onDismiss={() => setNewBadges([])} />
+      )}
       {leagueSubmitMsg && (
         <div className="card league-auto-banner">
           <strong>League update</strong>
@@ -665,7 +682,9 @@ export function HomePage() {
       {shareUrl && (
         <div className="card round-share-banner">
           <strong>Round recap link</strong>
-          <p className="muted small">Share your finished round with friends.</p>
+          <p className="muted small">
+            Share your finished round with friends — great for league night posts and group chats.
+          </p>
           <div className="round-share-row">
             <input type="text" readOnly value={shareUrl} className="round-share-input" />
             <button
@@ -702,6 +721,7 @@ export function HomePage() {
           </p>
         </div>
       )}
+      {!roundActive && user && <HomeProgressStrip />}
       <div className="card bag-picker-card">
         <BagPicker
           bags={bags}

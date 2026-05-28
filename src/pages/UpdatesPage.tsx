@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { APP_VERSION, RELEASES, ROADMAP } from '../data/updates'
+import { APP_VERSION, RELEASES } from '../data/updates'
+import { ROADMAP_ITEMS, RoadmapStatus } from '../data/roadmap'
 import { hasUnreadUpdates, isReleaseUnread, markUpdatesSeen } from '../lib/updates'
 
 function formatDate(iso: string): string {
@@ -9,6 +10,31 @@ function formatDate(iso: string): string {
     month: 'long',
     day: 'numeric',
   })
+}
+
+const STATUS_LABELS: Record<RoadmapStatus, string> = {
+  shipped: 'Shipped',
+  in_progress: 'In progress',
+  planned: 'Coming soon',
+}
+
+function RoadmapColumn({ status, items }: { status: RoadmapStatus; items: typeof ROADMAP_ITEMS }) {
+  const filtered = items.filter(i => i.status === status)
+  if (filtered.length === 0) return null
+
+  return (
+    <div className={`updates-roadmap-column updates-roadmap-${status}`}>
+      <h3>{STATUS_LABELS[status]}</h3>
+      <ul className="updates-roadmap-cards">
+        {filtered.map(item => (
+          <li key={item.id} className="updates-roadmap-card">
+            <strong>{item.title}</strong>
+            <p className="muted small">{item.description}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
 }
 
 export function UpdatesPage() {
@@ -68,15 +94,16 @@ export function UpdatesPage() {
       </div>
 
       <div className="card updates-roadmap">
-        <h2>Coming soon</h2>
+        <h2>Product roadmap</h2>
         <p className="muted small">
-          A peek at what we're building next. This list updates as plans firm up.
+          Shipped features, what we&apos;re building now, and what&apos;s on deck. Updated as plans
+          change.
         </p>
-        <ul className="updates-roadmap-list">
-          {ROADMAP.map(item => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
+        <div className="updates-roadmap-grid">
+          <RoadmapColumn status="shipped" items={ROADMAP_ITEMS} />
+          <RoadmapColumn status="in_progress" items={ROADMAP_ITEMS} />
+          <RoadmapColumn status="planned" items={ROADMAP_ITEMS} />
+        </div>
       </div>
 
       <div className="updates-actions">

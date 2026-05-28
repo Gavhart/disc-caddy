@@ -1,8 +1,9 @@
-import { FormEvent, useEffect, useState } from 'react'
+import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { playModeLabel, skillLevelLabel } from '../data/leagueFeatures'
 import { LeaguePairReveal, LeaguePairShuffle } from './LeaguePairShuffle'
 import { LeaguePairRoundModal } from './LeaguePairRoundModal'
+import { LeagueStandingsHero } from './LeagueStandingsHero'
 import {
   addLeaguePotEntry,
   createLeaguePair,
@@ -15,6 +16,7 @@ import {
   listLeagueMembers,
   listLeagueMessages,
   listLeaguePairs,
+  listLeagueLivePairs,
   listLeaguePotEntries,
   postLeagueAnnouncement,
   refreshLeagueHandicaps,
@@ -179,44 +181,76 @@ function StandingsTable({
   league,
   standings,
   pairStandings,
+  myPairStanding,
+  currentUserId,
 }: {
   league: League
   standings: LeagueStanding[]
   pairStandings: LeaguePairStanding[]
+  myPairStanding?: LeaguePairStanding | null
+  currentUserId?: string | null
 }) {
-  if (league.playMode === 'doubles' && pairStandings.length > 0) {
-    return (
-      <>
-        <h4>Pair standings</h4>
-        <table className="leaderboard-table">
-          <thead>
-            <tr>
-              <th>#</th>
-              <th>Pair</th>
-              <th>Rounds</th>
-              <th>Avg combined +/-</th>
-            </tr>
-          </thead>
-          <tbody>
-            {pairStandings.map(s => (
-              <tr key={s.pairId}>
-                <td>{s.rank}</td>
-                <td>{s.pairName}</td>
-                <td>{s.roundsTogether}</td>
-                <td>
-                  {s.avgCombinedToPar != null ? formatScoreToPar(s.avgCombinedToPar) : '—'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <h4>Individual standings</h4>
-      </>
-    )
-  }
+  const hasData =
+    standings.length > 0 || (league.playMode === 'doubles' && pairStandings.length > 0)
 
-  if (standings.length === 0) {
-    return <p className="muted">No submitted rounds yet — play a round and submit it below.</p>
+  return (
+    <>
+      {hasData && (
+        <LeagueStandingsHero
+          league={league}
+          standings={standings}
+          pairStandings={pairStandings}
+          myPairStanding={myPairStanding}
+          currentUserId={currentUserId}
+        />
+      )}
+      {league.playMode === 'doubles' && pairStandings.length > 0 && (
+        <>
+          <h4>Pair standings</h4>
+          <table className="leaderboard-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Pair</th>
+                <th>Rounds</th>
+                <th>Avg combined +/-</th>
+              </tr>
+            </thead>
+            <tbody>
+              {pairStandings.map(s => (
+                <tr key={s.pairId}>
+                  <td>{s.rank}</td>
+                  <td>{s.pairName}</td>
+                  <td>{s.roundsTogether}</td>
+                  <td>
+                    {s.avgCombinedToPar != null ? formatScoreToPar(s.avgCombinedToPar) : '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <h4>Individual standings</h4>
+        </>
+      )}
+
+      {standings.length === 0 && !hasData ? (
+        <p className="muted">No submitted rounds yet — play a round and submit it below.</p>
+      ) : standings.length === 0 ? null : (
+        <StandingsTableBody league={league} standings={standings} />
+      )}
+    </>
+  )
+}
+
+function StandingsTableBody({
+  league,
+  standings,
+}: {
+  league: League
+  standings: LeagueStanding[]
+}) {
+  if (league.playMode === 'doubles' && standings.length === 0) {
+    return null
   }
 
   const showNet = league.handicapEnabled && league.format === 'stroke'
@@ -332,6 +366,14 @@ export function LeagueDetailTabs({
   const [shuffleSitOut, setShuffleSitOut] = useState<string | null>(null)
   const [justShuffled, setJustShuffled] = useState(false)
   const [startRoundPair, setStartRoundPair] = useState<LeaguePair | null>(null)
+  const [livePairIds, setLivePairIds] = useState<Set<string>>(new Set())
+
+  const myPairStanding = useMemo(() => {
+    if (!user?.id || league.playMode !== 'doubles') return null
+    const myPair = pairs.find(p => p.player1Id === user.id || p.player2Id === user.id)
+    if (!myPair) return null
+    return pairStandings.find(s => s.pairId === myPair.id) ?? null
+  }, [pairs, pairStandings, user?.id, league.playMode])
 
   const tabs: { id: LeagueTab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
@@ -379,16 +421,19 @@ export function LeagueDetailTabs({
         listLeaguePairs(league.id),
         fetchLeaguePairStandings(league.id),
         listLeagueMembers(league.id),
+        listLeagueLivePairs(league.id).catch(() => []),
       ])
-        .then(([p, ps, m]) => {
+        .then(([p, ps, m, live]) => {
           setPairs(p)
           setPairStandings(ps)
           setMembers(m)
+          setLivePairIds(new Set(live.map(row => row.pairId)))
         })
         .catch(() => {
           setPairs([])
           setPairStandings([])
           setMembers([])
+          setLivePairIds(new Set())
         })
     } else if (tab === 'rivalries') {
       Promise.all([fetchLeagueRivalries(league.id), fetchLeagueStreaks(league.id)])
@@ -401,9 +446,17 @@ export function LeagueDetailTabs({
           setStreaks([])
         })
     } else if (tab === 'standings' && league.playMode === 'doubles') {
-      fetchLeaguePairStandings(league.id)
-        .then(setPairStandings)
-        .catch(() => setPairStandings([]))
+      Promise.all([
+        fetchLeaguePairStandings(league.id),
+        listLeaguePairs(league.id),
+      ])
+        .then(([ps, p]) => {
+          setPairStandings(ps)
+          setPairs(p)
+        })
+        .catch(() => {
+          setPairStandings([])
+        })
     }
   }, [tab, league.id, league.playMode])
 
@@ -594,6 +647,8 @@ export function LeagueDetailTabs({
               league={league}
               standings={standings}
               pairStandings={pairStandings}
+              myPairStanding={myPairStanding}
+              currentUserId={user?.id}
             />
           </>
         )}
@@ -765,7 +820,12 @@ export function LeagueDetailTabs({
                   return (
                     <li key={p.id} className="league-pair-item">
                       <div>
-                        <strong>{p.name ?? `${p.player1Name} & ${p.player2Name}`}</strong>
+                        <div className="league-pair-title-row">
+                          <strong>{p.name ?? `${p.player1Name} & ${p.player2Name}`}</strong>
+                          {livePairIds.has(p.id) && (
+                            <span className="league-live-badge">Live now</span>
+                          )}
+                        </div>
                         <p className="muted small">
                           {p.player1Name} · {p.player2Name}
                         </p>

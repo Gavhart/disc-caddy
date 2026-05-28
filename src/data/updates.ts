@@ -9,21 +9,8 @@ export interface ReleaseNote {
   items: string[]
 }
 
-/** Planned features — edit anytime; shown on the updates page. */
-export const ROADMAP: string[] = [
-  'Doubles pair scoring and team standings in leagues',
-  'Automated handicap indexes for handicap leagues',
-  'League discovery — find open leagues near your home areas',
-  'Dedicated league chat channels and announcement blasts',
-  'Ace pot, skins payouts, and season prize tracking',
-  'Club/team dashboards with captains and multi-league orgs',
-  'Season progression charts, streaks, and rivalry boards',
-  'Beginner-friendly league filters and skill tags',
-  'Native iOS & Android apps with push notifications',
-  'Course map overlays tied to hole notes',
-  'AI bag tuning from your stats and course playbook',
-  'Tournament bracket mode for larger groups',
-]
+/** Planned features — edit ROADMAP_ITEMS in data/roadmap.ts for the updates page. */
+export const ROADMAP: string[] = []
 
 export const RELEASES: ReleaseNote[] = [
   {

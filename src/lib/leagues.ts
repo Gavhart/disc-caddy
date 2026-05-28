@@ -339,6 +339,21 @@ export async function shuffleLeaguePairs(leagueId: string): Promise<ShuffleLeagu
   }
 }
 
+export async function listLeagueLivePairs(
+  leagueId: string,
+): Promise<{ pairId: string; roundId: string }[]> {
+  const { data, error } = await supabase.rpc('list_league_live_pairs', {
+    p_league_id: leagueId,
+  })
+  if (error) throw error
+  return (
+    (data as { pair_id: string; round_id: string }[] | null) ?? []
+  ).map(row => ({
+    pairId: row.pair_id,
+    roundId: row.round_id,
+  }))
+}
+
 export async function startLeaguePairRound(input: {
   pairId: string
   courseId: string

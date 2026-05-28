@@ -3,6 +3,9 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import QRCode from 'qrcode'
 import { useAuth } from '../contexts/AuthContext'
 import { Logo } from '../components/Logo'
+import { CaddyDemoPreview } from '../components/CaddyDemoPreview'
+import { AppFeatureShowcase } from '../components/AppFeatureShowcase'
+import { SOCIAL_PROOF } from '../data/roadmap'
 import {
   captureInviteRefFromSearch,
   getAppBaseUrl,
@@ -30,7 +33,7 @@ export function InvitePage() {
 
   useEffect(() => {
     QRCode.toDataURL(inviteLink, {
-      width: 320,
+      width: 280,
       margin: 2,
       color: { dark: '#0f1f14', light: '#ffffff' },
     })
@@ -68,19 +71,43 @@ export function InvitePage() {
   const inviterLabel = me?.displayName?.trim() || null
 
   return (
-    <div className="container invite-page">
+    <div className="container invite-page invite-page-expanded">
       <nav className="invite-nav" aria-label="Invite page">
         <button type="button" className="page-back link-button" onClick={goBack}>
           ← {session ? 'Back' : 'Sign in'}
         </button>
       </nav>
+
       <header className="invite-header">
         <Logo height={48} />
         <h1>Join Disc Caddy</h1>
         <p className="muted invite-tagline">
-          Disc recommendations, live scorecards, and players near you — free to start.
+          Smart disc picks, live scorecards, and league standings — free to start.
         </p>
       </header>
+
+      <div className="invite-social-proof card">
+        <p className="invite-social-headline">{SOCIAL_PROOF.headline}</p>
+        <div className="invite-social-stats">
+          {SOCIAL_PROOF.stats.map(s => (
+            <div key={s.label}>
+              <strong>{s.value}</strong>
+              <span className="muted small">{s.label}</span>
+            </div>
+          ))}
+        </div>
+        <ul className="invite-quotes">
+          {SOCIAL_PROOF.quotes.map(q => (
+            <li key={q.author}>
+              <blockquote>&ldquo;{q.text}&rdquo;</blockquote>
+              <cite className="muted small">— {q.author}</cite>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <CaddyDemoPreview />
+      <AppFeatureShowcase />
 
       <div className="card invite-card">
         {isPersonalShare && inviterLabel && (
@@ -100,8 +127,8 @@ export function InvitePage() {
               src={qrDataUrl}
               alt="QR code to open Disc Caddy invite link"
               className="invite-qr"
-              width={320}
-              height={320}
+              width={280}
+              height={280}
             />
           </div>
         )}
@@ -137,14 +164,10 @@ export function InvitePage() {
         )}
       </div>
 
-      <ul className="invite-features muted small">
-        <li>Smart disc picks for every hole</li>
-        <li>Live group scorecards with friends</li>
-        <li>Find players in your area on Community</li>
-      </ul>
-
       <p className="muted small invite-footer">
         {getAppBaseUrl().replace(/^https?:\/\//, '')}
+        {' · '}
+        <Link to="/updates">Roadmap</Link>
         {' · '}
         <Link to="/privacy">Privacy</Link>
         {' · '}
