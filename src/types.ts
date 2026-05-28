@@ -529,6 +529,12 @@ export interface LeaguePair {
   player2Name: string
 }
 
+export interface ShuffleLeaguePairsResult {
+  pairs: LeaguePair[]
+  sitOutUserId: string | null
+  sitOutName: string | null
+}
+
 export interface LeaguePairStanding {
   pairId: string
   pairName: string

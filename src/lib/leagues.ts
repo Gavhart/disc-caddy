@@ -7,6 +7,7 @@ import {
   LeagueMessage,
   LeaguePair,
   LeaguePairStanding,
+  ShuffleLeaguePairsResult,
   LeaguePot,
   LeaguePotEntry,
   LeagueMemberOption,
@@ -294,6 +295,71 @@ export async function createLeaguePair(
 export async function deleteLeaguePair(pairId: string): Promise<void> {
   const { error } = await supabase.rpc('delete_league_pair', { p_pair_id: pairId })
   if (error) throw error
+}
+
+function mapLeaguePairRow(p: {
+  id: string
+  name: string | null
+  player1_id: string
+  player2_id: string
+  player1_name: string
+  player2_name: string
+}): LeaguePair {
+  return {
+    id: p.id,
+    name: p.name,
+    player1Id: p.player1_id,
+    player2Id: p.player2_id,
+    player1Name: p.player1_name,
+    player2Name: p.player2_name,
+  }
+}
+
+export async function shuffleLeaguePairs(leagueId: string): Promise<ShuffleLeaguePairsResult> {
+  const { data, error } = await supabase.rpc('shuffle_league_pairs', {
+    p_league_id: leagueId,
+  })
+  if (error) throw error
+  const row = (data ?? {}) as {
+    pairs?: {
+      id: string
+      name: string | null
+      player1_id: string
+      player2_id: string
+      player1_name: string
+      player2_name: string
+    }[]
+    sit_out_user_id?: string | null
+    sit_out_name?: string | null
+  }
+  return {
+    pairs: (row.pairs ?? []).map(mapLeaguePairRow),
+    sitOutUserId: row.sit_out_user_id ?? null,
+    sitOutName: row.sit_out_name ?? null,
+  }
+}
+
+export async function startLeaguePairRound(input: {
+  pairId: string
+  courseId: string
+  bagId: string
+}): Promise<{ roundId: string; courseId: string; partnerName: string }> {
+  const { data, error } = await supabase.rpc('start_league_pair_round', {
+    p_pair_id: input.pairId,
+    p_course_id: input.courseId,
+    p_bag_id: input.bagId,
+  })
+  if (error) throw error
+  const row = (data ?? {}) as {
+    round_id: string
+    course_id: string
+    partner_name: string
+  }
+  return {
+    roundId: row.round_id,
+    courseId: row.course_id,
+    partnerName: row.partner_name,
+  }
 }
 
 export async function listLeagueAnnouncements(leagueId: string): Promise<LeagueAnnouncement[]> {

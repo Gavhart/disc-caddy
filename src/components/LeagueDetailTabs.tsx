@@ -1,5 +1,8 @@
 import { FormEvent, useEffect, useState } from 'react'
+import { useAuth } from '../contexts/AuthContext'
 import { playModeLabel, skillLevelLabel } from '../data/leagueFeatures'
+import { LeaguePairReveal, LeaguePairShuffle } from './LeaguePairShuffle'
+import { LeaguePairRoundModal } from './LeaguePairRoundModal'
 import {
   addLeaguePotEntry,
   createLeaguePair,
@@ -30,6 +33,7 @@ import {
   LeagueStanding,
   LeagueStreak,
   RoundSummary,
+  ShuffleLeaguePairsResult,
 } from '../types'
 
 type LeagueTab =
@@ -146,7 +150,7 @@ function LeagueAboutContent({ league }: { league: League }) {
           <li>
             <strong>{playModeLabel(league.playMode)}</strong> league
             {league.playMode === 'doubles'
-              ? ' — pair standings count rounds where both partners submitted the same round.'
+              ? ' — pair standings count rounds where both partners submitted the same round. Shuffle teams on the Pairs tab, then start a live scorecard together.'
               : ' — individual player standings.'}
           </li>
           {league.handicapEnabled && (
@@ -304,6 +308,8 @@ export function LeagueDetailTabs({
   onRefreshStandings: () => Promise<void>
   onSubmitRound: (roundId: string) => Promise<void>
 }) {
+  const { me, user } = useAuth()
+  const isPro = me?.isPro ?? false
   const [tab, setTab] = useState<LeagueTab>('overview')
   const [messages, setMessages] = useState<LeagueMessage[]>([])
   const [announcements, setAnnouncements] = useState<LeagueAnnouncement[]>([])
@@ -323,6 +329,9 @@ export function LeagueDetailTabs({
   const [pairPlayer1, setPairPlayer1] = useState('')
   const [pairPlayer2, setPairPlayer2] = useState('')
   const [pairName, setPairName] = useState('')
+  const [shuffleSitOut, setShuffleSitOut] = useState<string | null>(null)
+  const [justShuffled, setJustShuffled] = useState(false)
+  const [startRoundPair, setStartRoundPair] = useState<LeaguePair | null>(null)
 
   const tabs: { id: LeagueTab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
@@ -336,7 +345,15 @@ export function LeagueDetailTabs({
 
   useEffect(() => {
     setTab('overview')
+    setJustShuffled(false)
+    setShuffleSitOut(null)
   }, [league.id])
+
+  useEffect(() => {
+    if (!justShuffled) return
+    const timer = window.setTimeout(() => setJustShuffled(false), 4000)
+    return () => window.clearTimeout(timer)
+  }, [justShuffled])
 
   useEffect(() => {
     if (tab === 'chat') {
@@ -712,30 +729,72 @@ export function LeagueDetailTabs({
 
         {tab === 'pairs' && league.playMode === 'doubles' && (
           <>
+            {league.isAdmin && members.length >= 2 && (
+              <LeaguePairShuffle
+                leagueId={league.id}
+                memberNames={members.map(m => m.displayName)}
+                disabled={busy}
+                onComplete={(result: ShuffleLeaguePairsResult) => {
+                  setPairs(result.pairs)
+                  setShuffleSitOut(result.sitOutName)
+                  setJustShuffled(true)
+                  void fetchLeaguePairStandings(league.id)
+                    .then(setPairStandings)
+                    .catch(() => setPairStandings([]))
+                  void onRefreshStandings()
+                }}
+                onError={onError}
+              />
+            )}
+
+            {(pairs.length > 0 || shuffleSitOut) && (
+              <LeaguePairReveal
+                pairs={pairs}
+                sitOutName={shuffleSitOut}
+                justRevealed={justShuffled}
+              />
+            )}
+
             {pairs.length === 0 ? (
-              <p className="muted">No pairs yet — admins can create teams below.</p>
+              <p className="muted">No pairs yet — shuffle teams above or create pairs manually.</p>
             ) : (
               <ul className="league-pair-list">
-                {pairs.map(p => (
-                  <li key={p.id} className="league-pair-item">
-                    <div>
-                      <strong>{p.name ?? `${p.player1Name} & ${p.player2Name}`}</strong>
-                      <p className="muted small">
-                        {p.player1Name} · {p.player2Name}
-                      </p>
-                    </div>
-                    {league.isAdmin && (
-                      <button
-                        type="button"
-                        className="btn-secondary"
-                        disabled={busy}
-                        onClick={() => handleDeletePair(p.id)}
-                      >
-                        Remove
-                      </button>
-                    )}
-                  </li>
-                ))}
+                {pairs.map(p => {
+                  const onTeam =
+                    user?.id === p.player1Id || user?.id === p.player2Id
+                  return (
+                    <li key={p.id} className="league-pair-item">
+                      <div>
+                        <strong>{p.name ?? `${p.player1Name} & ${p.player2Name}`}</strong>
+                        <p className="muted small">
+                          {p.player1Name} · {p.player2Name}
+                        </p>
+                      </div>
+                      <div className="league-pair-item-actions">
+                        {onTeam && (
+                          <button
+                            type="button"
+                            className="btn-primary"
+                            disabled={busy}
+                            onClick={() => setStartRoundPair(p)}
+                          >
+                            Start live round
+                          </button>
+                        )}
+                        {league.isAdmin && (
+                          <button
+                            type="button"
+                            className="btn-secondary"
+                            disabled={busy}
+                            onClick={() => handleDeletePair(p.id)}
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                    </li>
+                  )
+                })}
               </ul>
             )}
             {league.isAdmin && members.length >= 2 && (
@@ -784,6 +843,15 @@ export function LeagueDetailTabs({
               </form>
             )}
           </>
+        )}
+
+        {startRoundPair && (
+          <LeaguePairRoundModal
+            pair={startRoundPair}
+            isPro={isPro}
+            onClose={() => setStartRoundPair(null)}
+            onError={onError}
+          />
         )}
 
         {tab === 'rivalries' && (

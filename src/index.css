@@ -5711,6 +5711,126 @@ footer {
   gap: 12px;
 }
 
+.league-pair-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.league-shuffle-panel {
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+.league-shuffle-stage {
+  min-height: 72px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin: 12px 0;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.league-shuffle-stage-active {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent);
+  animation: league-shuffle-pulse 0.9s ease-in-out infinite alternate;
+}
+
+.league-shuffle-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.league-shuffle-name {
+  font-size: 1.35rem;
+  text-align: center;
+}
+
+.league-shuffle-btn {
+  width: 100%;
+}
+
+.league-pair-reveal {
+  margin-bottom: 16px;
+}
+
+.league-pair-reveal-fresh .league-pair-reveal-item {
+  animation: league-pair-pop 0.45s ease backwards;
+}
+
+.league-pair-reveal-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: grid;
+  gap: 8px;
+}
+
+.league-pair-reveal-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.league-pair-reveal-team {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.league-pair-sit-out {
+  margin-top: 10px;
+}
+
+.league-pair-round-modal {
+  max-width: 420px;
+}
+
+.league-pair-round-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.league-pair-round-pro-note {
+  color: var(--warning, #b45309);
+  font-size: 0.9rem;
+}
+
+@keyframes league-shuffle-pulse {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.01);
+  }
+}
+
+@keyframes league-pair-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .league-discover-item,
 .league-club-item {
   display: flex;
