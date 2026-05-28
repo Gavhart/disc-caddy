@@ -1,14 +1,14 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { PageHeader } from '../components/PageHeader'
-import { LeagueClubsSection } from '../components/LeagueClubsSection'
 import { LeagueDetailTabs } from '../components/LeagueDetailTabs'
-import { LeagueDiscoverSection } from '../components/LeagueDiscoverSection'
-import { LeagueFeatureGrid } from '../components/LeagueFeatureGrid'
 import { playModeLabel, skillLevelLabel } from '../data/leagueFeatures'
 import {
+  createClub,
   createLeague,
   deleteLeague,
+  discoverPublicLeagues,
   fetchLeagueStandings,
+  joinClub,
   joinLeague,
   listMyClubs,
   listMyLeagues,
@@ -16,7 +16,7 @@ import {
   updateLeague,
 } from '../lib/leagues'
 import { listMyRounds } from '../lib/rounds'
-import { Club, League, LeagueStanding, RoundSummary } from '../types'
+import { Club, DiscoverableLeague, League, LeagueStanding, RoundSummary } from '../types'
 
 function defaultSeasonEnd(): string {
   const end = new Date()
@@ -272,6 +272,27 @@ export function LeaguesPage() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [publicLeagues, setPublicLeagues] = useState<DiscoverableLeague[]>([])
+  const [publicLeaguesLoading, setPublicLeaguesLoading] = useState(true)
+  const [clubInviteCode, setClubInviteCode] = useState('')
+  const [showCreateClub, setShowCreateClub] = useState(false)
+  const [clubName, setClubName] = useState('')
+  const [clubDescription, setClubDescription] = useState('')
+  const [clubLocation, setClubLocation] = useState('')
+  const [copiedClubCode, setCopiedClubCode] = useState<string | null>(null)
+
+  function reloadClubs() {
+    listMyClubs()
+      .then(setClubs)
+      .catch(() => setClubs([]))
+  }
+
+  function reloadPublicLeagues() {
+    discoverPublicLeagues(24)
+      .then(setPublicLeagues)
+      .catch(() => setPublicLeagues([]))
+      .finally(() => setPublicLeaguesLoading(false))
+  }
 
   function reload() {
     listMyLeagues()
@@ -287,9 +308,8 @@ export function LeaguesPage() {
     listMyRounds()
       .then(setRounds)
       .catch(() => setRounds([]))
-    listMyClubs()
-      .then(setClubs)
-      .catch(() => setClubs([]))
+    reloadClubs()
+    reloadPublicLeagues()
   }, [])
 
   useEffect(() => {
@@ -442,6 +462,67 @@ export function LeaguesPage() {
     }
   }
 
+  async function handleJoinPublicLeague(code: string) {
+    setBusy(true)
+    setError(null)
+    try {
+      const id = await joinLeague(code)
+      reload()
+      setSelectedId(id)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not join league')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleJoinClub(e: FormEvent) {
+    e.preventDefault()
+    setBusy(true)
+    setError(null)
+    try {
+      await joinClub(clubInviteCode.trim())
+      setClubInviteCode('')
+      reloadClubs()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not join club')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function handleCreateClub(e: FormEvent) {
+    e.preventDefault()
+    setBusy(true)
+    setError(null)
+    try {
+      await createClub({
+        name: clubName.trim(),
+        description: clubDescription.trim() || undefined,
+        location: clubLocation.trim() || undefined,
+      })
+      setClubName('')
+      setClubDescription('')
+      setClubLocation('')
+      setShowCreateClub(false)
+      reloadClubs()
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not create club')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function copyClubInviteCode(code: string) {
+    try {
+      await navigator.clipboard.writeText(code)
+      setCopiedClubCode(code)
+      window.setTimeout(() => setCopiedClubCode(null), 2000)
+    } catch {
+      setError('Could not copy invite code')
+    }
+  }
+
   async function handleDelete() {
     if (!selectedId || !selected?.isAdmin) return
     if (
@@ -464,11 +545,200 @@ export function LeaguesPage() {
     }
   }
 
+  const getStartedContent = (
+    <>
+      <form onSubmit={handleJoin} className="league-form-row">
+        <input
+          value={inviteCode}
+          onChange={e => setInviteCode(e.target.value)}
+          placeholder="League invite code"
+          required
+        />
+        <button type="submit" className="btn-primary" disabled={busy}>
+          Join league
+        </button>
+      </form>
+
+      {!showCreate ? (
+        <button
+          type="button"
+          className="btn-secondary league-create-toggle"
+          onClick={() => setShowCreate(true)}
+        >
+          + Create a new league
+        </button>
+      ) : (
+        <form onSubmit={handleCreate} className="league-create-form">
+          <div className="league-form-row">
+            <input
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="League name"
+              required
+            />
+            <button type="submit" className="btn-primary" disabled={busy}>
+              Create
+            </button>
+          </div>
+          <div className="league-form-row league-form-dates">
+            <label>
+              Season start
+              <input
+                type="date"
+                value={seasonStart}
+                onChange={e => setSeasonStart(e.target.value)}
+                required
+              />
+            </label>
+            <label>
+              Season end
+              <input
+                type="date"
+                value={seasonEnd}
+                onChange={e => setSeasonEnd(e.target.value)}
+                required
+              />
+            </label>
+          </div>
+          <LeagueSettingsFields
+            idPrefix="create"
+            format={format}
+            playMode={playMode}
+            handicapEnabled={handicapEnabled}
+            minRounds={minRounds}
+            onFormatChange={setFormat}
+            onPlayModeChange={setPlayMode}
+            onHandicapChange={setHandicapEnabled}
+            onMinRoundsChange={setMinRounds}
+          />
+          <LeagueVisibilityFields
+            idPrefix="create"
+            isPublic={isPublic}
+            skillLevel={skillLevel}
+            clubId={clubId}
+            clubs={clubs}
+            onPublicChange={setIsPublic}
+            onSkillLevelChange={setSkillLevel}
+            onClubChange={setClubId}
+          />
+          <LeagueInfoFields
+            idPrefix="create"
+            description={description}
+            location={location}
+            rules={rules}
+            onDescriptionChange={setDescription}
+            onLocationChange={setLocation}
+            onRulesChange={setRules}
+          />
+          <button type="button" className="btn-secondary" onClick={() => setShowCreate(false)}>
+            Cancel
+          </button>
+        </form>
+      )}
+
+      <details className="league-optional-section">
+        <summary>Browse public leagues</summary>
+        {publicLeaguesLoading ? (
+          <p className="muted small">Loading…</p>
+        ) : publicLeagues.length === 0 ? (
+          <p className="muted small">No public leagues yet.</p>
+        ) : (
+          <ul className="league-discover-list">
+            {publicLeagues.map(l => (
+              <li key={l.id} className="league-discover-item">
+                <div>
+                  <strong>{l.name}</strong>
+                  {l.description && <p className="muted small">{l.description}</p>}
+                  <p className="muted small league-discover-meta">
+                    {formatSeasonRange(l.seasonStart, l.seasonEnd)} · {formatLabel(l.format)} ·{' '}
+                    {playModeLabel(l.playMode)} · {l.memberCount} members
+                    {l.location ? ` · ${l.location}` : ''}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="btn-secondary"
+                  disabled={busy}
+                  onClick={() => handleJoinPublicLeague(l.inviteCode)}
+                >
+                  Join
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </details>
+
+      <details className="league-optional-section">
+        <summary>Clubs (optional)</summary>
+        <p className="muted small">
+          Link a club when creating a league — useful if you run several seasons under one org.
+        </p>
+        {clubs.length > 0 && (
+          <ul className="league-club-list">
+            {clubs.map(c => (
+              <li key={c.id} className="league-club-item">
+                <div>
+                  <strong>{c.name}</strong>
+                  {c.myRole === 'admin' && <span className="league-admin-badge"> Admin</span>}
+                  {c.location && <p className="muted small">📍 {c.location}</p>}
+                  <p className="muted small">{c.memberCount} members</p>
+                </div>
+                <div className="league-card-invite">
+                  <code>{c.inviteCode}</code>
+                  <button
+                    type="button"
+                    className="league-copy-btn"
+                    onClick={() => copyClubInviteCode(c.inviteCode)}
+                  >
+                    {copiedClubCode === c.inviteCode ? 'Copied' : 'Copy'}
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+        <form onSubmit={handleJoinClub} className="league-form-row">
+          <input
+            value={clubInviteCode}
+            onChange={e => setClubInviteCode(e.target.value)}
+            placeholder="Club invite code"
+          />
+          <button type="submit" className="btn-secondary" disabled={busy}>
+            Join club
+          </button>
+        </form>
+        {!showCreateClub ? (
+          <button
+            type="button"
+            className="btn-secondary league-create-toggle"
+            onClick={() => setShowCreateClub(true)}
+          >
+            + Create a club
+          </button>
+        ) : (
+          <form onSubmit={handleCreateClub} className="league-create-form">
+            <label>
+              Club name
+              <input value={clubName} onChange={e => setClubName(e.target.value)} required />
+            </label>
+            <button type="submit" className="btn-primary" disabled={busy}>
+              Create club
+            </button>
+            <button type="button" className="btn-secondary" onClick={() => setShowCreateClub(false)}>
+              Cancel
+            </button>
+          </form>
+        )}
+      </details>
+    </>
+  )
+
   return (
     <div className="container leagues-page">
       <PageHeader
         title="Leagues"
-        description="Season standings, chat, ace pots, discovery, clubs, and more."
+        description="Season standings, chat, ace pots, and league management."
         backTo="/social"
         backLabel="Social"
       />
@@ -684,120 +954,18 @@ export function LeaguesPage() {
         </section>
       )}
 
-      <LeagueDiscoverSection
-        busy={busy}
-        onBusy={setBusy}
-        onError={setError}
-        onJoined={id => {
-          reload()
-          setSelectedId(id)
-        }}
-      />
-
-      <LeagueClubsSection busy={busy} onBusy={setBusy} onError={setError} />
-
-      <section className="card">
-        <div className="leagues-section-head">
-          <h2>Join or create</h2>
-        </div>
-
-        <form onSubmit={handleJoin} className="league-form-row">
-          <input
-            value={inviteCode}
-            onChange={e => setInviteCode(e.target.value)}
-            placeholder="Paste invite code to join"
-            required
-          />
-          <button type="submit" className="btn-secondary" disabled={busy}>
-            Join league
-          </button>
-        </form>
-
-        {!showCreate ? (
-          <button
-            type="button"
-            className="btn-secondary league-create-toggle"
-            onClick={() => setShowCreate(true)}
-          >
-            + Create a new league
-          </button>
-        ) : (
-          <form onSubmit={handleCreate} className="league-create-form">
-            <div className="league-form-row">
-              <input
-                value={name}
-                onChange={e => setName(e.target.value)}
-                placeholder="League name"
-                required
-              />
-              <button type="submit" className="btn-primary" disabled={busy}>
-                Create
-              </button>
-            </div>
-            <div className="league-form-row league-form-dates">
-              <label>
-                Season start
-                <input
-                  type="date"
-                  value={seasonStart}
-                  onChange={e => setSeasonStart(e.target.value)}
-                  required
-                />
-              </label>
-              <label>
-                Season end
-                <input
-                  type="date"
-                  value={seasonEnd}
-                  onChange={e => setSeasonEnd(e.target.value)}
-                  required
-                />
-              </label>
-            </div>
-            <LeagueSettingsFields
-              idPrefix="create"
-              format={format}
-              playMode={playMode}
-              handicapEnabled={handicapEnabled}
-              minRounds={minRounds}
-              onFormatChange={setFormat}
-              onPlayModeChange={setPlayMode}
-              onHandicapChange={setHandicapEnabled}
-              onMinRoundsChange={setMinRounds}
-            />
-            <LeagueVisibilityFields
-              idPrefix="create"
-              isPublic={isPublic}
-              skillLevel={skillLevel}
-              clubId={clubId}
-              clubs={clubs}
-              onPublicChange={setIsPublic}
-              onSkillLevelChange={setSkillLevel}
-              onClubChange={setClubId}
-            />
-            <LeagueInfoFields
-              idPrefix="create"
-              description={description}
-              location={location}
-              rules={rules}
-              onDescriptionChange={setDescription}
-              onLocationChange={setLocation}
-              onRulesChange={setRules}
-            />
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => setShowCreate(false)}
-            >
-              Cancel
-            </button>
-          </form>
-        )}
-      </section>
-
-      <section className="card">
-        <LeagueFeatureGrid />
-      </section>
+      {leagues.length === 0 ? (
+        <section className="card league-get-started">
+          <h2 className="section-title">Get started</h2>
+          <p className="muted small">Join with an invite code or create a season for your group.</p>
+          {getStartedContent}
+        </section>
+      ) : (
+        <details className="card league-get-started">
+          <summary>Join or create another league</summary>
+          {getStartedContent}
+        </details>
+      )}
     </div>
   )
 }

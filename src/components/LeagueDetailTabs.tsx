@@ -1,5 +1,4 @@
 import { FormEvent, useEffect, useState } from 'react'
-import { LeagueToolkitHub } from './LeagueToolkitHub'
 import { playModeLabel, skillLevelLabel } from '../data/leagueFeatures'
 import {
   addLeaguePotEntry,
@@ -163,18 +162,9 @@ function LeagueAboutContent({ league }: { league: League }) {
             </li>
           )}
           <li>
-            Season runs <strong>{formatSeasonRange(league.seasonStart, league.seasonEnd)}</strong>
-            {league.seasonStatus === 'active'
-              ? ' (in season now).'
-              : league.seasonStatus === 'upcoming'
-                ? ' (not started yet).'
-                : ' (season ended).'}
+            Season runs <strong>{formatSeasonRange(league.seasonStart, league.seasonEnd)}</strong>.
           </li>
-          <li>
-            Finished rounds (9+ holes) during an active season auto-submit when you complete a
-            scorecard.
-          </li>
-          <li>Manually submit any completed round from the Overview tab.</li>
+          <li>Completed rounds auto-submit during an active season, or submit manually below.</li>
         </ul>
       </div>
     </div>
@@ -546,7 +536,6 @@ export function LeagueDetailTabs({
         {tab === 'overview' && (
           <>
             <LeagueAboutContent league={league} />
-            <LeagueToolkitHub />
             {completedRounds.length > 0 && (
               <>
                 <h4>Submit a round</h4>

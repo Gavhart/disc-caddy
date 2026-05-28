@@ -5654,6 +5654,29 @@ footer {
   gap: 10px;
 }
 
+.league-get-started summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1.1rem;
+  padding: 4px 0;
+}
+
+.league-optional-section {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.league-optional-section summary {
+  cursor: pointer;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.league-optional-section[open] summary {
+  margin-bottom: 12px;
+}
+
 .invite-page {
   max-width: 420px;
   margin: 0 auto;
