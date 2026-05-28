@@ -9,27 +9,63 @@ export interface RoadmapItem {
 
 export const ROADMAP_ITEMS: RoadmapItem[] = [
   {
+    id: 'caddy-engine',
+    title: 'Arm-speed-aware Caddy recommendations',
+    description: 'Top pick, ranked bag, aim guidance, wind, and hole memory on course holes.',
+    status: 'shipped',
+  },
+  {
+    id: 'live-scorecards',
+    title: 'Live group scorecards',
+    description: 'Real-time multi-player cards; each player edits their own scores.',
+    status: 'shipped',
+  },
+  {
     id: 'doubles-live',
     title: 'Doubles pair shuffle & live team scorecards',
     description: 'Random pairing draw, best-ball team rounds, both partners update scores.',
     status: 'shipped',
   },
   {
-    id: 'badges',
-    title: 'Lifetime badges & player progression',
-    description: 'Earn badges from rounds, birdies, leagues, and weekly challenges.',
+    id: 'league-platform',
+    title: 'Full league platform',
+    description: 'Standings, chat, announcements, ace pot, rivalries, handicaps, discovery, clubs.',
     status: 'shipped',
   },
   {
-    id: 'league-platform',
-    title: 'League chat, ace pots, rivalries & handicaps',
-    description: 'Full league toolkit — standings, announcements, pair scoring, streak boards.',
+    id: 'badges',
+    title: 'Lifetime badges & player progression',
+    description: 'Badges, stats summary, unlock banner after rounds, home progress strip.',
     status: 'shipped',
   },
   {
     id: 'highlights',
     title: 'Round highlights & playing-today check-ins',
     description: 'Photo highlights on finished rounds and “playing today” on Community.',
+    status: 'shipped',
+  },
+  {
+    id: 'community',
+    title: 'Community, events & messaging',
+    description: 'Home areas, pickup rounds, league nights, DMs, friend activity feed.',
+    status: 'shipped',
+  },
+  {
+    id: 'invite-demo',
+    title: 'Public invite page with live demo',
+    description: 'Sample-hole Caddy preview and feature showcase for new players.',
+    status: 'shipped',
+  },
+  {
+    id: 'league-hero',
+    title: 'League standings podium & live pair badges',
+    description: 'Top-3 hero on standings; “Live now” when a doubles team is on the course.',
+    status: 'shipped',
+  },
+  {
+    id: 'formats',
+    title: 'Round formats & playbook',
+    description: 'Stroke, Stableford, skins, best ball; per-hole strategy notes and stats.',
     status: 'shipped',
   },
   {
@@ -45,9 +81,15 @@ export const ROADMAP_ITEMS: RoadmapItem[] = [
     status: 'in_progress',
   },
   {
-    id: 'discovery',
+    id: 'demo-video',
+    title: 'Gameplay demo videos',
+    description: 'Short screen captures for store listings and the invite page.',
+    status: 'in_progress',
+  },
+  {
+    id: 'discovery-map',
     title: 'League discovery map',
-    description: 'Browse open public leagues filtered by skill level and home area.',
+    description: 'Browse open public leagues on a map filtered by skill and home area.',
     status: 'planned',
   },
   {
@@ -66,6 +108,12 @@ export const ROADMAP_ITEMS: RoadmapItem[] = [
     id: 'course-overlays',
     title: 'Course map overlays',
     description: 'Hole notes and aim lines tied to the course discovery map.',
+    status: 'planned',
+  },
+  {
+    id: 'sponsors',
+    title: 'League sponsorship & merch',
+    description: 'Branding slots, sponsor logos, and shop links on league pages.',
     status: 'planned',
   },
 ]

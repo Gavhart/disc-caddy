@@ -4248,6 +4248,150 @@ footer {
   max-width: 640px;
 }
 
+.updates-page-expanded {
+  max-width: 820px;
+}
+
+.updates-hero-stats {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 14px;
+  font-size: 14px;
+}
+
+.updates-hero-stats strong {
+  display: block;
+  font-size: 1.25rem;
+}
+
+.updates-highlights {
+  margin-bottom: 16px;
+}
+
+.updates-highlight-grid {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  display: grid;
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .updates-highlight-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.updates-highlight-card {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.updates-highlight-icon {
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.updates-highlight-link {
+  display: inline-block;
+  margin-top: 6px;
+}
+
+.updates-invite-cta {
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.updates-invite-cta .btn-secondary {
+  margin-top: 10px;
+}
+
+.updates-league-panel {
+  margin-bottom: 16px;
+}
+
+.updates-league-section {
+  margin-top: 20px;
+}
+
+.updates-league-section h3 {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+
+.updates-league-grid {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 10px;
+}
+
+@media (min-width: 640px) {
+  .updates-league-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.updates-league-card {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  background: var(--surface);
+}
+
+.updates-league-card-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: flex-start;
+  margin-bottom: 6px;
+}
+
+.updates-league-status {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.updates-league-status-live {
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  color: var(--accent-bright);
+}
+
+.updates-league-status-partial {
+  background: color-mix(in srgb, var(--sky) 20%, transparent);
+  color: var(--sky);
+}
+
+.updates-league-status-planned {
+  background: var(--border);
+  color: var(--muted);
+}
+
+.updates-league-link {
+  display: inline-block;
+  margin-top: 8px;
+}
+
+.updates-roadmap-count {
+  margin-left: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
 .updates-hero {
   text-align: center;
   background: linear-gradient(

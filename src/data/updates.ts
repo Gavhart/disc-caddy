@@ -1,5 +1,5 @@
 /** Bump when you ship a release users should see on next sign-in. */
-export const APP_VERSION = '1.0.0'
+export const APP_VERSION = '1.1.0'
 
 export interface ReleaseNote {
   version: string
@@ -9,10 +9,88 @@ export interface ReleaseNote {
   items: string[]
 }
 
-/** Planned features — edit ROADMAP_ITEMS in data/roadmap.ts for the updates page. */
+/** @deprecated Use ROADMAP_ITEMS in data/roadmap.ts */
 export const ROADMAP: string[] = []
 
+export interface ProductHighlight {
+  id: string
+  icon: string
+  title: string
+  summary: string
+  href?: string
+}
+
+/** Top-of-page pillars on the Updates screen. */
+export const PRODUCT_HIGHLIGHTS: ProductHighlight[] = [
+  {
+    id: 'caddy',
+    icon: '🎯',
+    title: 'Smart Caddy',
+    summary:
+      'Arm-speed-aware disc picks for every hole — top pick, ranked bag, aim guidance, and hole memory on course holes.',
+    href: '/',
+  },
+  {
+    id: 'live',
+    icon: '📋',
+    title: 'Live scorecards',
+    summary:
+      'Group rounds with real-time sync. Each player edits their line, or host-only mode on one phone.',
+    href: '/',
+  },
+  {
+    id: 'leagues',
+    icon: '🏆',
+    title: 'League platform',
+    summary:
+      'Season standings, doubles pairs, shuffle draw, chat, ace pots, rivalries, handicaps, and auto-submit.',
+    href: '/social/leagues',
+  },
+  {
+    id: 'progress',
+    icon: '⭐',
+    title: 'Badges & progress',
+    summary:
+      'Lifetime badges, weekly challenges, playing-today check-ins, round highlights, and a progress strip on Play.',
+    href: '/profile',
+  },
+  {
+    id: 'social',
+    icon: '👥',
+    title: 'Community & events',
+    summary:
+      'Find players near you, post pickup rounds and league nights, DM friends, and share finished round recaps.',
+    href: '/social',
+  },
+  {
+    id: 'library',
+    icon: '🗺️',
+    title: 'Courses & bags',
+    summary:
+      'Multiple bags, course stepper, discovery map, playbook notes, stats dashboard, and nearby auto-import.',
+    href: '/library',
+  },
+]
+
 export const RELEASES: ReleaseNote[] = [
+  {
+    version: '1.1.0',
+    date: '2026-05-21',
+    title: 'Leagues, doubles live, progression & polish',
+    items: [
+      'Doubles pair shuffle — fun random draw with team names; odd player sits out',
+      'Live doubles scorecards — start a team round from Pairs; both partners update scores (best ball)',
+      'League standings podium — top 3 hero on Standings; “Live now” badge when a pair is on the course',
+      'Lifetime badges & player stats — rounds, birdies, leagues, challenges; unlock toast after you finish a round',
+      'Playing-today check-ins & round photo highlights on Community and finished rounds',
+      'League platform — chat, announcements, ace pot, rivalries, streaks, handicaps, public discovery, clubs',
+      'Recommend page — hand & throw from profile with per-hole overrides; clearer course vs custom hole',
+      'Home progress strip — rounds, birdies, best, badge count at a glance',
+      'Invite page — live Caddy demo on a sample hole, feature previews, and social proof',
+      'Updates page — shipped / in progress / coming soon roadmap columns',
+      'Doubles auto-submit — both partners credited to pair standings when a team round ends',
+    ],
+  },
   {
     version: '1.0.0',
     date: '2026-05-21',

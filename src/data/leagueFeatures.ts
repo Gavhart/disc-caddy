@@ -105,8 +105,9 @@ export const LEAGUE_ROADMAP_FEATURES: LeagueFeature[] = [
   {
     id: 'highlights',
     title: 'Highlights & media',
-    summary: 'Clips, ace photos, and round recap images.',
-    status: 'planned',
+    summary: 'Round photo highlights on finished rounds and friend activity thumbnails.',
+    status: 'partial',
+    href: '/rounds',
   },
   {
     id: 'discovery',
