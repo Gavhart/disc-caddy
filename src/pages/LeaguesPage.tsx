@@ -1,17 +1,22 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { PageHeader } from '../components/PageHeader'
+import { LeagueClubsSection } from '../components/LeagueClubsSection'
+import { LeagueDetailTabs } from '../components/LeagueDetailTabs'
+import { LeagueDiscoverSection } from '../components/LeagueDiscoverSection'
+import { LeagueFeatureGrid } from '../components/LeagueFeatureGrid'
+import { playModeLabel, skillLevelLabel } from '../data/leagueFeatures'
 import {
   createLeague,
   deleteLeague,
   fetchLeagueStandings,
   joinLeague,
+  listMyClubs,
   listMyLeagues,
   submitRoundToLeague,
   updateLeague,
 } from '../lib/leagues'
 import { listMyRounds } from '../lib/rounds'
-import { formatScoreToPar } from '../lib/rounds'
-import { League, LeagueStanding, RoundSummary } from '../types'
+import { Club, League, LeagueStanding, RoundSummary } from '../types'
 
 function defaultSeasonEnd(): string {
   const end = new Date()
@@ -94,74 +99,144 @@ function LeagueInfoFields({
   )
 }
 
-function LeagueAboutPanel({ league }: { league: League }) {
-  const hasCustomInfo = Boolean(league.description || league.location || league.rules)
-
+function LeagueSettingsFields({
+  format,
+  playMode,
+  handicapEnabled,
+  minRounds,
+  onFormatChange,
+  onPlayModeChange,
+  onHandicapChange,
+  onMinRoundsChange,
+  idPrefix,
+}: {
+  format: 'stroke' | 'stableford'
+  playMode: 'singles' | 'doubles'
+  handicapEnabled: boolean
+  minRounds: number
+  onFormatChange: (v: 'stroke' | 'stableford') => void
+  onPlayModeChange: (v: 'singles' | 'doubles') => void
+  onHandicapChange: (v: boolean) => void
+  onMinRoundsChange: (v: number) => void
+  idPrefix: string
+}) {
   return (
-    <div className="league-about-panel">
-      <h3>About this league</h3>
-      {league.creatorName && (
-        <p className="muted small league-about-creator">
-          Organized by <strong>{league.creatorName}</strong>
-        </p>
-      )}
-      {hasCustomInfo ? (
-        <dl className="league-about-list">
-          {league.description && (
-            <div>
-              <dt>Overview</dt>
-              <dd>{league.description}</dd>
-            </div>
-          )}
-          {league.location && (
-            <div>
-              <dt>Where we play</dt>
-              <dd>{league.location}</dd>
-            </div>
-          )}
-          {league.rules && (
-            <div>
-              <dt>House rules</dt>
-              <dd>{league.rules}</dd>
-            </div>
-          )}
-        </dl>
-      ) : (
-        <p className="muted small">
-          No league details yet
-          {league.isAdmin ? ' — tap Edit league to add an overview, location, and house rules.' : '.'}
-        </p>
-      )}
-
-      <div className="league-how-it-works">
-        <h4>How this league works</h4>
-        <ul className="muted small">
-          <li>
-            <strong>{formatLabel(league.format)}</strong> scoring — standings rank players by average
-            score to par across submitted rounds.
-          </li>
-          <li>
-            Season runs <strong>{formatSeasonRange(league.seasonStart, league.seasonEnd)}</strong>
-            {league.seasonStatus === 'active'
-              ? ' (in season now).'
-              : league.seasonStatus === 'upcoming'
-                ? ' (not started yet).'
-                : ' (season ended).'}
-          </li>
-          <li>
-            Finished rounds (9+ holes) during an active season can auto-submit to this league when you
-            complete a scorecard.
-          </li>
-          <li>You can also manually submit any completed round from the list below.</li>
-          <li>Share the invite code so friends can join and compete on the same standings.</li>
-        </ul>
+    <div className="league-settings-fields">
+      <div className="league-form-row league-form-dates">
+        <label htmlFor={`${idPrefix}-format`}>
+          Scoring format
+          <select
+            id={`${idPrefix}-format`}
+            value={format}
+            onChange={e => onFormatChange(e.target.value as 'stroke' | 'stableford')}
+          >
+            <option value="stroke">Stroke (avg score to par)</option>
+            <option value="stableford">Stableford (points per round)</option>
+          </select>
+        </label>
+        <label htmlFor={`${idPrefix}-play-mode`}>
+          Play mode
+          <select
+            id={`${idPrefix}-play-mode`}
+            value={playMode}
+            onChange={e => onPlayModeChange(e.target.value as 'singles' | 'doubles')}
+          >
+            <option value="singles">Singles</option>
+            <option value="doubles">Doubles (pair standings)</option>
+          </select>
+        </label>
       </div>
+      <label className="league-checkbox-label" htmlFor={`${idPrefix}-handicap`}>
+        <input
+          id={`${idPrefix}-handicap`}
+          type="checkbox"
+          checked={handicapEnabled}
+          onChange={e => onHandicapChange(e.target.checked)}
+        />
+        Handicap league (net scoring from recent rounds)
+      </label>
+      <label htmlFor={`${idPrefix}-min-rounds`}>
+        Minimum rounds to qualify for standings
+        <input
+          id={`${idPrefix}-min-rounds`}
+          type="number"
+          min={0}
+          max={50}
+          value={minRounds}
+          onChange={e => onMinRoundsChange(Number(e.target.value) || 0)}
+        />
+      </label>
+    </div>
+  )
+}
+
+function LeagueVisibilityFields({
+  isPublic,
+  skillLevel,
+  clubId,
+  clubs,
+  onPublicChange,
+  onSkillLevelChange,
+  onClubChange,
+  idPrefix,
+}: {
+  isPublic: boolean
+  skillLevel: League['skillLevel']
+  clubId: string
+  clubs: Club[]
+  onPublicChange: (v: boolean) => void
+  onSkillLevelChange: (v: League['skillLevel']) => void
+  onClubChange: (v: string) => void
+  idPrefix: string
+}) {
+  return (
+    <div className="league-visibility-fields">
+      <label className="league-checkbox-label" htmlFor={`${idPrefix}-public`}>
+        <input
+          id={`${idPrefix}-public`}
+          type="checkbox"
+          checked={isPublic}
+          onChange={e => onPublicChange(e.target.checked)}
+        />
+        Public league (show in Discover for anyone to join)
+      </label>
+      <label htmlFor={`${idPrefix}-skill`}>
+        Skill level tag
+        <select
+          id={`${idPrefix}-skill`}
+          value={skillLevel}
+          onChange={e => onSkillLevelChange(e.target.value as League['skillLevel'])}
+        >
+          <option value="all">All skill levels</option>
+          <option value="beginner">Beginner-friendly</option>
+          <option value="intermediate">Intermediate</option>
+          <option value="advanced">Advanced / competitive</option>
+        </select>
+      </label>
+      {clubs.length > 0 && (
+        <label htmlFor={`${idPrefix}-club`}>
+          Linked club (optional)
+          <select
+            id={`${idPrefix}-club`}
+            value={clubId}
+            onChange={e => onClubChange(e.target.value)}
+          >
+            <option value="">None</option>
+            {clubs.map(c => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
     </div>
   )
 }
 
 export function LeaguesPage() {
   const [leagues, setLeagues] = useState<League[]>([])
+  const [clubs, setClubs] = useState<Club[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [standings, setStandings] = useState<LeagueStanding[]>([])
   const [rounds, setRounds] = useState<RoundSummary[]>([])
@@ -170,6 +245,13 @@ export function LeaguesPage() {
   const [description, setDescription] = useState('')
   const [location, setLocation] = useState('')
   const [rules, setRules] = useState('')
+  const [format, setFormat] = useState<'stroke' | 'stableford'>('stroke')
+  const [playMode, setPlayMode] = useState<'singles' | 'doubles'>('singles')
+  const [handicapEnabled, setHandicapEnabled] = useState(false)
+  const [minRounds, setMinRounds] = useState(0)
+  const [isPublic, setIsPublic] = useState(false)
+  const [skillLevel, setSkillLevel] = useState<League['skillLevel']>('all')
+  const [clubId, setClubId] = useState('')
   const [seasonStart, setSeasonStart] = useState(() => new Date().toISOString().slice(0, 10))
   const [seasonEnd, setSeasonEnd] = useState(defaultSeasonEnd)
   const [inviteCode, setInviteCode] = useState('')
@@ -180,6 +262,12 @@ export function LeaguesPage() {
   const [editSeasonStart, setEditSeasonStart] = useState('')
   const [editSeasonEnd, setEditSeasonEnd] = useState('')
   const [editFormat, setEditFormat] = useState<'stroke' | 'stableford'>('stroke')
+  const [editPlayMode, setEditPlayMode] = useState<'singles' | 'doubles'>('singles')
+  const [editHandicapEnabled, setEditHandicapEnabled] = useState(false)
+  const [editMinRounds, setEditMinRounds] = useState(0)
+  const [editIsPublic, setEditIsPublic] = useState(false)
+  const [editSkillLevel, setEditSkillLevel] = useState<League['skillLevel']>('all')
+  const [editClubId, setEditClubId] = useState('')
   const [showEdit, setShowEdit] = useState(false)
   const [copiedCode, setCopiedCode] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -199,6 +287,9 @@ export function LeaguesPage() {
     listMyRounds()
       .then(setRounds)
       .catch(() => setRounds([]))
+    listMyClubs()
+      .then(setClubs)
+      .catch(() => setClubs([]))
   }, [])
 
   useEffect(() => {
@@ -227,6 +318,12 @@ export function LeaguesPage() {
     setEditSeasonStart(selected.seasonStart)
     setEditSeasonEnd(selected.seasonEnd)
     setEditFormat(selected.format === 'stableford' ? 'stableford' : 'stroke')
+    setEditPlayMode(selected.playMode)
+    setEditHandicapEnabled(selected.handicapEnabled)
+    setEditMinRounds(selected.minRounds)
+    setEditIsPublic(selected.isPublic)
+    setEditSkillLevel(selected.skillLevel)
+    setEditClubId(selected.clubId ?? '')
   }, [selected])
 
   async function copyInviteCode(code: string) {
@@ -239,6 +336,12 @@ export function LeaguesPage() {
     }
   }
 
+  async function refreshStandings() {
+    if (!selectedId) return
+    setStandings(await fetchLeagueStandings(selectedId))
+    reload()
+  }
+
   async function handleCreate(e: FormEvent) {
     e.preventDefault()
     setBusy(true)
@@ -248,14 +351,28 @@ export function LeaguesPage() {
         name: name.trim(),
         seasonStart,
         seasonEnd,
+        format,
         description: description.trim() || undefined,
         location: location.trim() || undefined,
         rules: rules.trim() || undefined,
+        playMode,
+        handicapEnabled,
+        minRounds,
+        isPublic,
+        skillLevel,
+        clubId: clubId || null,
       })
       setName('')
       setDescription('')
       setLocation('')
       setRules('')
+      setFormat('stroke')
+      setPlayMode('singles')
+      setHandicapEnabled(false)
+      setMinRounds(0)
+      setIsPublic(false)
+      setSkillLevel('all')
+      setClubId('')
       setShowCreate(false)
       reload()
       setSelectedId(id)
@@ -287,8 +404,7 @@ export function LeaguesPage() {
     setBusy(true)
     try {
       await submitRoundToLeague(selectedId, roundId)
-      setStandings(await fetchLeagueStandings(selectedId))
-      reload()
+      await refreshStandings()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not submit round')
     } finally {
@@ -310,6 +426,12 @@ export function LeaguesPage() {
         description: editDescription.trim(),
         location: editLocation.trim(),
         rules: editRules.trim(),
+        playMode: editPlayMode,
+        handicapEnabled: editHandicapEnabled,
+        minRounds: editMinRounds,
+        isPublic: editIsPublic,
+        skillLevel: editSkillLevel,
+        clubId: editClubId || null,
       })
       reload()
       setShowEdit(false)
@@ -346,7 +468,7 @@ export function LeaguesPage() {
     <div className="container leagues-page">
       <PageHeader
         title="Leagues"
-        description="Season standings with your group. Add league details so members know what you're playing for."
+        description="Season standings, chat, ace pots, discovery, clubs, and more."
         backTo="/social"
         backLabel="Social"
       />
@@ -376,6 +498,14 @@ export function LeaguesPage() {
                         {seasonStatusLabel(l.seasonStatus)}
                       </span>
                       <span className="league-format-badge">{formatLabel(l.format)}</span>
+                      <span className="league-format-badge">{playModeLabel(l.playMode)}</span>
+                      {l.handicapEnabled && (
+                        <span className="league-admin-badge">Handicap</span>
+                      )}
+                      {l.isPublic && <span className="league-format-badge">Public</span>}
+                      {l.skillLevel !== 'all' && (
+                        <span className="league-format-badge">{skillLevelLabel(l.skillLevel)}</span>
+                      )}
                       {l.isAdmin && <span className="league-admin-badge">Admin</span>}
                     </div>
                   </div>
@@ -475,8 +605,6 @@ export function LeaguesPage() {
             )}
           </div>
 
-          <LeagueAboutPanel league={selected} />
-
           {showEdit && selected.isAdmin && (
             <form onSubmit={handleSaveEdit} className="league-edit-form">
               <label>
@@ -516,76 +644,57 @@ export function LeaguesPage() {
                   />
                 </label>
               </div>
-              <label>
-                Format
-                <select
-                  value={editFormat}
-                  onChange={e => setEditFormat(e.target.value as 'stroke' | 'stableford')}
-                >
-                  <option value="stroke">Stroke</option>
-                  <option value="stableford">Stableford</option>
-                </select>
-              </label>
+              <LeagueSettingsFields
+                idPrefix="edit"
+                format={editFormat}
+                playMode={editPlayMode}
+                handicapEnabled={editHandicapEnabled}
+                minRounds={editMinRounds}
+                onFormatChange={setEditFormat}
+                onPlayModeChange={setEditPlayMode}
+                onHandicapChange={setEditHandicapEnabled}
+                onMinRoundsChange={setEditMinRounds}
+              />
+              <LeagueVisibilityFields
+                idPrefix="edit"
+                isPublic={editIsPublic}
+                skillLevel={editSkillLevel}
+                clubId={editClubId}
+                clubs={clubs}
+                onPublicChange={setEditIsPublic}
+                onSkillLevelChange={setEditSkillLevel}
+                onClubChange={setEditClubId}
+              />
               <button type="submit" className="btn-primary" disabled={busy}>
                 Save changes
               </button>
             </form>
           )}
 
-          <h3>Standings</h3>
-          {standings.length === 0 ? (
-            <p className="muted">No submitted rounds yet — play a round and submit it below.</p>
-          ) : (
-            <table className="leaderboard-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Player</th>
-                  <th>Rounds</th>
-                  <th>Avg +/-</th>
-                  <th>Best</th>
-                </tr>
-              </thead>
-              <tbody>
-                {standings.map(s => (
-                  <tr key={s.userId}>
-                    <td>{s.rank}</td>
-                    <td>{s.displayName}</td>
-                    <td>{s.roundsSubmitted}</td>
-                    <td>
-                      {s.avgScoreToPar != null ? formatScoreToPar(s.avgScoreToPar) : '—'}
-                    </td>
-                    <td>
-                      {s.bestScoreToPar != null ? formatScoreToPar(s.bestScoreToPar) : '—'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-
-          {completedRounds.length > 0 && (
-            <>
-              <h4>Submit a round</h4>
-              <ul className="stats-recent-list">
-                {completedRounds.slice(0, 8).map(r => (
-                  <li key={r.id}>
-                    {r.courseName ?? 'Round'} — {formatScoreToPar(r.scoreToPar)}{' '}
-                    <button
-                      type="button"
-                      className="btn-secondary"
-                      disabled={busy}
-                      onClick={() => handleSubmitRound(r.id)}
-                    >
-                      Submit
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
+          <LeagueDetailTabs
+            league={selected}
+            standings={standings}
+            completedRounds={completedRounds}
+            busy={busy}
+            onBusy={setBusy}
+            onError={setError}
+            onRefreshStandings={refreshStandings}
+            onSubmitRound={handleSubmitRound}
+          />
         </section>
       )}
+
+      <LeagueDiscoverSection
+        busy={busy}
+        onBusy={setBusy}
+        onError={setError}
+        onJoined={id => {
+          reload()
+          setSelectedId(id)
+        }}
+      />
+
+      <LeagueClubsSection busy={busy} onBusy={setBusy} onError={setError} />
 
       <section className="card">
         <div className="leagues-section-head">
@@ -645,6 +754,27 @@ export function LeaguesPage() {
                 />
               </label>
             </div>
+            <LeagueSettingsFields
+              idPrefix="create"
+              format={format}
+              playMode={playMode}
+              handicapEnabled={handicapEnabled}
+              minRounds={minRounds}
+              onFormatChange={setFormat}
+              onPlayModeChange={setPlayMode}
+              onHandicapChange={setHandicapEnabled}
+              onMinRoundsChange={setMinRounds}
+            />
+            <LeagueVisibilityFields
+              idPrefix="create"
+              isPublic={isPublic}
+              skillLevel={skillLevel}
+              clubId={clubId}
+              clubs={clubs}
+              onPublicChange={setIsPublic}
+              onSkillLevelChange={setSkillLevel}
+              onClubChange={setClubId}
+            />
             <LeagueInfoFields
               idPrefix="create"
               description={description}
@@ -663,6 +793,10 @@ export function LeaguesPage() {
             </button>
           </form>
         )}
+      </section>
+
+      <section className="card">
+        <LeagueFeatureGrid />
       </section>
     </div>
   )

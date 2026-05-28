@@ -467,6 +467,12 @@ export interface League {
   seasonStart: string
   seasonEnd: string
   format: RoundFormat
+  playMode: 'singles' | 'doubles'
+  handicapEnabled: boolean
+  minRounds: number
+  isPublic: boolean
+  skillLevel: 'beginner' | 'intermediate' | 'advanced' | 'all'
+  clubId: string | null
   inviteCode: string
   memberCount: number
   createdBy: string
@@ -490,7 +496,108 @@ export interface LeagueStanding {
   roundsSubmitted: number
   avgScoreToPar: number | null
   bestScoreToPar: number | null
+  avgStablefordPoints: number | null
+  bestStablefordPoints: number | null
+  avgNetScoreToPar: number | null
+  handicapIndex: number | null
+  qualified: boolean
   rank: number
+}
+
+export interface DiscoverableLeague {
+  id: string
+  name: string
+  description: string | null
+  location: string | null
+  format: RoundFormat
+  playMode: 'singles' | 'doubles'
+  skillLevel: League['skillLevel']
+  handicapEnabled: boolean
+  seasonStart: string
+  seasonEnd: string
+  inviteCode: string
+  memberCount: number
+  creatorName: string | null
+}
+
+export interface LeaguePair {
+  id: string
+  name: string | null
+  player1Id: string
+  player2Id: string
+  player1Name: string
+  player2Name: string
+}
+
+export interface LeaguePairStanding {
+  pairId: string
+  pairName: string
+  roundsTogether: number
+  avgCombinedToPar: number | null
+  rank: number
+}
+
+export interface LeagueAnnouncement {
+  id: string
+  title: string
+  body: string
+  authorName: string
+  createdAt: string
+}
+
+export interface LeagueMessage {
+  id: string
+  body: string
+  senderId: string
+  senderName: string
+  createdAt: string
+}
+
+export interface LeaguePot {
+  id: string
+  label: string
+  balanceCents: number
+  entryFeeCents: number
+}
+
+export interface LeaguePotEntry {
+  id: string
+  amountCents: number
+  note: string | null
+  playerName: string
+  createdAt: string
+}
+
+export interface LeagueRivalry {
+  userAId: string
+  userBId: string
+  userAName: string
+  userBName: string
+  sharedRounds: number
+  aWins: number
+  bWins: number
+}
+
+export interface LeagueStreak {
+  userId: string
+  displayName: string
+  submittedRounds: number
+  avgScoreToPar: number | null
+}
+
+export interface LeagueMemberOption {
+  userId: string
+  displayName: string
+}
+
+export interface Club {
+  id: string
+  name: string
+  description: string | null
+  location: string | null
+  inviteCode: string
+  myRole: 'admin' | 'member'
+  memberCount: number
 }
 
 export interface FriendHeadToHead {
