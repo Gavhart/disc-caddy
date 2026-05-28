@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AppFeatureShowcase } from '../components/AppFeatureShowcase'
 import { CaddyDemoPreview } from '../components/CaddyDemoPreview'
+import { GreatForList } from '../components/GreatForList'
 import { APP_VERSION, PRODUCT_HIGHLIGHTS, RELEASES } from '../data/updates'
 import {
   LEAGUE_CORE_FEATURES,
@@ -40,6 +41,7 @@ function RoadmapColumn({ status, items }: { status: RoadmapStatus; items: typeof
           <li key={item.id} className="updates-roadmap-card">
             <strong>{item.title}</strong>
             <p className="muted small">{item.description}</p>
+            {item.greatFor && item.greatFor.length > 0 && <GreatForList items={item.greatFor} />}
           </li>
         ))}
       </ul>
@@ -67,6 +69,7 @@ function LeagueFeatureGrid({
               </span>
             </div>
             <p className="muted small">{f.summary}</p>
+            {f.greatFor && f.greatFor.length > 0 && <GreatForList items={f.greatFor} />}
             {f.href && (
               <Link to={f.href} className="updates-league-link small">
                 Open in app →
@@ -104,7 +107,7 @@ export function UpdatesPage() {
         <p className="muted">
           Version <strong>{APP_VERSION}</strong>
           {unread
-            ? ' — multi-shot Caddy, field practice, GPS distance, lie layout, and mandos just shipped.'
+            ? ' — Venmo buy-ins for leagues, ace pot pay links, and profile payout handles just shipped.'
             : " — everything in Disc Caddy today, what's next, and full release history."}
         </p>
         <div className="updates-hero-stats">

@@ -1,3 +1,5 @@
+import { VENMO_INTEGRATION } from './venmoIntegration'
+
 export type RoadmapStatus = 'shipped' | 'in_progress' | 'planned'
 
 export interface RoadmapItem {
@@ -5,6 +7,8 @@ export interface RoadmapItem {
   title: string
   description: string
   status: RoadmapStatus
+  /** Optional “Great for:” bullets on the Updates roadmap cards. */
+  greatFor?: readonly string[]
 }
 
 export const ROADMAP_ITEMS: RoadmapItem[] = [
@@ -139,6 +143,13 @@ export const ROADMAP_ITEMS: RoadmapItem[] = [
     title: 'League sponsorship & merch',
     description: 'Branding slots, sponsor logos, and shop links on league pages.',
     status: 'planned',
+  },
+  {
+    id: 'venmo',
+    title: VENMO_INTEGRATION.title,
+    description: VENMO_INTEGRATION.summary,
+    status: 'shipped',
+    greatFor: VENMO_INTEGRATION.greatFor,
   },
 ]
 

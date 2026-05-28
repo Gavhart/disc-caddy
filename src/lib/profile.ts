@@ -41,6 +41,7 @@ export async function fetchMe(): Promise<Me | null> {
     avatarPath: data.avatar_path ?? null,
     communitySearchRadiusMiles: data.community_search_radius_miles ?? 25,
     notifyEmail: data.notify_email ?? true,
+    venmoUsername: data.venmo_username ?? null,
   }
 }
 
@@ -84,6 +85,7 @@ export interface PlayerPatch {
   putterMaxDistance?: number | null
   midrangeMaxDistance?: number | null
   fairwayMaxDistance?: number | null
+  venmoUsername?: string | null
 }
 
 /** Update player handedness / forehand fields. */
@@ -113,6 +115,10 @@ export async function updatePlayer(userId: string, patch: PlayerPatch) {
     update.midrange_max_distance = patch.midrangeMaxDistance
   if (patch.fairwayMaxDistance !== undefined)
     update.fairway_max_distance = patch.fairwayMaxDistance
+  if (patch.venmoUsername !== undefined) {
+    const cleaned = patch.venmoUsername?.trim().replace(/^@/, '') ?? ''
+    update.venmo_username = cleaned.length > 0 ? cleaned : null
+  }
 
   const { error } = await supabase
     .from('profiles')

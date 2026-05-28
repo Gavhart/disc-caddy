@@ -1,4 +1,5 @@
 import type { League } from '../types'
+import { VENMO_INTEGRATION } from './venmoIntegration'
 
 export type LeagueFeatureStatus = 'live' | 'partial' | 'planned'
 
@@ -9,6 +10,8 @@ export interface LeagueFeature {
   status: LeagueFeatureStatus
   /** In-app route when the feature is available today */
   href?: string
+  /** Optional “Great for:” bullets on the Updates league cards. */
+  greatFor?: readonly string[]
 }
 
 /** Core league platform capabilities — maps product goals to the app today. */
@@ -138,6 +141,14 @@ export const LEAGUE_ROADMAP_FEATURES: LeagueFeature[] = [
     title: 'Ace pots & payouts',
     summary: 'Track ace pools and log contributions per league.',
     status: 'live',
+  },
+  {
+    id: 'venmo',
+    title: VENMO_INTEGRATION.title,
+    summary: VENMO_INTEGRATION.summary,
+    status: 'live',
+    greatFor: VENMO_INTEGRATION.greatFor,
+    href: '/social/leagues',
   },
   {
     id: 'sponsors',

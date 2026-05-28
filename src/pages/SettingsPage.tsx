@@ -11,6 +11,7 @@ import { ProfilePhotoUploader } from '../components/ProfilePhotoUploader'
 import { setNotifyEmail } from '../lib/notifications'
 import { isPushSupported, registerForPushNotifications } from '../lib/pushNotifications'
 import { updatePlayer } from '../lib/profile'
+import { isValidVenmoUsername } from '../lib/venmo'
 import { Hand, ThrowStyle } from '../types'
 
 export function SettingsPage() {
@@ -32,6 +33,9 @@ export function SettingsPage() {
   const [notifyEmail, setNotifyEmailState] = useState(true)
   const [savingNotify, setSavingNotify] = useState(false)
   const [pushBusy, setPushBusy] = useState(false)
+  const [venmoUsername, setVenmoUsername] = useState('')
+  const [savingVenmo, setSavingVenmo] = useState(false)
+  const [venmoError, setVenmoError] = useState<string | null>(null)
 
   // After Stripe Checkout redirects here, pull fresh subscription state.
   useEffect(() => {
@@ -77,6 +81,7 @@ export function SettingsPage() {
         : '',
     )
     setNotifyEmailState(me.notifyEmail)
+    setVenmoUsername(me.venmoUsername ?? '')
   }, [me])
 
   /** Parse one of the optional distance fields; throw with a labeled error. */
@@ -87,6 +92,27 @@ export function SettingsPage() {
       throw new Error(`${label} must be 50–800 ft (or blank to derive from driver).`)
     }
     return n
+  }
+
+  async function saveVenmoUsername() {
+    if (!user) return
+    const raw = venmoUsername.trim()
+    if (raw && !isValidVenmoUsername(raw)) {
+      setVenmoError('Use letters, numbers, hyphens, and underscores only (no @ needed).')
+      return
+    }
+    setSavingVenmo(true)
+    setVenmoError(null)
+    try {
+      await updatePlayer(user.id, {
+        venmoUsername: raw.length > 0 ? raw : null,
+      })
+      await refreshMe()
+    } catch (err) {
+      setVenmoError(err instanceof Error ? err.message : 'Save failed')
+    } finally {
+      setSavingVenmo(false)
+    }
   }
 
   async function savePlayer() {
@@ -229,6 +255,33 @@ export function SettingsPage() {
             {me.maxDistance} ft <span className="muted small">(edit on Recommend page)</span>
           </span>
         </div>
+      </div>
+
+      <div className="card settings-section" id="venmo">
+        <h2>Venmo</h2>
+        <p className="muted small">
+          Optional — league admins can send payouts to this handle. Buy-ins on league ace pots use
+          the treasurer Venmo set on each league.
+        </p>
+        <label>
+          Your Venmo username
+          <input
+            value={venmoUsername}
+            onChange={e => setVenmoUsername(e.target.value)}
+            placeholder="YourVenmoHandle"
+            autoComplete="off"
+            spellCheck={false}
+          />
+        </label>
+        {venmoError && <p className="form-error">{venmoError}</p>}
+        <button
+          type="button"
+          className="btn-secondary"
+          onClick={saveVenmoUsername}
+          disabled={savingVenmo}
+        >
+          {savingVenmo ? 'Saving…' : 'Save Venmo'}
+        </button>
       </div>
 
       <div className="card settings-section" id="player">

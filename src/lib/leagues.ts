@@ -450,12 +450,45 @@ export async function fetchLeaguePot(leagueId: string): Promise<LeaguePot> {
     label: string
     balance_cents: number
     entry_fee_cents: number
+    venmo_username: string | null
   }
   return {
     id: row.id,
     label: row.label,
     balanceCents: row.balance_cents,
     entryFeeCents: row.entry_fee_cents,
+    venmoUsername: row.venmo_username ?? null,
+  }
+}
+
+export async function updateLeaguePotSettings(
+  leagueId: string,
+  patch: {
+    venmoUsername?: string | null
+    entryFeeCents?: number
+    label?: string
+  },
+): Promise<LeaguePot> {
+  const { data, error } = await supabase.rpc('update_league_pot_settings', {
+    p_league_id: leagueId,
+    p_venmo_username: patch.venmoUsername ?? '',
+    p_entry_fee_cents: patch.entryFeeCents ?? null,
+    p_label: patch.label?.trim() || null,
+  })
+  if (error) throw error
+  const row = data as {
+    id: string
+    label: string
+    balance_cents: number
+    entry_fee_cents: number
+    venmo_username: string | null
+  }
+  return {
+    id: row.id,
+    label: row.label,
+    balanceCents: row.balance_cents,
+    entryFeeCents: row.entry_fee_cents,
+    venmoUsername: row.venmo_username ?? null,
   }
 }
 

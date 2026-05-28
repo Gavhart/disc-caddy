@@ -5031,6 +5031,33 @@ footer {
   font-size: 14px;
 }
 
+.feature-great-for {
+  margin-top: 8px;
+}
+
+.feature-great-for-label {
+  display: block;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.feature-great-for-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+
+.feature-great-for-list li {
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 80%, var(--accent) 20%);
+}
+
 .updates-actions {
   display: flex;
   flex-direction: column;
@@ -6398,6 +6425,59 @@ footer {
   font-size: 1.5rem;
   font-weight: 700;
   margin: 4px 0;
+}
+
+.league-venmo-teaser,
+.league-venmo-panel {
+  margin-top: 20px;
+  padding: 14px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+
+.league-venmo-head h4 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.league-venmo-admin {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.league-venmo-templates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.league-venmo-template-btn {
+  flex: 1 1 calc(50% - 8px);
+  min-width: 120px;
+}
+
+.league-venmo-custom {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: flex-end;
+  margin-bottom: 8px;
+}
+
+.league-venmo-custom label {
+  flex: 1 1 140px;
+}
+
+.league-venmo-profile {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
 }
 
 .league-pair-item {

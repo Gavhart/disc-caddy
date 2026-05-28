@@ -1,5 +1,5 @@
 /** Bump when you ship a release users should see on next sign-in. */
-export const APP_VERSION = '1.2.0'
+export const APP_VERSION = '1.3.0'
 
 export interface ReleaseNote {
   version: string
@@ -43,7 +43,7 @@ export const PRODUCT_HIGHLIGHTS: ProductHighlight[] = [
     icon: '🏆',
     title: 'League platform',
     summary:
-      'Season standings, doubles pairs, shuffle draw, chat, ace pots, rivalries, handicaps, and auto-submit.',
+      'Season standings, doubles pairs, shuffle draw, chat, ace pots, Venmo buy-ins, rivalries, handicaps, and auto-submit.',
     href: '/social/leagues',
   },
   {
@@ -81,6 +81,18 @@ export const PRODUCT_HIGHLIGHTS: ProductHighlight[] = [
 ]
 
 export const RELEASES: ReleaseNote[] = [
+  {
+    version: '1.3.0',
+    date: '2026-05-21',
+    title: 'Venmo integrations for leagues',
+    items: [
+      'League ace pot tab — admins set a treasurer Venmo and suggested buy-in; members get one-tap pay links',
+      'Quick pay presets — ace pot, skins, club dues, mini buy-in, and league payout with league name in the note',
+      'Custom Venmo amount — pay any buy-in, then log the contribution so the pot balance stays accurate',
+      'Profile Venmo username in Settings — optional handle for league admins sending payouts',
+      'Updates page — Venmo moved from coming soon to shipped on the product roadmap',
+    ],
+  },
   {
     version: '1.2.0',
     date: '2026-05-21',

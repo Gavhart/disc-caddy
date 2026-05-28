@@ -258,6 +258,8 @@ export interface Me {
   communitySearchRadiusMiles: number
   /** Email alerts for scorecard invites and messages. */
   notifyEmail: boolean
+  /** Optional Venmo @username for receiving league payouts. */
+  venmoUsername: string | null
 }
 
 /** Preset radius options for community search (miles). */
@@ -577,6 +579,7 @@ export interface LeaguePot {
   label: string
   balanceCents: number
   entryFeeCents: number
+  venmoUsername: string | null
 }
 
 export interface LeaguePotEntry {

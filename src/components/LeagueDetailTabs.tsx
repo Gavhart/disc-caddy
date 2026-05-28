@@ -4,6 +4,7 @@ import { playModeLabel, skillLevelLabel } from '../data/leagueFeatures'
 import { LeaguePairReveal, LeaguePairShuffle } from './LeaguePairShuffle'
 import { LeaguePairRoundModal } from './LeaguePairRoundModal'
 import { LeagueStandingsHero } from './LeagueStandingsHero'
+import { VenmoIntegrationPanel } from './VenmoIntegrationPanel'
 import {
   addLeaguePotEntry,
   createLeaguePair,
@@ -779,6 +780,17 @@ export function LeagueDetailTabs({
                 Log contribution
               </button>
             </form>
+            <VenmoIntegrationPanel
+              leagueId={league.id}
+              leagueName={league.name}
+              pot={pot}
+              isAdmin={league.isAdmin}
+              busy={busy}
+              userVenmoUsername={me?.venmoUsername}
+              onBusy={onBusy}
+              onError={onError}
+              onPotUpdated={updated => setPot(updated)}
+            />
           </>
         )}
 
