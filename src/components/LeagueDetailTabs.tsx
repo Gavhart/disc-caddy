@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { playModeLabel, skillLevelLabel } from '../data/leagueFeatures'
 import { LeaguePairReveal, LeaguePairShuffle } from './LeaguePairShuffle'
 import { LeaguePairRoundModal } from './LeaguePairRoundModal'
+import { LeagueTonightPanel } from './LeagueTonightPanel'
 import { LeagueStandingsHero } from './LeagueStandingsHero'
 import { VenmoIntegrationPanel } from './VenmoIntegrationPanel'
 import {
@@ -41,6 +42,7 @@ import {
 
 type LeagueTab =
   | 'overview'
+  | 'tonight'
   | 'standings'
   | 'chat'
   | 'announcements'
@@ -153,8 +155,8 @@ function LeagueAboutContent({ league }: { league: League }) {
           <li>
             <strong>{playModeLabel(league.playMode)}</strong> league
             {league.playMode === 'doubles'
-              ? ' — pair standings count rounds where both partners submitted the same round. Shuffle teams on the Pairs tab, then start a live scorecard together.'
-              : ' — individual player standings.'}
+              ? ' — pair standings count rounds where both partners submitted the same round. Use Tonight for check-in and cards, or shuffle season pairs on the Pairs tab.'
+              : ' — individual player standings. Use Tonight for league night check-in and card assignments.'}
           </li>
           {league.handicapEnabled && (
             <li>
@@ -378,6 +380,7 @@ export function LeagueDetailTabs({
 
   const tabs: { id: LeagueTab; label: string }[] = [
     { id: 'overview', label: 'Overview' },
+    { id: 'tonight', label: 'Tonight' },
     { id: 'standings', label: 'Standings' },
     { id: 'chat', label: 'Chat' },
     { id: 'announcements', label: 'News' },
@@ -417,6 +420,10 @@ export function LeagueDetailTabs({
           setPot(null)
           setPotEntries([])
         })
+    } else if (tab === 'tonight') {
+      listLeagueMembers(league.id)
+        .then(setMembers)
+        .catch(() => setMembers([]))
     } else if (tab === 'pairs') {
       Promise.all([
         listLeaguePairs(league.id),
@@ -628,6 +635,17 @@ export function LeagueDetailTabs({
               </>
             )}
           </>
+        )}
+
+        {tab === 'tonight' && (
+          <LeagueTonightPanel
+            league={league}
+            members={members}
+            isPro={isPro}
+            busy={busy}
+            onBusy={onBusy}
+            onError={onError}
+          />
         )}
 
         {tab === 'standings' && (

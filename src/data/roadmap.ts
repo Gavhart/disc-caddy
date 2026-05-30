@@ -97,6 +97,30 @@ export const ROADMAP_ITEMS: RoadmapItem[] = [
     status: 'shipped',
   },
   {
+    id: 'hole-map-pins',
+    title: 'Hole map + throw pins',
+    description: 'Schematic map with phase-colored pins, throw classification, and remaining distance.',
+    status: 'shipped',
+  },
+  {
+    id: 'caddy-adherence',
+    title: 'Caddy vs your bag stats',
+    description: 'Top-pick adherence %, off-script discs, and phase breakdown on Stats and live rounds.',
+    status: 'shipped',
+  },
+  {
+    id: 'minimal-scoring',
+    title: 'Quick score bar',
+    description: 'Fixed bottom bar with big-tap +/- for one-handed league scoring on the Play tab.',
+    status: 'shipped',
+  },
+  {
+    id: 'league-cards',
+    title: 'League night check-in & cards',
+    description: 'Tonight tab — open session, check players in, shuffle cards, notify pairings, start live rounds.',
+    status: 'shipped',
+  },
+  {
     id: 'native-push',
     title: 'Native push notifications',
     description: 'Scorecard invites, league news, and friend activity on iOS & Android.',
@@ -134,8 +158,8 @@ export const ROADMAP_ITEMS: RoadmapItem[] = [
   },
   {
     id: 'course-overlays',
-    title: 'Course map overlays',
-    description: 'Hole notes and aim lines tied to the course discovery map.',
+    title: 'Full course map overlays',
+    description: 'Satellite-style hole maps and aim lines on the course discovery map (hole progress map shipped).',
     status: 'planned',
   },
   {

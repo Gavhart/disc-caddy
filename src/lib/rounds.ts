@@ -53,6 +53,9 @@ interface RoundThrowRow {
   recommended_rank: number | null
   used_recommendation: boolean
   notes: string | null
+  throw_phase: 'drive' | 'approach' | 'putt' | null
+  remaining_before_ft: number | null
+  throw_distance_ft: number | null
   created_at: string
 }
 
@@ -111,6 +114,9 @@ function rowToThrow(r: RoundThrowRow): RoundThrow {
     recommendedRank: r.recommended_rank,
     usedRecommendation: r.used_recommendation,
     notes: r.notes,
+    throwPhase: r.throw_phase ?? null,
+    remainingBeforeFt: r.remaining_before_ft ?? null,
+    throwDistanceFt: r.throw_distance_ft ?? null,
     createdAt: r.created_at,
   }
 }
@@ -208,6 +214,9 @@ export async function logThrow(input: {
   throwStyle: ThrowStyle
   recommendedRank: number | null
   usedRecommendation?: boolean
+  throwPhase?: 'drive' | 'approach' | 'putt' | null
+  remainingBeforeFt?: number | null
+  throwDistanceFt?: number | null
 }): Promise<RoundThrow> {
   const { data, error } = await supabase
     .from('round_throws')
@@ -219,6 +228,9 @@ export async function logThrow(input: {
       throw_style: input.throwStyle,
       recommended_rank: input.recommendedRank,
       used_recommendation: input.usedRecommendation ?? true,
+      throw_phase: input.throwPhase ?? null,
+      remaining_before_ft: input.remainingBeforeFt ?? null,
+      throw_distance_ft: input.throwDistanceFt ?? null,
     })
     .select('*')
     .single()

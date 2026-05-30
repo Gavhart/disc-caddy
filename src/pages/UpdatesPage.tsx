@@ -10,6 +10,7 @@ import {
   leagueFeatureStatusLabel,
 } from '../data/leagueFeatures'
 import { ROADMAP_ITEMS, RoadmapStatus } from '../data/roadmap'
+import { UDISC_PARITY_ROADMAP } from '../data/udiscParityRoadmap'
 import { hasUnreadUpdates, isReleaseUnread, markUpdatesSeen } from '../lib/updates'
 
 function formatDate(iso: string): string {
@@ -82,6 +83,39 @@ function LeagueFeatureGrid({
   )
 }
 
+const PARITY_STATUS_LABELS: Record<RoadmapStatus, string> = {
+  shipped: 'Live',
+  in_progress: 'Building',
+  planned: 'Next',
+}
+
+function UdiscParityRoadmap() {
+  return (
+    <div className="card updates-parity-roadmap">
+      <h2>On-course polish</h2>
+      <p className="muted small">
+        UDisc-inspired upgrades in priority order — visual hole progress, bag stats, faster
+        scoring, and league organizer tools — without losing Disc Caddy&apos;s &ldquo;what to
+        throw&rdquo; edge.
+      </p>
+      <ol className="updates-parity-list">
+        {UDISC_PARITY_ROADMAP.map((item, index) => (
+          <li key={item.id} className={`updates-parity-item updates-parity-${item.status}`}>
+            <div className="updates-parity-item-head">
+              <span className="updates-parity-rank">{index + 1}</span>
+              <strong>{item.title}</strong>
+              <span className={`updates-parity-status updates-parity-status-${item.status}`}>
+                {PARITY_STATUS_LABELS[item.status]}
+              </span>
+            </div>
+            <p className="muted small">{item.description}</p>
+          </li>
+        ))}
+      </ol>
+    </div>
+  )
+}
+
 export function UpdatesPage() {
   const navigate = useNavigate()
   const unread = hasUnreadUpdates()
@@ -107,7 +141,7 @@ export function UpdatesPage() {
         <p className="muted">
           Version <strong>{APP_VERSION}</strong>
           {unread
-            ? ' — Venmo buy-ins for leagues, ace pot pay links, and profile payout handles just shipped.'
+            ? ' — hole map with throw pins, phase picks, and Caddy vs your bag stats just shipped.'
             : " — everything in Disc Caddy today, what's next, and full release history."}
         </p>
         <div className="updates-hero-stats">
@@ -170,6 +204,8 @@ export function UpdatesPage() {
         <LeagueFeatureGrid title="Core league features" features={LEAGUE_CORE_FEATURES} />
         <LeagueFeatureGrid title="League extras" features={LEAGUE_ROADMAP_FEATURES} />
       </div>
+
+      <UdiscParityRoadmap />
 
       <div className="card updates-roadmap">
         <h2>Product roadmap</h2>

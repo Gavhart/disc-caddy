@@ -2,14 +2,18 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { ProGate } from '../components/ProGate'
-import { fetchDiscPerformanceStats, fetchPlayerStatsDashboard } from '../lib/stats'
+import { fetchCaddyAdherenceStats, fetchDiscPerformanceStats, fetchPlayerStatsDashboard, fetchThrowPhaseStats } from '../lib/stats'
+import { CaddyAdherencePanel } from '../components/CaddyAdherencePanel'
 import { formatScoreToPar } from '../lib/rounds'
-import { DiscPerformanceStat, PlayerStatsDashboard } from '../types'
+import { throwPhaseLabel } from '../lib/throwPhase'
+import { CaddyAdherenceStats, DiscPerformanceStat, PlayerStatsDashboard, ThrowPhaseStats } from '../types'
 
 export function StatsPage() {
   const { me } = useAuth()
   const [stats, setStats] = useState<PlayerStatsDashboard | null>(null)
   const [discs, setDiscs] = useState<DiscPerformanceStat[]>([])
+  const [phaseStats, setPhaseStats] = useState<ThrowPhaseStats | null>(null)
+  const [adherence, setAdherence] = useState<CaddyAdherenceStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -18,10 +22,17 @@ export function StatsPage() {
       setLoading(false)
       return
     }
-    Promise.all([fetchPlayerStatsDashboard(), fetchDiscPerformanceStats()])
-      .then(([s, d]) => {
+    Promise.all([
+      fetchPlayerStatsDashboard(),
+      fetchDiscPerformanceStats(),
+      fetchThrowPhaseStats(),
+      fetchCaddyAdherenceStats(),
+    ])
+      .then(([s, d, p, a]) => {
         setStats(s)
         setDiscs(d)
+        setPhaseStats(p)
+        setAdherence(a)
       })
       .catch(err =>
         setError(err instanceof Error ? err.message : 'Could not load stats'),
@@ -88,6 +99,12 @@ export function StatsPage() {
         )}
       </div>
 
+      {adherence && (
+        <div className="card">
+          <CaddyAdherencePanel stats={adherence} />
+        </div>
+      )}
+
       {stats && stats.recentRounds.length > 0 && (
         <div className="card">
           <h3>Recent rounds</h3>
@@ -101,6 +118,50 @@ export function StatsPage() {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {phaseStats && phaseStats.totals.length > 0 && (
+        <div className="card">
+          <h3>Throw phases</h3>
+          <p className="muted small">
+            From logged throws in Hole progress — drives, approaches, and putts auto-classified
+            by distance left to the basket.
+          </p>
+          <div className="stats-phase-grid">
+            {phaseStats.totals.map(row => (
+              <div key={row.throwPhase} className={`stats-phase-card stats-phase-${row.throwPhase}`}>
+                <span className="stats-phase-label">{throwPhaseLabel(row.throwPhase)}</span>
+                <strong>{row.throws}</strong>
+                <span className="muted small">throws</span>
+                {row.avgDistanceFt != null && (
+                  <span className="muted small">avg {row.avgDistanceFt} ft</span>
+                )}
+              </div>
+            ))}
+          </div>
+          {phaseStats.byDisc.length > 0 && (
+            <table className="leaderboard-table" style={{ marginTop: 16 }}>
+              <thead>
+                <tr>
+                  <th>Disc</th>
+                  <th>Phase</th>
+                  <th>Throws</th>
+                  <th>Avg dist</th>
+                </tr>
+              </thead>
+              <tbody>
+                {phaseStats.byDisc.map(row => (
+                  <tr key={`${row.discName}-${row.throwPhase}`}>
+                    <td>{row.discName}</td>
+                    <td>{throwPhaseLabel(row.throwPhase)}</td>
+                    <td>{row.throws}</td>
+                    <td>{row.avgDistanceFt != null ? `${row.avgDistanceFt} ft` : '—'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       )}
 

@@ -1,5 +1,5 @@
 /** Bump when you ship a release users should see on next sign-in. */
-export const APP_VERSION = '1.3.0'
+export const APP_VERSION = '1.5.0'
 
 export interface ReleaseNote {
   version: string
@@ -43,7 +43,7 @@ export const PRODUCT_HIGHLIGHTS: ProductHighlight[] = [
     icon: '🏆',
     title: 'League platform',
     summary:
-      'Season standings, doubles pairs, shuffle draw, chat, ace pots, Venmo buy-ins, rivalries, handicaps, and auto-submit.',
+      'Season standings, doubles pairs, shuffle draw, league night cards, chat, ace pots, Venmo buy-ins, rivalries, handicaps, and auto-submit.',
     href: '/social/leagues',
   },
   {
@@ -81,6 +81,30 @@ export const PRODUCT_HIGHLIGHTS: ProductHighlight[] = [
 ]
 
 export const RELEASES: ReleaseNote[] = [
+  {
+    version: '1.5.0',
+    date: '2026-05-21',
+    title: 'Quick score bar & league night cards',
+    items: [
+      'Quick score bar — fixed bottom +/- controls on Play for one-handed scoring during live rounds',
+      'Host scoring mode — cycle players on the quick bar when host enters all scores on one phone',
+      'League Tonight tab — admins open league night, check players in, shuffle cards, and notify pairings',
+      'Card rounds — players on a card start a shared live scorecard (singles groups or doubles pairs)',
+      'Updates page — minimal scoring and league cards marked shipped on the UDisc parity roadmap',
+    ],
+  },
+  {
+    version: '1.4.0',
+    date: '2026-05-21',
+    title: 'Hole map, throw phases & Caddy adherence',
+    items: [
+      'Hole progress map — tee → basket schematic with numbered, color-coded pins per throw',
+      'Throw phases — auto-classify drives, approaches, and putts; feed upshot/drive/putt picks',
+      'Caddy vs your bag — adherence % and off-script disc list on Stats and during live rounds',
+      'Updates page — prioritized on-course polish roadmap (UDisc parity + Caddy identity)',
+      'Throw phase stats on the Stats dashboard with average distance per phase',
+    ],
+  },
   {
     version: '1.3.0',
     date: '2026-05-21',

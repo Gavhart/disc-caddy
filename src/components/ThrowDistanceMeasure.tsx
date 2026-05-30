@@ -15,10 +15,30 @@ function combinedAccuracy(a: PreciseLocation, b: PreciseLocation): number | null
   return Math.round(Math.sqrt(aa * aa + bb * bb))
 }
 
+export interface ThrowMeasureResult {
+  distanceFt: number
+  landingLat?: number
+  landingLon?: number
+}
+
 export function ThrowDistanceMeasure({
   onMeasured,
+  title = 'GPS throw distance',
+  subtitle = 'Release → disc',
+  copy = 'Stand where you threw from and tap mark release, then walk to your disc (or target) and tap mark landing.',
+  startLabel = 'Release',
+  endLabel = 'Landing / target',
+  markStartLabel = 'Mark release',
+  markEndLabel = 'Mark landing',
 }: {
-  onMeasured: (distanceFt: number) => void
+  onMeasured: (result: ThrowMeasureResult | number) => void
+  title?: string
+  subtitle?: string
+  copy?: string
+  startLabel?: string
+  endLabel?: string
+  markStartLabel?: string
+  markEndLabel?: string
 }) {
   const [release, setRelease] = useState<PreciseLocation | null>(null)
   const [busy, setBusy] = useState<'release' | 'landing' | null>(null)
@@ -49,7 +69,11 @@ export function ThrowDistanceMeasure({
       const distanceFt = clampThrowDistanceFeet(rawFeet)
       const accuracy = combinedAccuracy(release, landing)
 
-      onMeasured(distanceFt)
+      onMeasured({
+        distanceFt,
+        landingLat: landing.lat,
+        landingLon: landing.lon,
+      })
       setResultLabel(
         `Measured ${distanceFt.toLocaleString()} ft` +
           (accuracy != null ? ` · GPS accuracy ~±${accuracy} m` : ''),
@@ -72,13 +96,10 @@ export function ThrowDistanceMeasure({
   return (
     <div className="hole-distance-measure">
       <div className="hole-distance-measure-head">
-        <strong>GPS throw distance</strong>
-        <span className="muted small">Release → disc</span>
+        <strong>{title}</strong>
+        <span className="muted small">{subtitle}</span>
       </div>
-      <p className="muted small hole-distance-measure-copy">
-        Stand where you threw from and tap mark release, then walk to your disc (or target)
-        and tap mark landing. Works in an open field with or without a basket.
-      </p>
+      <p className="muted small hole-distance-measure-copy">{copy}</p>
 
       <ol className="hole-distance-measure-steps">
         <li
@@ -90,7 +111,7 @@ export function ThrowDistanceMeasure({
                 : ''
           }
         >
-          <span>Release</span>
+          <span>{startLabel}</span>
           {release ? (
             <span className="muted small">Marked{formatAccuracy(release.accuracyMeters)}</span>
           ) : (
@@ -100,19 +121,19 @@ export function ThrowDistanceMeasure({
               disabled={busy != null}
               onClick={() => void markRelease()}
             >
-              {busy === 'release' ? 'Getting location…' : 'Mark release'}
+              {busy === 'release' ? 'Getting location…' : markStartLabel}
             </button>
           )}
         </li>
         <li className={busy === 'landing' ? 'hole-distance-step-active' : ''}>
-          <span>Landing / target</span>
+          <span>{endLabel}</span>
           <button
             type="button"
             className="btn-primary"
             disabled={!release || busy != null}
             onClick={() => void markLanding()}
           >
-            {busy === 'landing' ? 'Getting location…' : 'Mark landing'}
+            {busy === 'landing' ? 'Getting location…' : markEndLabel}
           </button>
         </li>
       </ol>

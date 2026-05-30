@@ -52,16 +52,18 @@ import {
   holeToLieLayout,
 } from '../lib/lieLayout'
 import {
-  createHoleShot,
   effectiveHoleForShots,
   HoleShot,
-  remainingHoleDistance,
+  holeProgress,
 } from '../lib/holeShots'
 import { updateCourseHole, listCourses, listHolesForCourse } from '../lib/courses'
 import { Scorecard } from '../components/Scorecard'
+import { QuickScoreBar } from '../components/QuickScoreBar'
 import { RoundInviteBanner } from '../components/RoundInviteBanner'
 import { HoleNoteEditor } from '../components/HoleNoteEditor'
 import { HomeProgressStrip } from '../components/HomeProgressStrip'
+import { CaddyAdherencePanel } from '../components/CaddyAdherencePanel'
+import { computeAdherenceFromThrows } from '../lib/caddyAdherence'
 import { BadgeUnlockBanner } from '../components/BadgeUnlockBanner'
 import {
   Bag,
@@ -159,6 +161,14 @@ export function HomePage() {
       active: roundActive,
     })
   }, [pickedCourseId, pickedHoleNumber, roundId, roundActive])
+
+  const showQuickScoreBar =
+    roundActive && roundId != null && pickedHoleNumber != null && roundPlayers.length > 0
+
+  useEffect(() => {
+    document.body.classList.toggle('has-quick-score-bar', showQuickScoreBar)
+    return () => document.body.classList.remove('has-quick-score-bar')
+  }, [showQuickScoreBar])
 
   useEffect(() => {
     let cancelled = false
@@ -397,11 +407,6 @@ export function HomePage() {
     [roundId],
   )
 
-  const loggedHoleNumber = useMemo(() => {
-    if (pickedHoleNumber == null) return null
-    const logged = roundThrows.some(t => t.holeNumber === pickedHoleNumber)
-    return logged ? pickedHoleNumber : null
-  }, [pickedHoleNumber, roundThrows])
 
   const handleMaxDistanceChange = useCallback(
     async (newMax: number) => {
@@ -578,14 +583,6 @@ export function HomePage() {
           usedRecommendation: rec.rank === 1,
         })
         setRoundThrows(prev => [...prev, t])
-        setHoleShots(prev => [
-          ...prev,
-          createHoleShot({
-            distanceFt: rec.effDistance,
-            discName: rec.bagDisc.discName,
-            throwStyle: rec.throwStyle,
-          }),
-        ])
       } catch (err) {
         console.error('[home] log throw failed', err)
         alert(err instanceof Error ? err.message : 'Could not log throw')
@@ -594,7 +591,11 @@ export function HomePage() {
     [roundId, pickedHoleNumber],
   )
 
-  const remainingDist = remainingHoleDistance(hole.distance, holeShots)
+  const shotProgress = useMemo(
+    () => holeProgress(hole.distance, holeShots),
+    [hole.distance, holeShots],
+  )
+  const remainingDist = shotProgress.status === 'playing' ? shotProgress.remaining : 0
   const effectiveHole = useMemo(() => {
     const fromShots =
       holeShots.length > 0 ? effectiveHoleForShots(hole, holeShots) : hole
@@ -647,7 +648,12 @@ export function HomePage() {
   const suggestedThrow = useMemo(() => {
     const top = recommendations[0]
     if (!top) return null
-    return { discName: top.bagDisc.discName, distanceFt: top.effDistance }
+    return {
+      bagDiscId: top.bagDisc.id,
+      discName: top.bagDisc.discName,
+      distanceFt: top.effDistance,
+      throwStyle: top.throwStyle,
+    }
   }, [recommendations])
 
   const holeMemoryMessage = useMemo(() => {
@@ -696,7 +702,61 @@ export function HomePage() {
       : undefined
   const isRoundHost = roundHostId != null && user?.id === roundHostId
   const hostPlayer = roundPlayers.find(p => p.isHost)
+
+  const handleHoleShotsChange = useCallback(
+    (nextShots: HoleShot[]) => {
+      setHoleShots(prev => {
+        if (
+          nextShots.length > prev.length &&
+          roundActive &&
+          isPro &&
+          isRoundHost &&
+          roundId &&
+          pickedHoleNumber != null
+        ) {
+          const shot = nextShots[nextShots.length - 1]
+          if (shot.bagDiscId && shot.discName) {
+            const style = shot.throwStyle ?? effectivePrimaryThrow
+            const match =
+              recommendations.find(
+                r => r.bagDisc.id === shot.bagDiscId && r.throwStyle === style,
+              ) ?? recommendations.find(r => r.bagDisc.id === shot.bagDiscId)
+            void logThrow({
+              roundId,
+              holeNumber: pickedHoleNumber,
+              bagDiscId: shot.bagDiscId,
+              discName: shot.discName,
+              throwStyle: style,
+              recommendedRank: match?.rank ?? null,
+              usedRecommendation: match?.rank === 1,
+              throwPhase: shot.throwPhase ?? null,
+              remainingBeforeFt: shot.remainingBeforeFt ?? null,
+              throwDistanceFt: shot.distanceFt,
+            })
+              .then(t => setRoundThrows(r => [...r, t]))
+              .catch(err => console.error('[home] log hole shot failed', err))
+          }
+        }
+        return nextShots
+      })
+    },
+    [
+      roundActive,
+      isPro,
+      isRoundHost,
+      roundId,
+      pickedHoleNumber,
+      recommendations,
+      effectivePrimaryThrow,
+    ],
+  )
+
   const isGroupParticipant = roundActive && !isRoundHost && roundPlayers.length > 0
+
+  const roundAdherence = useMemo(
+    () => computeAdherenceFromThrows(roundThrows),
+    [roundThrows],
+  )
 
   return (
     <div className="container">
@@ -841,6 +901,8 @@ export function HomePage() {
         roundActive={roundActive}
         remainingDistance={remainingDist}
         shotCount={holeShots.length}
+        shotProgressStatus={shotProgress.status}
+        overshootFt={shotProgress.overshootFt}
       />
       <HoleInput
         hole={hole}
@@ -858,14 +920,28 @@ export function HomePage() {
       <HoleShotTracker
         holeDistance={hole.distance}
         shots={holeShots}
-        onChange={setHoleShots}
+        onChange={handleHoleShotsChange}
+        bagDiscs={discs}
+        primaryThrow={effectivePrimaryThrow}
+        teeBearing={hole.teeBearing}
         suggestedThrow={suggestedThrow}
         baseLayout={holeToLieLayout(hole)}
         lieLayout={lieLayout}
         onLieLayoutChange={handleLieLayoutChange}
       />
+      {roundActive && isPro && (
+        <div className="card">
+          <CaddyAdherencePanel
+            stats={roundAdherence}
+            title="This round — Caddy vs your bag"
+            compact
+            showStatsLink
+          />
+        </div>
+      )}
       <Recommendation
         recommendations={recommendations}
+        bagDiscs={discs}
         hand={effectiveHand}
         primaryThrow={effectivePrimaryThrow}
         profileHand={profileHand}
@@ -875,7 +951,6 @@ export function HomePage() {
         getDiscRecommendation={getDiscRecommendation}
         roundActive={roundActive && pickedCourseId != null && isRoundHost}
         isPro={isPro}
-        loggedHoleNumber={loggedHoleNumber}
         currentHoleNumber={pickedHoleNumber}
         onLogThrow={handleLogThrow}
         holeMemoryMessage={holeMemoryMessage}
@@ -883,7 +958,22 @@ export function HomePage() {
         holeDistance={hole.distance}
         remainingDistance={remainingDist}
         shotCount={holeShots.length}
+        shotProgressStatus={shotProgress.status}
+        overshootFt={shotProgress.overshootFt}
       />
+      {showQuickScoreBar && roundId && pickedHoleNumber != null && (
+        <QuickScoreBar
+          roundId={roundId}
+          players={roundPlayers}
+          scores={roundScores}
+          holes={courseHoles}
+          currentHoleNumber={pickedHoleNumber}
+          currentUserId={user?.id ?? ''}
+          isHost={isRoundHost}
+          onScoresChange={() => refreshRoundData(roundId)}
+          onOptimisticScore={handleOptimisticScore}
+        />
+      )}
     </div>
   )
 }

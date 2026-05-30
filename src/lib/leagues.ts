@@ -8,6 +8,8 @@ import {
   LeaguePair,
   LeaguePairStanding,
   ShuffleLeaguePairsResult,
+  LeagueTonight,
+  StartLeagueSessionRoundResult,
   LeaguePot,
   LeaguePotEntry,
   LeagueMemberOption,
@@ -656,5 +658,176 @@ export async function autoSubmitRoundToLeagues(
   return {
     submitted: Number(row.submitted ?? 0),
     leagueIds: row.league_ids ?? [],
+  }
+}
+
+function mapLeagueTonight(row: Record<string, unknown>): LeagueTonight {
+  const sessionRaw = row.session as Record<string, unknown> | null
+  const session =
+    sessionRaw && sessionRaw.id
+      ? {
+          id: String(sessionRaw.id),
+          leagueId: String(sessionRaw.league_id),
+          sessionDate: String(sessionRaw.session_date),
+          courseId: (sessionRaw.course_id as string | null) ?? null,
+          status: (sessionRaw.status as 'open' | 'closed') ?? 'open',
+          createdAt: String(sessionRaw.created_at),
+          closedAt: (sessionRaw.closed_at as string | null) ?? null,
+        }
+      : null
+
+  const checkins = (
+    (row.checkins as {
+      user_id: string
+      display_name: string
+      checked_in_at: string
+      checked_in_by: string
+      is_me: boolean
+    }[]) ?? []
+  ).map(c => ({
+    userId: c.user_id,
+    displayName: c.display_name,
+    checkedInAt: c.checked_in_at,
+    checkedInBy: c.checked_in_by,
+    isMe: Boolean(c.is_me),
+  }))
+
+  const cards = (
+    (row.cards as {
+      id: string
+      sort_order: number
+      label: string
+      members: {
+        user_id: string
+        display_name: string
+        sort_order: number
+        is_me: boolean
+      }[]
+    }[]) ?? []
+  ).map(c => ({
+    id: c.id,
+    sortOrder: c.sort_order,
+    label: c.label,
+    members: (c.members ?? []).map(m => ({
+      userId: m.user_id,
+      displayName: m.display_name,
+      sortOrder: m.sort_order,
+      isMe: Boolean(m.is_me),
+    })),
+  }))
+
+  const sitOutRaw = row.sit_out as { user_id: string; display_name: string } | null
+
+  return {
+    session,
+    checkins,
+    cards,
+    sitOut: sitOutRaw?.user_id
+      ? { userId: sitOutRaw.user_id, displayName: sitOutRaw.display_name }
+      : null,
+    myCardId: (row.my_card_id as string | null) ?? null,
+    checkedInCount: Number(row.checked_in_count ?? 0),
+    memberCount: Number(row.member_count ?? 0),
+  }
+}
+
+export async function fetchLeagueTonight(leagueId: string): Promise<LeagueTonight> {
+  const { data, error } = await supabase.rpc('get_league_tonight', {
+    p_league_id: leagueId,
+  })
+  if (error) throw error
+  return mapLeagueTonight((data ?? {}) as Record<string, unknown>)
+}
+
+export async function openLeagueSession(
+  leagueId: string,
+  courseId?: string | null,
+): Promise<LeagueTonight> {
+  const { data, error } = await supabase.rpc('open_league_session', {
+    p_league_id: leagueId,
+    p_course_id: courseId ?? null,
+  })
+  if (error) throw error
+  return mapLeagueTonight((data ?? {}) as Record<string, unknown>)
+}
+
+export async function closeLeagueSession(sessionId: string): Promise<LeagueTonight> {
+  const { data, error } = await supabase.rpc('close_league_session', {
+    p_session_id: sessionId,
+  })
+  if (error) throw error
+  return mapLeagueTonight((data ?? {}) as Record<string, unknown>)
+}
+
+export async function checkInLeagueSession(
+  sessionId: string,
+  userId?: string,
+): Promise<LeagueTonight> {
+  const { data, error } = await supabase.rpc('check_in_league_session', {
+    p_session_id: sessionId,
+    p_user_id: userId ?? null,
+  })
+  if (error) throw error
+  return mapLeagueTonight((data ?? {}) as Record<string, unknown>)
+}
+
+export async function checkOutLeagueSession(
+  sessionId: string,
+  userId?: string,
+): Promise<LeagueTonight> {
+  const { data, error } = await supabase.rpc('check_out_league_session', {
+    p_session_id: sessionId,
+    p_user_id: userId ?? null,
+  })
+  if (error) throw error
+  return mapLeagueTonight((data ?? {}) as Record<string, unknown>)
+}
+
+export async function shuffleLeagueSessionCards(sessionId: string): Promise<LeagueTonight> {
+  const { data, error } = await supabase.rpc('shuffle_league_session_cards', {
+    p_session_id: sessionId,
+  })
+  if (error) throw error
+  return mapLeagueTonight((data ?? {}) as Record<string, unknown>)
+}
+
+export async function notifyLeagueSessionCards(
+  sessionId: string,
+): Promise<{ notified: number; tonight: LeagueTonight }> {
+  const { data, error } = await supabase.rpc('notify_league_session_cards', {
+    p_session_id: sessionId,
+  })
+  if (error) throw error
+  const row = (data ?? {}) as { notified: number; tonight: Record<string, unknown> }
+  return {
+    notified: Number(row.notified ?? 0),
+    tonight: mapLeagueTonight(row.tonight ?? {}),
+  }
+}
+
+export async function startLeagueSessionRound(input: {
+  cardId: string
+  courseId: string
+  bagId: string
+}): Promise<StartLeagueSessionRoundResult> {
+  const { data, error } = await supabase.rpc('start_league_session_round', {
+    p_card_id: input.cardId,
+    p_course_id: input.courseId,
+    p_bag_id: input.bagId,
+  })
+  if (error) throw error
+  const row = (data ?? {}) as {
+    round_id: string
+    course_id: string
+    course_name: string | null
+    card_label: string
+    member_count: number
+  }
+  return {
+    roundId: row.round_id,
+    courseId: row.course_id,
+    courseName: row.course_name,
+    cardLabel: row.card_label,
+    memberCount: Number(row.member_count ?? 0),
   }
 }

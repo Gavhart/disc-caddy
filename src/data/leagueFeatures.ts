@@ -76,6 +76,13 @@ export const LEAGUE_CORE_FEATURES: LeagueFeature[] = [
     status: 'live',
   },
   {
+    id: 'league-night',
+    title: 'League night check-in & cards',
+    summary: 'Tonight tab — check in, shuffle cards, push pairings, and start live card rounds.',
+    status: 'live',
+    href: '/social/leagues',
+  },
+  {
     id: 'mobile-scorecards',
     title: 'Mobile scorecards',
     summary: 'Native iOS/Android apps with the same live scoring experience.',

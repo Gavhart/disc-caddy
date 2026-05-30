@@ -3124,6 +3124,18 @@ select {
   color: var(--accent-bright);
 }
 
+.hole-shot-past-basket {
+  color: var(--danger, #c44);
+}
+
+.hole-shot-past-msg {
+  margin-top: 8px;
+}
+
+.pick-log-hint {
+  margin-top: 8px;
+}
+
 .hole-shot-list {
   list-style: none;
   padding: 0;
@@ -3168,6 +3180,26 @@ select {
   gap: 8px;
 }
 
+.hole-shot-disc-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 16px;
+  align-items: flex-end;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.hole-shot-disc-picker label {
+  flex: 1 1 180px;
+}
+
+.hole-shot-disc-picker-throw {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .hole-shot-error {
   color: #ef4444;
   margin-top: 8px;
@@ -3175,6 +3207,159 @@ select {
 
 .hole-shot-done-msg {
   margin: 0;
+}
+
+.hole-progress-map-wrap {
+  margin: 12px 0 16px;
+}
+
+.hole-progress-map-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.hole-progress-map {
+  width: 100%;
+  max-width: 280px;
+  display: block;
+  margin: 0 auto;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+}
+
+.hole-progress-map-fairway {
+  stroke: color-mix(in srgb, var(--accent) 35%, var(--border));
+  stroke-width: 6;
+  stroke-linecap: round;
+}
+
+.hole-progress-map-remaining {
+  stroke: color-mix(in srgb, var(--accent-bright) 50%, transparent);
+  stroke-width: 4;
+  stroke-dasharray: 6 6;
+  stroke-linecap: round;
+}
+
+.hole-progress-map-tee {
+  fill: #8b5a2b;
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+
+.hole-progress-map-basket {
+  fill: none;
+  stroke: var(--accent-bright);
+  stroke-width: 3;
+}
+
+.hole-progress-map-pin {
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+
+.hole-progress-map-pin-num {
+  fill: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.hole-progress-map-label {
+  fill: var(--text-muted);
+  font-size: 10px;
+}
+
+.hole-progress-map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  justify-content: center;
+  margin-top: 8px;
+}
+
+.hole-progress-map-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.hole-progress-map-legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+}
+
+.hole-shot-phase-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.hole-shot-phase-pill,
+.hole-shot-phase-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.hole-shot-phase-drive {
+  background: color-mix(in srgb, #3b82f6 18%, transparent);
+  color: #3b82f6;
+}
+
+.hole-shot-phase-approach {
+  background: color-mix(in srgb, #f59e0b 18%, transparent);
+  color: #b45309;
+}
+
+.hole-shot-phase-putt {
+  background: color-mix(in srgb, #22c55e 18%, transparent);
+  color: #15803d;
+}
+
+.stats-phase-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.stats-phase-card {
+  text-align: center;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stats-phase-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.stats-phase-drive {
+  border-color: color-mix(in srgb, #3b82f6 40%, var(--border));
+}
+
+.stats-phase-approach {
+  border-color: color-mix(in srgb, #f59e0b 40%, var(--border));
+}
+
+.stats-phase-putt {
+  border-color: color-mix(in srgb, #22c55e 40%, var(--border));
 }
 
 .recommendation-lie-banner {
@@ -4976,6 +5161,378 @@ footer {
   content: '→ ';
   color: var(--sky);
   font-weight: 700;
+}
+
+.updates-parity-roadmap {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.updates-parity-roadmap h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
+.updates-parity-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.updates-parity-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.updates-parity-status {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-elevated);
+  color: var(--text-muted);
+}
+
+.updates-parity-status--shipped {
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--success, #22c55e);
+}
+
+.updates-parity-status--in-progress {
+  background: rgba(56, 189, 248, 0.15);
+  color: var(--sky);
+}
+
+.caddy-adherence-panel {
+  margin-top: 12px;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+  background: var(--surface-elevated);
+  border: 1px solid var(--border);
+}
+
+.caddy-adherence-panel--compact {
+  margin-top: 8px;
+  padding: 10px 12px;
+}
+
+.caddy-adherence-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.caddy-adherence-head h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.caddy-adherence-pct {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--sky);
+}
+
+.caddy-adherence-bar {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.caddy-adherence-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--sky), #22c55e);
+  transition: width 0.3s ease;
+}
+
+.caddy-adherence-meta {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.caddy-adherence-phases {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.caddy-adherence-off {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.quick-score-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--nav-tabbar-height, 64px) + env(safe-area-inset-bottom, 0px));
+  z-index: 350;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid var(--border);
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
+}
+
+.quick-score-bar--collapsed {
+  box-shadow: none;
+}
+
+.quick-score-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 0;
+  background: transparent;
+  color: var(--sky);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.quick-score-toggle-meta {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.quick-score-body {
+  padding: 0 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quick-score-context {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+}
+
+.quick-score-hole {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.quick-score-player-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.quick-score-player-name {
+  font-size: 13px;
+  font-weight: 600;
+  min-width: 100px;
+  text-align: center;
+}
+
+.quick-score-player-nav {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface-elevated);
+  color: var(--text);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.quick-score-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.quick-score-step {
+  min-width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-elevated);
+  color: var(--text);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.quick-score-step:disabled {
+  opacity: 0.5;
+}
+
+.quick-score-display {
+  min-width: 88px;
+  text-align: center;
+}
+
+.quick-score-strokes {
+  display: block;
+  font-size: 32px;
+  line-height: 1;
+}
+
+.quick-score-to-par {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+body.has-quick-score-bar .main {
+  padding-bottom: calc(var(--nav-tabbar-height) + 132px + env(safe-area-inset-bottom, 0px));
+}
+
+.league-tonight-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.league-tonight-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.league-tonight-head h3 {
+  margin: 0 0 4px;
+}
+
+.league-tonight-live-badge {
+  flex-shrink: 0;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(34, 197, 94, 0.15);
+  color: var(--success, #22c55e);
+}
+
+.league-tonight-stats {
+  display: flex;
+  gap: 16px;
+}
+
+.league-tonight-checkin-self {
+  align-self: flex-start;
+}
+
+.league-tonight-member-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.league-tonight-member-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.league-tonight-member-name {
+  flex: 1;
+  min-width: 120px;
+}
+
+.league-tonight-checked {
+  font-size: 12px;
+  color: var(--success, #22c55e);
+  font-weight: 600;
+}
+
+.league-tonight-admin-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-top: 10px;
+}
+
+.league-tonight-course {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.league-tonight-card-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .league-tonight-card-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.league-tonight-card-mine {
+  border-color: var(--sky);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--sky) 35%, transparent);
+}
+
+.league-tonight-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.league-tonight-you-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--sky);
+}
+
+.league-tonight-card-roster {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  font-size: 14px;
+}
+
+.league-tonight-sit-out {
+  margin: 0;
 }
 
 .updates-roadmap-grid {

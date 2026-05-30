@@ -19,6 +19,7 @@ import {
   holeTreeLayouts,
   mandoComplexPenalty,
 } from './holeLayoutOptions'
+import { nextThrowPhase } from './throwPhase'
 import {
   PLASTIC_MODS,
   WEAR_MODS,
@@ -648,6 +649,24 @@ function explain(scored: ScoredAttempt, hole: Hole, hand: Hand): ExplanationDeta
       body: `${handLabel}${styleLabel} ${release} with ${disc.name}. Natural finish trends ${fadeSide}.`,
     },
   ]
+
+  const liePhase = nextThrowPhase(hole.distance)
+  if (liePhase === 'putt') {
+    sections.push({
+      title: 'Lie',
+      body: `${hole.distance} ft out — putt range. Prioritize a stable disc you can hit the line with.`,
+    })
+  } else if (liePhase === 'approach') {
+    sections.push({
+      title: 'Lie',
+      body: `${hole.distance} ft out — upshot territory. Shape and landing beat raw distance.`,
+    })
+  } else {
+    sections.push({
+      title: 'Lie',
+      body: `${hole.distance} ft out — full swing. Match power to the gap without overshooting.`,
+    })
+  }
 
   if (aimOffsetFt != null && aimOffsetFt !== 0) {
     sections.push({

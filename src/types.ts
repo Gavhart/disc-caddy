@@ -349,7 +349,41 @@ export interface RoundThrow {
   recommendedRank: number | null
   usedRecommendation: boolean
   notes: string | null
+  throwPhase: 'drive' | 'approach' | 'putt' | null
+  remainingBeforeFt: number | null
+  throwDistanceFt: number | null
   createdAt: string
+}
+
+export interface ThrowPhaseStat {
+  throwPhase: 'drive' | 'approach' | 'putt'
+  throws: number
+  avgDistanceFt: number | null
+}
+
+export interface DiscPhaseStat {
+  discName: string
+  throwPhase: 'drive' | 'approach' | 'putt'
+  throws: number
+  avgDistanceFt: number | null
+}
+
+export interface ThrowPhaseStats {
+  totals: ThrowPhaseStat[]
+  byDisc: DiscPhaseStat[]
+}
+
+export interface CaddyAdherenceStats {
+  totalThrows: number
+  topPickThrows: number
+  offScriptThrows: number
+  adherencePct: number | null
+  offScriptDiscs: { discName: string; throws: number }[]
+  byPhase: {
+    throwPhase: 'drive' | 'approach' | 'putt'
+    total: number
+    topPickThrows: number
+  }[]
 }
 
 /** Prior throw + score on a course hole (Pro hole memory). */
@@ -610,6 +644,56 @@ export interface LeagueStreak {
 export interface LeagueMemberOption {
   userId: string
   displayName: string
+}
+
+export interface LeagueSession {
+  id: string
+  leagueId: string
+  sessionDate: string
+  courseId: string | null
+  status: 'open' | 'closed'
+  createdAt: string
+  closedAt: string | null
+}
+
+export interface LeagueSessionCheckin {
+  userId: string
+  displayName: string
+  checkedInAt: string
+  checkedInBy: string
+  isMe: boolean
+}
+
+export interface LeagueSessionCardMember {
+  userId: string
+  displayName: string
+  sortOrder: number
+  isMe: boolean
+}
+
+export interface LeagueSessionCard {
+  id: string
+  sortOrder: number
+  label: string
+  members: LeagueSessionCardMember[]
+}
+
+export interface LeagueTonight {
+  session: LeagueSession | null
+  checkins: LeagueSessionCheckin[]
+  cards: LeagueSessionCard[]
+  sitOut: { userId: string; displayName: string } | null
+  myCardId: string | null
+  checkedInCount: number
+  memberCount: number
+}
+
+export interface StartLeagueSessionRoundResult {
+  roundId: string
+  courseId: string
+  courseName: string | null
+  cardLabel: string
+  memberCount: number
 }
 
 export interface Club {

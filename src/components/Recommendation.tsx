@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Hand, Recommendation as Rec, ThrowStyle } from '../types'
+import { HoleProgressStatus } from '../lib/holeShots'
+import { nextThrowPhase, throwPhasePickLabel } from '../lib/throwPhase'
+import { BagDisc, Hand, Recommendation as Rec, ThrowStyle } from '../types'
 import { ProGate } from './ProGate'
 
 interface Props {
   recommendations: Rec[]
+  bagDiscs: BagDisc[]
   hand: Hand
   primaryThrow: ThrowStyle
   profileHand: Hand
@@ -17,7 +20,6 @@ interface Props {
   ) => Rec | null
   roundActive?: boolean
   isPro?: boolean
-  loggedHoleNumber?: number | null
   currentHoleNumber?: number | null
   onLogThrow?: (rec: Rec) => Promise<void>
   holeMemoryMessage?: string | null
@@ -25,6 +27,8 @@ interface Props {
   holeDistance?: number
   remainingDistance?: number
   shotCount?: number
+  shotProgressStatus?: HoleProgressStatus
+  overshootFt?: number
 }
 
 function styleLabel(style: Rec['throwStyle']): string {
@@ -43,6 +47,7 @@ function handLabel(hand: Hand): string {
 
 export function Recommendation({
   recommendations,
+  bagDiscs,
   hand,
   primaryThrow,
   profileHand,
@@ -52,7 +57,6 @@ export function Recommendation({
   getDiscRecommendation,
   roundActive = false,
   isPro = false,
-  loggedHoleNumber = null,
   currentHoleNumber = null,
   onLogThrow,
   holeMemoryMessage = null,
@@ -60,6 +64,8 @@ export function Recommendation({
   holeDistance,
   remainingDistance,
   shotCount = 0,
+  shotProgressStatus = 'playing',
+  overshootFt,
 }: Props) {
   const top = recommendations[0]
   const [selectedBagDiscId, setSelectedBagDiscId] = useState<string | null>(null)
@@ -71,6 +77,28 @@ export function Recommendation({
     ? recommendations
     : recommendations.slice(0, VISIBLE_PICKS)
   const hiddenPickCount = Math.max(0, recommendations.length - VISIBLE_PICKS)
+
+  const recommendedIds = useMemo(
+    () => new Set(recommendations.map(r => r.bagDisc.id)),
+    [recommendations],
+  )
+  const rankedDiscOptions = useMemo(() => {
+    const seen = new Set<string>()
+    const options: { id: string; name: string; rank: number }[] = []
+    for (const r of recommendations) {
+      if (seen.has(r.bagDisc.id)) continue
+      seen.add(r.bagDisc.id)
+      options.push({ id: r.bagDisc.id, name: r.bagDisc.discName, rank: r.rank })
+    }
+    return options
+  }, [recommendations])
+  const otherBagDiscs = useMemo(
+    () =>
+      [...bagDiscs]
+        .filter(d => !recommendedIds.has(d.id))
+        .sort((a, b) => a.discName.localeCompare(b.discName)),
+    [bagDiscs, recommendedIds],
+  )
 
   const usingProfileDefaults =
     hand === profileHand && primaryThrow === profilePrimaryThrow
@@ -129,11 +157,6 @@ export function Recommendation({
       discThrowOverride == null &&
       displayed.throwStyle === top.throwStyle)
 
-  const alreadyLogged =
-    loggedHoleNumber != null &&
-    currentHoleNumber != null &&
-    loggedHoleNumber === currentHoleNumber
-
   const pickLabel = displayed.pick === 'MEMORY'
     ? 'RECOMMENDED AGAIN'
     : usingTopPick
@@ -170,10 +193,16 @@ export function Recommendation({
     <section className="card recommendation">
       <h2>Recommendation</h2>
 
-      {shotCount > 0 && remainingDistance != null && (
+      {shotCount > 0 && shotProgressStatus === 'playing' && remainingDistance != null && (
         <p className="recommendation-lie-banner muted small">
-          Picking for <strong>{remainingDistance.toLocaleString()} ft</strong> remaining
-          {remainingDistance <= 120 ? ' — upshot range' : ''}.
+          <strong>{throwPhasePickLabel(nextThrowPhase(remainingDistance), remainingDistance)}</strong>
+        </p>
+      )}
+
+      {shotCount > 0 && shotProgressStatus === 'past_basket' && overshootFt != null && (
+        <p className="recommendation-lie-banner muted small">
+          Last throw went <strong>{overshootFt.toLocaleString()} ft</strong> past the basket —
+          fix the throw in Hole progress or reset the hole.
         </p>
       )}
 
@@ -245,12 +274,31 @@ export function Recommendation({
               }
             }}
           >
-            {recommendations.map(r => (
-              <option key={r.bagDisc.id} value={r.bagDisc.id}>
-                {r.bagDisc.discName}
-                {r.rank === 1 ? ' (top pick)' : ''}
-              </option>
-            ))}
+            {rankedDiscOptions.length > 0 && (
+              <optgroup label="Ranked picks">
+                {rankedDiscOptions.map(d => (
+                  <option key={d.id} value={d.id}>
+                    {d.name}
+                    {d.rank === 1 ? ' (top pick)' : ` (#${d.rank})`}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            {otherBagDiscs.length > 0 && (
+              <optgroup label="Rest of bag">
+                {otherBagDiscs.map(d => (
+                  <option key={d.id} value={d.id}>
+                    {d.discName}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+            {recommendations.length === 0 &&
+              bagDiscs.map(d => (
+                <option key={d.id} value={d.id}>
+                  {d.discName}
+                </option>
+              ))}
           </select>
         </label>
       </div>
@@ -327,17 +375,19 @@ export function Recommendation({
         {roundActive && onLogThrow && (
           <div className="pick-actions">
             {isPro ? (
-              alreadyLogged ? (
-                <span className="pill small">Logged for this hole ✓</span>
-              ) : (
+              <>
                 <button
                   type="button"
-                  className="btn-primary pick-log-btn"
+                  className="btn-secondary pick-log-btn"
                   onClick={() => onLogThrow(displayed)}
                 >
-                  Log this throw
+                  Log {displayed.bagDisc.discName} for stats
                 </button>
-              )
+                <p className="muted small pick-log-hint">
+                  Log each throw with distance in <strong>Hole progress</strong> below — pick any
+                  disc from your bag, not just the top recommendation.
+                </p>
+              </>
             ) : (
               <p className="muted small">
                 <Link to="/upgrade" className="link-button">

@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { BagPicker } from '../components/BagPicker'
 import { BagGapChart } from '../components/BagGapChart'
 import { PageHeader } from '../components/PageHeader'
-import { ThrowDistanceMeasure } from '../components/ThrowDistanceMeasure'
+import { ThrowDistanceMeasure, type ThrowMeasureResult } from '../components/ThrowDistanceMeasure'
 import { recommend } from '../lib/recommend'
 import { createBag, listBags, listDiscsInBag } from '../lib/bags'
 import {
@@ -140,7 +140,8 @@ export function PracticePage() {
     [coverage, maxRangeFt],
   )
 
-  function applyMeasuredDistance(ft: number) {
+  function applyMeasuredDistance(result: ThrowMeasureResult | number) {
+    const ft = typeof result === 'number' ? result : result.distanceFt
     setDistanceInput(String(ft))
     setLogError(null)
   }

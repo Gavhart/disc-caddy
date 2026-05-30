@@ -1,4 +1,5 @@
 import { Hole } from '../types'
+import { HoleProgressStatus } from '../lib/holeShots'
 import { summarizeHoleLayout } from '../lib/holeLabels'
 
 interface Props {
@@ -9,6 +10,8 @@ interface Props {
   roundActive?: boolean
   remainingDistance?: number
   shotCount?: number
+  shotProgressStatus?: HoleProgressStatus
+  overshootFt?: number
 }
 
 export function RecommendContextBar({
@@ -19,12 +22,18 @@ export function RecommendContextBar({
   roundActive = false,
   remainingDistance,
   shotCount = 0,
+  shotProgressStatus = 'playing',
+  overshootFt,
 }: Props) {
   const layout = summarizeHoleLayout(hole)
   const lieNote =
-    shotCount > 0 && remainingDistance != null
+    shotCount > 0 && shotProgressStatus === 'playing' && remainingDistance != null
       ? `${remainingDistance.toLocaleString()} ft left after ${shotCount} throw${shotCount === 1 ? '' : 's'}`
-      : null
+      : shotCount > 0 && shotProgressStatus === 'past_basket' && overshootFt != null
+        ? `Past basket by ${overshootFt.toLocaleString()} ft after ${shotCount} throw${shotCount === 1 ? '' : 's'}`
+        : shotCount > 0 && shotProgressStatus === 'at_basket'
+          ? `At the basket after ${shotCount} throw${shotCount === 1 ? '' : 's'}`
+          : null
 
   if (mode === 'course' && courseName && holeNumber != null) {
     return (
