@@ -5,8 +5,8 @@ set -e
 # We need Node available before npm ci, otherwise Xcode can't resolve
 # node_modules/@capacitor/* when it tries to build.
 echo "ci_post_clone: install Node via Homebrew"
-brew install node@20
-brew link --overwrite --force node@20
+brew install node@22
+brew link --overwrite --force node@22
 
 # Sanity check — fail loudly if Node didn't land on PATH.
 which node || { echo "node not on PATH after brew install"; exit 1; }
