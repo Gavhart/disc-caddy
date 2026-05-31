@@ -101,8 +101,8 @@ export function UpgradePage() {
 
         {isNativeApp() && (
           <p className="muted small native-billing-note">
-            Pro subscriptions aren't sold inside the mobile app. If you
-            subscribed on the web, your Pro features sync here automatically
+            Pro subscriptions aren't sold inside the mobile app. If you have an
+            active Pro subscription, your Pro features sync here automatically
             when you're signed in.
           </p>
         )}
@@ -190,7 +190,7 @@ export function UpgradePage() {
               </button>
             ) : isNativeApp() ? (
               <p className="muted small plan-cta">
-                Available on the Disc Caddy website
+                Not available in the mobile app.
               </p>
             ) : (
               <button className="btn-primary" disabled title="Stripe not configured">

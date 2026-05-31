@@ -5,6 +5,7 @@ import { ProGate } from '../components/ProGate'
 import { PageHeader } from '../components/PageHeader'
 import { useAuth } from '../contexts/AuthContext'
 import { useAppNotifications } from '../hooks/useAppNotifications'
+import { isWebCheckoutAvailable } from '../lib/platform'
 import { markCommunityMessageNotificationsRead } from '../lib/notifications'
 import {
   buildCommunityThreads,
@@ -258,8 +259,13 @@ export function CommunityMessagesPage() {
             ) : (
               <>
                 When a Pro player messages you, it will show up here. Alerts about events
-                and friends appear in <strong>Updates</strong> above.{' '}
-                <Link to="/upgrade">Upgrade to Pro</Link> to start conversations.
+                and friends appear in <strong>Updates</strong> above.
+                {isWebCheckoutAvailable() && (
+                  <>
+                    {' '}
+                    <Link to="/upgrade">Upgrade to Pro</Link> to start conversations.
+                  </>
+                )}
               </>
             )}
           </p>

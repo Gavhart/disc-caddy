@@ -15,6 +15,7 @@ import {
   updateBagDisc,
 } from '../lib/bags'
 import { FREE_TIER } from '../lib/subscription'
+import { isWebCheckoutAvailable } from '../lib/platform'
 import { Bag, BagDisc } from '../types'
 
 export function BagsListPage() {
@@ -216,12 +217,19 @@ export function BagsListPage() {
         {reachedFreeLimit && (
           <div className="paywall-inline">
             <div>
-              <strong>Free plan: 1 bag.</strong>{' '}
-              <span className="muted">Upgrade to add more.</span>
+              <strong>Free plan: 1 bag.</strong>
+              {isWebCheckoutAvailable() && (
+                <>
+                  {' '}
+                  <span className="muted">Upgrade to add more.</span>
+                </>
+              )}
             </div>
-            <Link to="/upgrade" className="btn-secondary">
-              Upgrade
-            </Link>
+            {isWebCheckoutAvailable() && (
+              <Link to="/upgrade" className="btn-secondary">
+                Upgrade
+              </Link>
+            )}
           </div>
         )}
 

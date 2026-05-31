@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { ProGate } from '../components/ProGate'
+import { isWebCheckoutAvailable } from '../lib/platform'
 import { fetchCaddyAdherenceStats, fetchDiscPerformanceStats, fetchPlayerStatsDashboard, fetchThrowPhaseStats } from '../lib/stats'
 import { CaddyAdherencePanel } from '../components/CaddyAdherencePanel'
 import { formatScoreToPar } from '../lib/rounds'
@@ -48,9 +49,11 @@ export function StatsPage() {
           <ProGate feature="Player stats dashboard">
             See scoring trends, birdie counts, and which discs perform best for you.
           </ProGate>
-          <Link to="/upgrade" className="btn-primary" style={{ marginTop: 12 }}>
-            Upgrade to Pro
-          </Link>
+          {isWebCheckoutAvailable() && (
+            <Link to="/upgrade" className="btn-primary" style={{ marginTop: 12 }}>
+              Upgrade to Pro
+            </Link>
+          )}
         </div>
       </div>
     )

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { isWebCheckoutAvailable } from '../lib/platform'
 
 interface Props {
   /** Short label for what Pro unlocks, e.g. "Live wind" */
@@ -15,9 +16,11 @@ export function ProGate({ feature, children }: Props) {
         <strong>{feature}</strong> is a Pro feature.
         {children}
       </p>
-      <Link to="/upgrade" className="btn-secondary pro-gate-cta">
-        Upgrade to Pro
-      </Link>
+      {isWebCheckoutAvailable() && (
+        <Link to="/upgrade" className="btn-secondary pro-gate-cta">
+          Upgrade to Pro
+        </Link>
+      )}
     </div>
   )
 }

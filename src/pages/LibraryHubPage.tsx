@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { PageHeader } from '../components/PageHeader'
 import { HubCard } from '../components/HubCard'
 import { useAuth } from '../contexts/AuthContext'
+import { isWebCheckoutAvailable } from '../lib/platform'
 
 export function LibraryHubPage() {
   const { me } = useAuth()
@@ -56,7 +57,7 @@ export function LibraryHubPage() {
         />
       </div>
 
-      {!me?.isPro && (
+      {!me?.isPro && isWebCheckoutAvailable() && (
         <p className="hub-footnote muted small">
           Several library tools are free.{' '}
           <Link to="/upgrade">Upgrade to Pro</Link> for stats, messaging, and more.

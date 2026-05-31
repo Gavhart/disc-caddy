@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { Bag } from '../types'
 import { useAuth } from '../contexts/AuthContext'
 import { FREE_TIER } from '../lib/subscription'
+import { isWebCheckoutAvailable } from '../lib/platform'
 
 interface Props {
   bags: Bag[]
@@ -149,11 +150,15 @@ export function BagPicker({
       ) : reachedFreeLimit ? (
         <div className="paywall-inline">
           <span className="muted small">
-            Free plan: 1 bag. Upgrade for unlimited bags.
+            {isWebCheckoutAvailable()
+              ? 'Free plan: 1 bag. Upgrade for unlimited bags.'
+              : 'Free plan: 1 bag.'}
           </span>
-          <Link to="/upgrade" className="btn-secondary">
-            Upgrade
-          </Link>
+          {isWebCheckoutAvailable() && (
+            <Link to="/upgrade" className="btn-secondary">
+              Upgrade
+            </Link>
+          )}
         </div>
       ) : (
         !renaming &&
