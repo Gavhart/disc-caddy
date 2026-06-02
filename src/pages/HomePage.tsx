@@ -166,11 +166,6 @@ export function HomePage() {
     roundActive && roundId != null && pickedHoleNumber != null && roundPlayers.length > 0
 
   useEffect(() => {
-    document.body.classList.toggle('has-quick-score-bar', showQuickScoreBar)
-    return () => document.body.classList.remove('has-quick-score-bar')
-  }, [showQuickScoreBar])
-
-  useEffect(() => {
     let cancelled = false
     async function load() {
       const list = await listBags()

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { CourseHole, RoundPlayer, RoundScore } from '../types'
 import { formatScoreToPar, upsertHoleScore } from '../lib/rounds'
 import { fetchRoundHostScoringOnly } from '../lib/roundInvites'
@@ -58,6 +59,14 @@ export function QuickScoreBar({
   useEffect(() => {
     setActivePlayerIdx(0)
   }, [currentHoleNumber, players.length])
+
+  useEffect(() => {
+    document.body.classList.add('has-quick-score-bar')
+    document.body.classList.toggle('quick-score-bar-collapsed', collapsed)
+    return () => {
+      document.body.classList.remove('has-quick-score-bar', 'quick-score-bar-collapsed')
+    }
+  }, [collapsed])
 
   const editablePlayers = useMemo(
     () =>
@@ -161,7 +170,7 @@ export function QuickScoreBar({
 
   if (editablePlayers.length === 0) return null
 
-  return (
+  return createPortal(
     <div
       className={`quick-score-bar${collapsed ? ' quick-score-bar--collapsed' : ''}`}
       aria-label="Quick score entry"
@@ -236,6 +245,7 @@ export function QuickScoreBar({
           </div>
         </div>
       )}
-    </div>
+    </div>,
+    document.body,
   )
 }

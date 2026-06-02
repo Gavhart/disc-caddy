@@ -31,10 +31,41 @@
   box-sizing: border-box;
 }
 
+/* App-wide: no horizontal page scroll on any screen */
 html {
   width: 100%;
   max-width: 100%;
+  overflow-x: clip;
   overflow-x: hidden;
+}
+
+img,
+video,
+canvas,
+iframe,
+embed,
+object {
+  max-width: 100%;
+}
+
+svg:not(.leaflet-zoom-animated):not(.leaflet-marker-icon):not(.leaflet-marker-shadow) {
+  max-width: 100%;
+  height: auto;
+}
+
+pre,
+code {
+  max-width: 100%;
+  overflow-x: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+input,
+select,
+textarea,
+button {
+  max-width: 100%;
 }
 
 body {
@@ -43,6 +74,7 @@ body {
   padding-right: env(safe-area-inset-right);
   width: 100%;
   max-width: 100%;
+  overflow-x: clip;
   overflow-x: hidden;
   overscroll-behavior-x: none;
   touch-action: pan-y pinch-zoom;
@@ -60,6 +92,7 @@ body {
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  overflow-x: clip;
   overflow-x: hidden;
 }
 
@@ -70,9 +103,15 @@ body {
   width: 100%;
   max-width: 100%;
   min-width: 0;
+  overflow-x: clip;
   overflow-x: hidden;
   overscroll-behavior-x: none;
   touch-action: pan-y pinch-zoom;
+}
+
+.main > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .container {
@@ -85,13 +124,28 @@ body {
   flex-direction: column;
   gap: 16px;
   box-sizing: border-box;
+  overflow-x: clip;
   overflow-x: hidden;
+}
+
+.container > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .app {
   max-width: 720px;
+  width: 100%;
+  min-width: 0;
   margin: 0 auto;
   padding: 24px 16px 64px;
+  overflow-x: clip;
+  overflow-x: hidden;
+}
+
+.app > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .app-header {
@@ -183,6 +237,8 @@ svg:not(:root) {
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   width: 100%;
+  min-width: 0;
+  max-width: 100%;
   gap: 8px;
 }
 
@@ -2499,12 +2555,15 @@ select {
   align-items: flex-end;
   justify-content: center;
   padding: 0;
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 .community-modal {
   width: 100%;
   max-width: 100%;
   max-height: min(90vh, 520px);
+  overflow-x: hidden;
   overflow-y: auto;
   margin: 0;
   border-radius: 16px 16px 0 0;
@@ -3515,7 +3574,9 @@ select {
 
 .bag-gap-track-wrap {
   position: relative;
-  padding: 48px 0 28px;
+  padding: 48px 8px 28px;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .bag-gap-track {
@@ -3523,7 +3584,8 @@ select {
   height: 12px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--border) 60%, var(--bg));
-  overflow: visible;
+  overflow: hidden;
+  max-width: 100%;
 }
 
 .bag-gap-zone {
@@ -4065,6 +4127,8 @@ select {
 
 table {
   width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 13px;
 }
@@ -4074,6 +4138,9 @@ td {
   padding: 9px 6px;
   text-align: left;
   border-bottom: 1px solid var(--border);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
 }
 
 th {
@@ -4918,8 +4985,10 @@ footer code {
   padding: 10px;
   margin: 8px 0 0;
   font-size: 12px;
-  overflow-x: auto;
+  overflow-x: hidden;
   max-width: 100%;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 footer {
@@ -4933,7 +5002,7 @@ footer {
 }
 
 .updates-page-expanded {
-  max-width: 820px;
+  max-width: min(820px, 100%);
 }
 
 .updates-hero-stats {
@@ -5286,12 +5355,18 @@ footer {
   position: fixed;
   left: 0;
   right: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
   bottom: calc(var(--nav-tabbar-height, 64px) + env(safe-area-inset-bottom, 0px));
   z-index: 350;
   background: color-mix(in srgb, var(--surface) 92%, transparent);
   backdrop-filter: blur(12px);
   border-top: 1px solid var(--border);
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
 }
 
 .quick-score-bar--collapsed {
@@ -5320,10 +5395,12 @@ footer {
 }
 
 .quick-score-body {
-  padding: 0 12px 12px;
+  padding: 0 max(8px, env(safe-area-inset-left, 0px)) 12px
+    max(8px, env(safe-area-inset-right, 0px));
   display: flex;
   flex-direction: column;
   gap: 8px;
+  max-width: 100%;
 }
 
 .quick-score-context {
@@ -5343,13 +5420,20 @@ footer {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .quick-score-player-name {
   font-size: 13px;
   font-weight: 600;
-  min-width: 100px;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 160px;
   text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .quick-score-player-nav {
@@ -5368,12 +5452,17 @@ footer {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .quick-score-step {
-  min-width: 56px;
-  height: 56px;
+  flex: 0 0 auto;
+  width: 52px;
+  height: 52px;
+  min-width: 0;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--surface-elevated);
@@ -5389,7 +5478,9 @@ footer {
 }
 
 .quick-score-display {
-  min-width: 88px;
+  flex: 1 1 auto;
+  min-width: 0;
+  max-width: 96px;
   text-align: center;
 }
 
@@ -5408,6 +5499,10 @@ footer {
 
 body.has-quick-score-bar .main {
   padding-bottom: calc(var(--nav-tabbar-height) + 132px + env(safe-area-inset-bottom, 0px));
+}
+
+body.has-quick-score-bar.quick-score-bar-collapsed .main {
+  padding-bottom: calc(var(--nav-tabbar-height) + 52px + env(safe-area-inset-bottom, 0px));
 }
 
 .league-tonight-panel {
@@ -5793,6 +5888,8 @@ body.has-quick-score-bar .main {
   background: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 10px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .scorecard-player {
@@ -5801,6 +5898,15 @@ body.has-quick-score-bar .main {
   align-items: center;
   gap: 6px;
   min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+.scorecard-player > strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 
 .scorecard-host-pill {
@@ -5839,35 +5945,42 @@ body.has-quick-score-bar .main {
 
 .scorecard-grid-wrap {
   margin-top: 14px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .scorecard-grid-scroll {
-  overflow-x: auto;
+  overflow-x: hidden;
+  width: 100%;
+  min-width: 0;
   max-width: 100%;
   margin-top: 8px;
-  -webkit-overflow-scrolling: touch;
 }
 
 .scorecard-grid {
   width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 13px;
 }
 
 .scorecard-grid th,
 .scorecard-grid td {
-  padding: 6px 8px;
+  padding: 6px 4px;
   border: 1px solid var(--border);
   text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
 }
 
 .scorecard-grid th:first-child,
 .scorecard-grid td:first-child {
   text-align: left;
-  position: sticky;
-  left: 0;
+  width: 26%;
+  max-width: 5.5rem;
   background: var(--surface);
-  z-index: 1;
 }
 
 .scorecard-cell-active {
@@ -5916,6 +6029,8 @@ body.has-quick-score-bar .main {
 
 .leaderboard-table {
   width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   font-size: 13px;
   margin-top: 8px;
@@ -5923,9 +6038,12 @@ body.has-quick-score-bar .main {
 
 .leaderboard-table th,
 .leaderboard-table td {
-  padding: 8px 10px;
+  padding: 8px 6px;
   border-bottom: 1px solid var(--border);
   text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
 }
 
 .leaderboard-table th {
@@ -6107,15 +6225,20 @@ body.has-quick-score-bar .main {
 
 .share-recap-table {
   width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   margin-top: 12px;
 }
 
 .share-recap-table th,
 .share-recap-table td {
-  padding: 8px;
+  padding: 8px 6px;
   border-bottom: 1px solid var(--border);
   text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: break-word;
 }
 
 .stats-grid {
@@ -6178,11 +6301,16 @@ body.has-quick-score-bar .main {
   justify-content: center;
   z-index: 200;
   padding: 16px;
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
+.modal-card,
 .modal-panel {
-  max-width: 480px;
+  max-width: min(480px, 100%);
   width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 .league-form-row {
@@ -7748,7 +7876,11 @@ button {
 html.native-app,
 html.native-app body,
 html.native-app #root,
-html.native-app .main {
+html.native-app .main,
+html.native-app .container,
+html.native-app .app,
+html.native-app .auth-shell {
+  overflow-x: clip !important;
   overflow-x: hidden !important;
   max-width: 100% !important;
   touch-action: pan-y pinch-zoom;
@@ -7757,14 +7889,19 @@ html.native-app .main {
 html.native-ios .container,
 html.native-ios .card,
 html.native-ios .auth-card {
+  overflow-x: clip;
   overflow-x: hidden;
 }
 
-.scorecard-grid-scroll,
-.setup-steps pre {
-  max-width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
+@media (max-width: 540px) {
+  .scorecard-grid {
+    font-size: 10px;
+  }
+
+  .scorecard-grid th,
+  .scorecard-grid td {
+    padding: 4px 2px;
+  }
 }
 
 /* ---------- Progression, check-ins, highlights ---------- */
