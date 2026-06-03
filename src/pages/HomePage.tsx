@@ -466,6 +466,33 @@ export function HomePage() {
     [pickedCourseHoleId],
   )
 
+  const pickedCourseHole = useMemo(
+    () =>
+      pickedCourseHoleId
+        ? courseHoles.find(h => h.id === pickedCourseHoleId) ?? null
+        : null,
+    [pickedCourseHoleId, courseHoles],
+  )
+
+  const handlePersistHoleCoords = useCallback(
+    async (coords: {
+      teeLat: number
+      teeLng: number
+      basketLat: number
+      basketLng: number
+    }) => {
+      if (!pickedCourseHoleId) {
+        throw new Error('Pick a course hole before mapping it.')
+      }
+      await updateCourseHole(pickedCourseHoleId, coords)
+      // Reflect new coords locally so the satellite map renders immediately.
+      setCourseHoles(prev =>
+        prev.map(h => (h.id === pickedCourseHoleId ? { ...h, ...coords } : h)),
+      )
+    },
+    [pickedCourseHoleId],
+  )
+
   const handleStartRound = useCallback(async () => {
     setRoundError(null)
     if (!user) {
@@ -923,6 +950,15 @@ export function HomePage() {
         baseLayout={holeToLieLayout(hole)}
         lieLayout={lieLayout}
         onLieLayoutChange={handleLieLayoutChange}
+        teeLat={pickedCourseHole?.teeLat ?? null}
+        teeLng={pickedCourseHole?.teeLng ?? null}
+        basketLat={pickedCourseHole?.basketLat ?? null}
+        basketLng={pickedCourseHole?.basketLng ?? null}
+        courseLat={pickedCourse?.lat ?? null}
+        courseLng={pickedCourse?.lon ?? null}
+        onPersistHoleCoords={
+          pickedCourseHoleId ? handlePersistHoleCoords : undefined
+        }
       />
       {roundActive && isPro && (
         <div className="card">

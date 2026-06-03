@@ -211,6 +211,12 @@ export interface CourseHole {
   mandos: ActiveMandoRoute[]
   /** Compass direction tee faces toward basket (live wind mapping). */
   teeBearing: TeeBearing
+  /** Optional GPS coordinate of the tee pad (decimal degrees). */
+  teeLat: number | null
+  teeLng: number | null
+  /** Optional GPS coordinate of the basket (decimal degrees). */
+  basketLat: number | null
+  basketLng: number | null
   notes: string | null
   createdBy: string | null
 }

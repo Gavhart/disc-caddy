@@ -46,6 +46,10 @@ interface CourseHoleRow {
   mando: MandoRoute | null
   mandos: ActiveMandoRoute[] | null
   tee_bearing: TeeBearing | null
+  tee_lat: number | null
+  tee_lng: number | null
+  basket_lat: number | null
+  basket_lng: number | null
   notes: string | null
   created_by: string | null
 }
@@ -88,6 +92,12 @@ function rowToHole(r: CourseHoleRow): CourseHole {
     treeLayouts,
     mandos,
     teeBearing: r.tee_bearing ?? 'north',
+    teeLat: r.tee_lat !== null && r.tee_lat !== undefined ? Number(r.tee_lat) : null,
+    teeLng: r.tee_lng !== null && r.tee_lng !== undefined ? Number(r.tee_lng) : null,
+    basketLat:
+      r.basket_lat !== null && r.basket_lat !== undefined ? Number(r.basket_lat) : null,
+    basketLng:
+      r.basket_lng !== null && r.basket_lng !== undefined ? Number(r.basket_lng) : null,
     notes: r.notes,
     createdBy: r.created_by,
   }
@@ -341,6 +351,10 @@ export async function updateCourseHole(
     treeLayouts: ActiveTreeLayout[]
     mandos: ActiveMandoRoute[]
     teeBearing: TeeBearing
+    teeLat: number | null
+    teeLng: number | null
+    basketLat: number | null
+    basketLng: number | null
     notes: string | null
   }>,
 ): Promise<void> {
@@ -362,6 +376,10 @@ export async function updateCourseHole(
     update.mando = patch.mandos[0] ?? 'none'
   }
   if (patch.teeBearing !== undefined) update.tee_bearing = patch.teeBearing
+  if (patch.teeLat !== undefined) update.tee_lat = patch.teeLat
+  if (patch.teeLng !== undefined) update.tee_lng = patch.teeLng
+  if (patch.basketLat !== undefined) update.basket_lat = patch.basketLat
+  if (patch.basketLng !== undefined) update.basket_lng = patch.basketLng
   if (patch.notes !== undefined) update.notes = patch.notes
 
   let { error } = await supabase.from('course_holes').update(update).eq('id', holeId)
@@ -373,6 +391,10 @@ export async function updateCourseHole(
     delete update.tree_layouts
     delete update.mando
     delete update.mandos
+    delete update.tee_lat
+    delete update.tee_lng
+    delete update.basket_lat
+    delete update.basket_lng
     ;({ error } = await supabase.from('course_holes').update(update).eq('id', holeId))
   }
   if (error) throw error

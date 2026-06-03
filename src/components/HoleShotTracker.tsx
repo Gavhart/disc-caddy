@@ -10,6 +10,7 @@ import {
 import { throwPhaseLabel } from '../lib/throwPhase'
 import { BagDisc, TeeBearing, ThrowStyle } from '../types'
 import { HoleProgressMap } from './HoleProgressMap'
+import { HoleSatelliteMap } from './HoleSatelliteMap'
 import { LieLayoutInput, LieLayoutValue } from './LieLayoutInput'
 import { ThrowDistanceMeasure, ThrowMeasureResult } from './ThrowDistanceMeasure'
 
@@ -37,6 +38,13 @@ export function HoleShotTracker({
   lieLayout,
   baseLayout,
   onLieLayoutChange,
+  teeLat = null,
+  teeLng = null,
+  basketLat = null,
+  basketLng = null,
+  courseLat = null,
+  courseLng = null,
+  onPersistHoleCoords,
 }: {
   holeDistance: number
   shots: HoleShot[]
@@ -48,6 +56,24 @@ export function HoleShotTracker({
   lieLayout?: Partial<LieLayoutValue>
   baseLayout: LieLayoutValue
   onLieLayoutChange?: (patch: Partial<LieLayoutValue>) => void
+  /** Optional GPS coordinates for the tee pad and basket on this hole. */
+  teeLat?: number | null
+  teeLng?: number | null
+  basketLat?: number | null
+  basketLng?: number | null
+  /** Course-level fallback center when the hole isn't mapped. */
+  courseLat?: number | null
+  courseLng?: number | null
+  /**
+   * Provided → satellite-map "Edit position" / "Map this hole" buttons appear
+   * and the tap-to-place editor saves through this callback.
+   */
+  onPersistHoleCoords?: (coords: {
+    teeLat: number
+    teeLng: number
+    basketLat: number
+    basketLng: number
+  }) => Promise<void>
 }) {
   const [mode, setMode] = useState<EntryMode>('throw')
   const [input, setInput] = useState('')
@@ -258,6 +284,20 @@ export function HoleShotTracker({
           <strong>{shots.length}</strong>
         </div>
       </div>
+
+      {(teeLat != null && teeLng != null && basketLat != null && basketLng != null) ||
+      onPersistHoleCoords ? (
+        <HoleSatelliteMap
+          teeLat={teeLat}
+          teeLng={teeLng}
+          basketLat={basketLat}
+          basketLng={basketLng}
+          holeDistance={holeDistance}
+          courseLat={courseLat}
+          courseLng={courseLng}
+          onSave={onPersistHoleCoords}
+        />
+      ) : null}
 
       {(shots.length > 0 || canAddThrows) && (
         <HoleProgressMap
