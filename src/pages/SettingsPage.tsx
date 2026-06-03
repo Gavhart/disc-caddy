@@ -504,8 +504,9 @@ export function SettingsPage() {
         <h2>Subscription</h2>
         {isNativeApp() && (
           <p className="muted small native-billing-note">
-            Subscriptions are managed on the Disc Caddy website. Pro status
-            syncs to this app when you're signed in.
+            Pro subscriptions aren't sold inside this app. If you have an
+            active Pro subscription, your Pro features sync here automatically
+            when you're signed in.
           </p>
         )}
         <div className="setting-row">

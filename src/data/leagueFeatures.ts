@@ -85,7 +85,7 @@ export const LEAGUE_CORE_FEATURES: LeagueFeature[] = [
   {
     id: 'mobile-scorecards',
     title: 'Mobile scorecards',
-    summary: 'Native iOS/Android apps with the same live scoring experience.',
+    summary: 'Native mobile scorecards with the same live scoring experience.',
     status: 'live',
     href: '/rounds',
   },

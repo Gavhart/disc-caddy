@@ -201,10 +201,9 @@ export function UpgradePage() {
           </div>
         </div>
 
-        {!PRO_BILLING_COMING_SOON && !isStripeConfigured && (
+        {!PRO_BILLING_COMING_SOON && !isStripeConfigured && !isNativeApp() && (
           <p className="muted small">
-            Stripe isn&apos;t wired up yet — see the README to set up payments when
-            you&apos;re ready to charge.
+            Pro checkout isn&apos;t available yet — check back soon.
           </p>
         )}
       </div>

@@ -58,7 +58,7 @@ export async function startCheckout(
     throw new Error('Pro checkout is not available yet — check back shortly.')
   }
   if (!isWebCheckoutAvailable()) {
-    throw new Error('Pro subscriptions are managed on the Disc Caddy website.')
+    throw new Error('Pro subscriptions are not available in this app.')
   }
 
   const priceId = getStripePriceId(interval)
@@ -92,7 +92,7 @@ export async function startCheckout(
  */
 export async function openBillingPortal(): Promise<void> {
   if (!isWebCheckoutAvailable()) {
-    throw new Error('Billing is managed on the Disc Caddy website.')
+    throw new Error('Billing is not managed in this app.')
   }
   const { data, error } = await supabase.functions.invoke(
     'create-portal-session',

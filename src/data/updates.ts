@@ -153,11 +153,11 @@ export const RELEASES: ReleaseNote[] = [
   {
     version: '1.0.0',
     date: '2026-05-21',
-    title: 'Ready for App Store & Play',
+    title: 'Ready for the App Store',
     items: [
-      'iOS and Android apps — same account as the website, Pro syncs when you subscribe on thedisccaddy.com',
+      'Native mobile app — same account everywhere, Pro entitlements sync to all your devices',
       'Store-ready privacy policy, account deletion, and native permissions for photos & location',
-      'Password reset emails always link to the website (works from the mobile app too)',
+      'Password reset emails work from the mobile app',
     ],
   },
   {
@@ -167,7 +167,7 @@ export const RELEASES: ReleaseNote[] = [
     items: [
       'Saving your home area on Community automatically imports nearby courses from DiscGolfAPI',
       'Courses within your search radius appear on the Library map and in Events without manual search',
-      'Pro pricing — $2.99/mo or $24.99/yr with a billing toggle on Upgrade',
+      'Pro pricing — $2.99/mo or $24.99/yr with a billing interval toggle',
     ],
   },
   {
@@ -244,7 +244,7 @@ export const RELEASES: ReleaseNote[] = [
     date: '2026-05-21',
     title: 'Pro checkout, invites, notifications & on-course polish',
     items: [
-      'Pro checkout live — Stripe billing on Upgrade and Settings (requires env + webhooks)',
+      'Pro membership now available',
       'Scorecard invites — friends get “Join my round at X?” before appearing on your card',
       'In-app alerts + optional email for scorecard invites and Community messages',
       'Community nav badge for unread messages and notifications',
@@ -281,7 +281,7 @@ export const RELEASES: ReleaseNote[] = [
       'Community matching fixes — players you see can actually receive messages; replies work in existing threads',
       'GPS home areas, search radius, and a mobile-friendly Community layout',
       'Profile hub — photo, display name, and settings links; hamburger nav on phone',
-      'Upgrade page lists current Pro perks; checkout is being wired up and will go live shortly',
+      'Pro perks page lists current member benefits',
     ],
   },
   {
@@ -326,7 +326,7 @@ export const RELEASES: ReleaseNote[] = [
       'Expanded recommendation breakdowns with aim guidance',
       'Course stepper with hole-by-hole layout details',
       'Player profile at signup — name, distance, hand, and throw style',
-      'Pro vs Free membership visible in your Supabase dashboard',
+      'Pro vs Free membership tracked on your account',
     ],
   },
   {
@@ -337,7 +337,7 @@ export const RELEASES: ReleaseNote[] = [
       'Arm-speed-aware disc recommendations from your bag',
       'Multiple bags, disc photos, and player distance tuning',
       'Shared course catalog with per-hole distances and doglegs',
-      'Stripe Pro subscription — unlimited bags and live-round features',
+      'Pro membership — unlimited bags and live-round features',
       'Fairway Sunset branding',
     ],
   },

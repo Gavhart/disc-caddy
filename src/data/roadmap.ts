@@ -123,7 +123,7 @@ export const ROADMAP_ITEMS: RoadmapItem[] = [
   {
     id: 'native-push',
     title: 'Native push notifications',
-    description: 'Scorecard invites, league news, and friend activity on iOS & Android.',
+    description: 'Scorecard invites, league news, and friend activity on mobile.',
     status: 'in_progress',
   },
   {

@@ -26,8 +26,12 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>Disc Caddy uses the camera so you can take a photo of a disc and add it to your bag.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Disc Caddy uses your location for live wind recommendations and to find nearby players and courses.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Disc Caddy saves disc photos you capture so you can add them to your bag.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Disc Caddy lets you choose photos for your profile and disc bag.</string>
 	<key>UIApplicationSceneManifest</key>

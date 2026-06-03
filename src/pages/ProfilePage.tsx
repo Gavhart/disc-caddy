@@ -155,7 +155,11 @@ export function ProfilePage() {
           <span className="profile-menu-copy">
             <strong>Subscription</strong>
             <span className="muted small">
-              {me.isPro ? 'Manage your Pro plan' : 'Upgrade or sync billing'}
+              {me.isPro
+                ? 'Your Pro plan'
+                : isWebCheckoutAvailable()
+                  ? 'Upgrade or sync billing'
+                  : 'Sync your plan'}
             </span>
           </span>
           <span className="profile-menu-chevron" aria-hidden>

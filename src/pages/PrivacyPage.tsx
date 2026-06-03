@@ -32,9 +32,6 @@ export function PrivacyPage() {
       <p>
         Disc Caddy (&quot;we&quot;, &quot;the app&quot;) helps disc golfers choose
         discs for a given hole. This policy describes what we collect and why.
-        It applies to the website at{' '}
-        <a href="https://thedisccaddy.com">thedisccaddy.com</a> and the iOS and
-        Android apps.
       </p>
       <h3>What we collect</h3>
       <ul>
@@ -61,8 +58,9 @@ export function PrivacyPage() {
           tracked in the background).
         </li>
         <li>
-          <strong>Subscription status</strong> — if you subscribe to Pro on the
-          website, we store your plan tier (Stripe handles payment details).
+          <strong>Subscription status</strong> — if you have an active Pro
+          subscription, we store your plan tier. Payment details are processed
+          by our payment provider and not stored on our servers.
         </li>
       </ul>
       <h3>How we use it</h3>
@@ -77,7 +75,8 @@ export function PrivacyPage() {
           <strong>Supabase</strong> — authentication, database, and file storage.
         </li>
         <li>
-          <strong>Stripe</strong> — subscription billing on the web (optional).
+          <strong>Stripe</strong> — payment processor for subscription billing
+          (optional).
         </li>
         <li>
           <strong>Open-Meteo</strong> — weather and geocoding when you search
@@ -100,12 +99,6 @@ export function PrivacyPage() {
           ).
         </li>
       </ul>
-      <h3>Mobile apps</h3>
-      <p>
-        Pro subscriptions are purchased on the website, not inside the iOS or
-        Android app. The mobile apps sync your account and Pro status when you
-        sign in with the same email.
-      </p>
       <h3>Your choices</h3>
       <p>
         You can delete your account anytime in Settings → Delete account. This
