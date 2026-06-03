@@ -3280,14 +3280,65 @@ select {
   margin-bottom: 8px;
 }
 
-.hole-progress-map {
+.hole-progress-map-stage {
+  position: relative;
   width: 100%;
   max-width: 280px;
-  display: block;
   margin: 0 auto;
+}
+
+.hole-progress-map {
+  width: 100%;
+  display: block;
   border-radius: 12px;
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--accent) 4%, var(--surface));
+}
+
+.hole-progress-map-zoom {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: color-mix(in srgb, var(--surface) 85%, transparent);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px;
+  backdrop-filter: blur(4px);
+}
+
+.hole-progress-map-zoom-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid transparent;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  padding: 0;
+}
+
+.hole-progress-map-zoom-btn:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
+.hole-progress-map-zoom-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.hole-progress-map-zoom-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
 }
 
 .hole-progress-map-fairway {

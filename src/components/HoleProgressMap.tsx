@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { HoleShot, holeProgress } from '../lib/holeShots'
 import {
   THROW_PHASE_COLORS,
@@ -10,6 +11,17 @@ const W = 220
 const H = 300
 const TEE = { x: W / 2, y: H - 36 }
 const BASKET = { x: W / 2, y: 36 }
+const CENTER = { x: (TEE.x + BASKET.x) / 2, y: (TEE.y + BASKET.y) / 2 }
+
+// Zoom bounds. zoom < 1 = zoomed out (more visible), zoom > 1 = zoomed in.
+const ZOOM_MIN = 0.4
+const ZOOM_MAX = 2.5
+const ZOOM_STEP = 1.25
+const ZOOM_DEFAULT = 1
+
+function clampZoom(z: number): number {
+  return Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, z))
+}
 
 function pinAlongLine(fraction: number): { x: number; y: number } {
   const t = Math.max(0, Math.min(1, fraction))
@@ -30,6 +42,7 @@ export function HoleProgressMap({
 }) {
   const progress = holeProgress(holeDistance, shots)
   const rotation = TEE_BEARING_DEG[teeBearing] ?? 0
+  const [zoom, setZoom] = useState<number>(ZOOM_DEFAULT)
 
   let traveled = 0
   const pins = shots.map((shot, i) => {
@@ -50,63 +63,115 @@ export function HoleProgressMap({
       ? progress.remaining / holeDistance
       : 0
 
+  // viewBox scales around the canvas center so zoom in/out feels natural and
+  // rotated holes (non-north bearings) don't clip off the edge.
+  const viewW = W / zoom
+  const viewH = H / zoom
+  const viewX = CENTER.x - viewW / 2
+  const viewY = CENTER.y - viewH / 2
+  const atDefault = Math.abs(zoom - ZOOM_DEFAULT) < 0.001
+
+  function zoomIn() {
+    setZoom(z => clampZoom(z * ZOOM_STEP))
+  }
+  function zoomOut() {
+    setZoom(z => clampZoom(z / ZOOM_STEP))
+  }
+  function zoomReset() {
+    setZoom(ZOOM_DEFAULT)
+  }
+
   return (
     <div className="hole-progress-map-wrap">
       <div className="hole-progress-map-head">
         <strong>Hole map</strong>
         <span className="muted small">Tee → basket · pins show where each throw landed</span>
       </div>
-      <svg
-        className="hole-progress-map"
-        viewBox={`0 0 ${W} ${H}`}
-        role="img"
-        aria-label={`Hole progress map with ${shots.length} throw${shots.length === 1 ? '' : 's'}`}
-      >
-        <g transform={`rotate(${rotation} ${TEE.x} ${TEE.y})`}>
-          <line
-            x1={TEE.x}
-            y1={TEE.y}
-            x2={BASKET.x}
-            y2={BASKET.y}
-            className="hole-progress-map-fairway"
-          />
-          {progress.status === 'playing' && remainingFraction > 0 && (
+      <div className="hole-progress-map-stage">
+        <svg
+          className="hole-progress-map"
+          viewBox={`${viewX} ${viewY} ${viewW} ${viewH}`}
+          role="img"
+          aria-label={`Hole progress map with ${shots.length} throw${shots.length === 1 ? '' : 's'}`}
+        >
+          <g transform={`rotate(${rotation} ${TEE.x} ${TEE.y})`}>
             <line
-              x1={pinAlongLine(1 - remainingFraction).x}
-              y1={pinAlongLine(1 - remainingFraction).y}
+              x1={TEE.x}
+              y1={TEE.y}
               x2={BASKET.x}
               y2={BASKET.y}
-              className="hole-progress-map-remaining"
+              className="hole-progress-map-fairway"
             />
-          )}
-          <circle cx={TEE.x} cy={TEE.y} r={10} className="hole-progress-map-tee" />
-          <text x={TEE.x} y={TEE.y + 22} textAnchor="middle" className="hole-progress-map-label">
-            Tee
-          </text>
-          <g transform={`translate(${BASKET.x}, ${BASKET.y})`}>
-            <circle r={12} className="hole-progress-map-basket" />
-            <text y={24} textAnchor="middle" className="hole-progress-map-label">
-              Basket
-            </text>
-          </g>
-          {pins.map(pin => (
-            <g key={pin.key} transform={`translate(${pin.pos.x}, ${pin.pos.y})`}>
-              <circle
-                r={11}
-                fill={THROW_PHASE_COLORS[pin.phase as ThrowPhase]}
-                className="hole-progress-map-pin"
+            {progress.status === 'playing' && remainingFraction > 0 && (
+              <line
+                x1={pinAlongLine(1 - remainingFraction).x}
+                y1={pinAlongLine(1 - remainingFraction).y}
+                x2={BASKET.x}
+                y2={BASKET.y}
+                className="hole-progress-map-remaining"
               />
-              <text y={4} textAnchor="middle" className="hole-progress-map-pin-num">
-                {pin.num}
+            )}
+            <circle cx={TEE.x} cy={TEE.y} r={10} className="hole-progress-map-tee" />
+            <text x={TEE.x} y={TEE.y + 22} textAnchor="middle" className="hole-progress-map-label">
+              Tee
+            </text>
+            <g transform={`translate(${BASKET.x}, ${BASKET.y})`}>
+              <circle r={12} className="hole-progress-map-basket" />
+              <text y={24} textAnchor="middle" className="hole-progress-map-label">
+                Basket
               </text>
-              <title>
-                Throw {pin.num}: {throwPhaseLabel(pin.phase as ThrowPhase)}
-                {pin.discName ? ` · ${pin.discName}` : ''}
-              </title>
             </g>
-          ))}
-        </g>
-      </svg>
+            {pins.map(pin => (
+              <g key={pin.key} transform={`translate(${pin.pos.x}, ${pin.pos.y})`}>
+                <circle
+                  r={11}
+                  fill={THROW_PHASE_COLORS[pin.phase as ThrowPhase]}
+                  className="hole-progress-map-pin"
+                />
+                <text y={4} textAnchor="middle" className="hole-progress-map-pin-num">
+                  {pin.num}
+                </text>
+                <title>
+                  Throw {pin.num}: {throwPhaseLabel(pin.phase as ThrowPhase)}
+                  {pin.discName ? ` · ${pin.discName}` : ''}
+                </title>
+              </g>
+            ))}
+          </g>
+        </svg>
+        <div className="hole-progress-map-zoom" role="group" aria-label="Map zoom">
+          <button
+            type="button"
+            className="hole-progress-map-zoom-btn"
+            onClick={zoomOut}
+            disabled={zoom <= ZOOM_MIN + 0.001}
+            aria-label="Zoom out"
+            title="Zoom out"
+          >
+            −
+          </button>
+          <button
+            type="button"
+            className="hole-progress-map-zoom-btn"
+            onClick={zoomReset}
+            disabled={atDefault}
+            aria-label="Reset zoom"
+            title="Reset zoom"
+          >
+            ⌖
+          </button>
+          <button
+            type="button"
+            className="hole-progress-map-zoom-btn"
+            onClick={zoomIn}
+            disabled={zoom >= ZOOM_MAX - 0.001}
+            aria-label="Zoom in"
+            title="Zoom in"
+          >
+            +
+          </button>
+        </div>
+      </div>
       <div className="hole-progress-map-legend">
         {(['drive', 'approach', 'putt'] as const).map(phase => (
           <span key={phase} className="hole-progress-map-legend-item">
