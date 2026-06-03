@@ -9,7 +9,6 @@ import { FriendActivityFeed } from '../components/FriendActivityFeed'
 import { WeeklyChallengesPanel } from '../components/WeeklyChallengesPanel'
 import { PlayerProgressPanel } from '../components/PlayerProgressPanel'
 import { fetchMyHomeCities, formatCityLabel } from '../lib/community'
-import { isWebCheckoutAvailable } from '../lib/platform'
 import { HomeCity } from '../types'
 
 function handLabel(hand: 'left' | 'right'): string {
@@ -148,24 +147,6 @@ export function ProfilePage() {
             ›
           </span>
         </Link>
-        <Link to="/settings#subscription" className="profile-menu-item card">
-          <span className="profile-menu-icon" aria-hidden>
-            ✨
-          </span>
-          <span className="profile-menu-copy">
-            <strong>Subscription</strong>
-            <span className="muted small">
-              {me.isPro
-                ? 'Your Pro plan'
-                : isWebCheckoutAvailable()
-                  ? 'Upgrade or sync billing'
-                  : 'Sync your plan'}
-            </span>
-          </span>
-          <span className="profile-menu-chevron" aria-hidden>
-            ›
-          </span>
-        </Link>
         <Link to="/settings#account" className="profile-menu-item card">
           <span className="profile-menu-icon" aria-hidden>
             ⚙️
@@ -205,12 +186,6 @@ export function ProfilePage() {
           </span>
         </Link>
       </div>
-
-      {!me.isPro && isWebCheckoutAvailable() && (
-        <Link to="/upgrade" className="btn-primary profile-upgrade-btn">
-          Upgrade to Pro
-        </Link>
-      )}
 
       <button type="button" className="btn-secondary profile-signout-btn" onClick={handleSignOut}>
         Sign out

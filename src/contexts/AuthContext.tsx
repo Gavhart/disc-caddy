@@ -11,6 +11,22 @@ import { supabase } from '../lib/supabase'
 import { fetchMe } from '../lib/profile'
 import { Me } from '../types'
 
+/**
+ * Disc Caddy is currently free for everyone — there is no paid tier. We
+ * force isPro = true at the AuthContext boundary so every gated feature
+ * (multi-bag, live rounds, messaging, stats, hole memory) is available
+ * without a subscription. Reintroduce real subscription handling here when
+ * we add Apple IAP + Stripe parity in a future release.
+ */
+function clampForPlatform(profile: Me | null): Me | null {
+  if (!profile) return profile
+  return {
+    ...profile,
+    isPro: true,
+    subscriptionTier: 'pro',
+  }
+}
+
 interface AuthContextValue {
   session: Session | null
   user: User | null
@@ -29,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const refreshMe = useCallback(async () => {
     try {
       const m = await fetchMe()
-      setMe(m)
+      setMe(clampForPlatform(m))
     } catch (err) {
       console.error('[auth] failed to fetch profile', err)
       setMe(null)

@@ -1,26 +1,9 @@
-import type { ReactNode } from 'react'
-import { Link } from 'react-router-dom'
-import { isWebCheckoutAvailable } from '../lib/platform'
-
-interface Props {
-  /** Short label for what Pro unlocks, e.g. "Live wind" */
-  feature: string
-  children?: ReactNode
-}
-
-/** Inline upsell shown when a Pro-only control is tapped while on free tier. */
-export function ProGate({ feature, children }: Props) {
-  return (
-    <div className="pro-gate">
-      <p className="pro-gate-text">
-        <strong>{feature}</strong> is a Pro feature.
-        {children}
-      </p>
-      {isWebCheckoutAvailable() && (
-        <Link to="/upgrade" className="btn-secondary pro-gate-cta">
-          Upgrade to Pro
-        </Link>
-      )}
-    </div>
-  )
+/**
+ * Disc Caddy is currently free for everyone — every feature is unlocked at
+ * the AuthContext level (isPro = true). ProGate is kept as a no-op stub so
+ * existing call sites keep compiling; bring it back to life when a paid tier
+ * actually exists again.
+ */
+export function ProGate(_props: { feature: string; children?: React.ReactNode }): null {
+  return null
 }

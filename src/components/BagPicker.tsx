@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Bag } from '../types'
-import { useAuth } from '../contexts/AuthContext'
-import { FREE_TIER } from '../lib/subscription'
-import { isWebCheckoutAvailable } from '../lib/platform'
 
 interface Props {
   bags: Bag[]
@@ -23,10 +20,6 @@ export function BagPicker({
   onRename,
   compact = false,
 }: Props) {
-  const { me } = useAuth()
-  const isPro = me?.isPro ?? false
-  const reachedFreeLimit = !isPro && bags.length >= FREE_TIER.maxBags
-
   const [creating, setCreating] = useState(false)
   const [name, setName] = useState('')
   const [renaming, setRenaming] = useState(false)
@@ -146,19 +139,6 @@ export function BagPicker({
           <button onClick={() => setCreating(false)} className="link-button">
             Cancel
           </button>
-        </div>
-      ) : reachedFreeLimit ? (
-        <div className="paywall-inline">
-          <span className="muted small">
-            {isWebCheckoutAvailable()
-              ? 'Free plan: 1 bag. Upgrade for unlimited bags.'
-              : 'Free plan: 1 bag.'}
-          </span>
-          {isWebCheckoutAvailable() && (
-            <Link to="/upgrade" className="btn-secondary">
-              Upgrade
-            </Link>
-          )}
         </div>
       ) : (
         !renaming &&

@@ -86,11 +86,6 @@ export function LeaguePairRoundModal({ pair, isPro, onClose, onError }: Props) {
           <strong>{teamLabel}</strong> — both partners get the same scorecard and can update their
           own lines.
         </p>
-        {!isPro && (
-          <p className="league-pair-round-pro-note">
-            Live scorecards are a Pro feature. Upgrade to start a team round.
-          </p>
-        )}
         {loading ? (
           <p className="muted">Loading…</p>
         ) : (

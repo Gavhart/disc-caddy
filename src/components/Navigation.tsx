@@ -1,6 +1,5 @@
 import { NavLink, useLocation } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { isWebCheckoutAvailable } from '../lib/platform'
 import {
   isLibraryRoute,
   isPlayRoute,
@@ -52,11 +51,6 @@ export function Navigation() {
                 </NavLink>
               ))}
               <NotificationsBell count={communityBadgeCount} className="nav-bell-desktop" />
-              {me && !me.isPro && isWebCheckoutAvailable() && (
-                <NavLink to="/upgrade" className="nav-upgrade">
-                  Upgrade
-                </NavLink>
-              )}
             </div>
           </div>
         </div>

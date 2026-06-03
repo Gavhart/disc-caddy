@@ -1,12 +1,7 @@
-import { Link } from 'react-router-dom'
 import { PageHeader } from '../components/PageHeader'
 import { HubCard } from '../components/HubCard'
-import { useAuth } from '../contexts/AuthContext'
-import { isWebCheckoutAvailable } from '../lib/platform'
 
 export function LibraryHubPage() {
-  const { me } = useAuth()
-
   return (
     <div className="container hub-page">
       <PageHeader
@@ -37,11 +32,7 @@ export function LibraryHubPage() {
           to="/stats"
           icon="📈"
           title="Player stats"
-          description={
-            me?.isPro
-              ? 'Trends, birdies, and disc performance.'
-              : 'Pro — scoring trends and disc analytics.'
-          }
+          description="Trends, birdies, and disc performance."
         />
         <HubCard
           to="/practice"
@@ -56,13 +47,6 @@ export function LibraryHubPage() {
           description="Hole notes, strategy, and your scoring history per course."
         />
       </div>
-
-      {!me?.isPro && isWebCheckoutAvailable() && (
-        <p className="hub-footnote muted small">
-          Several library tools are free.{' '}
-          <Link to="/upgrade">Upgrade to Pro</Link> for stats, messaging, and more.
-        </p>
-      )}
     </div>
   )
 }

@@ -129,7 +129,7 @@ export const RELEASES: ReleaseNote[] = [
       'Custom hole distance fixes — clear and retype distance; long holes no longer snap to bad picks when the field is empty',
       'Field practice (Library) — pick a disc, measure throw distance, log a session, and see a bag distance map with gap callouts',
       'Throw-distance GPS in field practice — mark release → mark landing for open-field sessions',
-      'One-tap “Use last pick” and “In the basket” shortcuts in hole progress; Pro live rounds auto-log throws to the stack',
+      'One-tap “Use last pick” and “In the basket” shortcuts in hole progress; live rounds auto-log throws to the stack',
     ],
   },
   {
@@ -155,7 +155,7 @@ export const RELEASES: ReleaseNote[] = [
     date: '2026-05-21',
     title: 'Ready for the App Store',
     items: [
-      'Native mobile app — same account everywhere, Pro entitlements sync to all your devices',
+      'Native mobile app — same account everywhere, all your data syncs across devices',
       'Store-ready privacy policy, account deletion, and native permissions for photos & location',
       'Password reset emails work from the mobile app',
     ],
@@ -167,7 +167,7 @@ export const RELEASES: ReleaseNote[] = [
     items: [
       'Saving your home area on Community automatically imports nearby courses from DiscGolfAPI',
       'Courses within your search radius appear on the Library map and in Events without manual search',
-      'Pro pricing — $2.99/mo or $24.99/yr with a billing interval toggle',
+      'Tournament-ready leaderboards',
     ],
   },
   {
@@ -225,7 +225,7 @@ export const RELEASES: ReleaseNote[] = [
     date: '2026-05-21',
     title: 'Stats, formats, leagues & the full power-user stack',
     items: [
-      'Player stats dashboard (Pro) — averages, birdies, trends, and disc performance',
+      'Player stats dashboard — averages, birdies, trends, and disc performance',
       'Round formats — stroke, Stableford, skins, and best ball with live standings',
       'Course playbook — per-hole strategy, notes, and your last 3 scores',
       'Weekly challenges on Profile — birdies, rounds played, squad goals',
@@ -242,9 +242,9 @@ export const RELEASES: ReleaseNote[] = [
   {
     version: '0.5.0',
     date: '2026-05-21',
-    title: 'Pro checkout, invites, notifications & on-course polish',
+    title: 'Invites, notifications & on-course polish',
     items: [
-      'Pro membership now available',
+      'Member features unlocked for everyone',
       'Scorecard invites — friends get “Join my round at X?” before appearing on your card',
       'In-app alerts + optional email for scorecard invites and Community messages',
       'Community nav badge for unread messages and notifications',
@@ -266,22 +266,22 @@ export const RELEASES: ReleaseNote[] = [
       'Friends on Profile — send requests, accept invites, and build a friends list',
       'One-tap add friends to your scorecard from the + Player panel',
       'Live group scorecards — everyone on the card sees score updates in real time',
-      'Each player enters their own scores; friends can join without Pro',
+      'Each player enters their own scores; friends can join any round',
       'Completed group rounds show up in Round history for every player at that course',
     ],
   },
   {
     version: '0.3.3',
     date: '2026-05-21',
-    title: 'Hole memory, Community inbox & Pro messaging',
+    title: 'Hole memory, Community inbox & messaging',
     items: [
-      'Hole memory (Pro) — on a course hole, see your last logged disc and result (e.g. “you threw a Buzzz and parred”) and get it recommended again',
+      'Hole memory — on a course hole, see your last logged disc and result (e.g. “you threw a Buzzz and parred”) and get it recommended again',
       'Dedicated Messages page with threaded conversations and replies',
-      'Community messaging is Pro-only; free accounts can still browse Community and read inbound messages',
+      'Community messaging available to everyone',
       'Community matching fixes — players you see can actually receive messages; replies work in existing threads',
       'GPS home areas, search radius, and a mobile-friendly Community layout',
       'Profile hub — photo, display name, and settings links; hamburger nav on phone',
-      'Pro perks page lists current member benefits',
+      'Updated Player profile + settings',
     ],
   },
   {
@@ -319,14 +319,14 @@ export const RELEASES: ReleaseNote[] = [
   {
     version: '0.2.0',
     date: '2026-05-21',
-    title: 'Pro round tracking & smarter picks',
+    title: 'Round tracking & smarter picks',
     items: [
-      'Live round mode — log your disc pick hole-by-hole (Pro)',
+      'Live round mode — log your disc pick hole-by-hole',
       'Live wind from your GPS location — override on the wind rose anytime',
       'Expanded recommendation breakdowns with aim guidance',
       'Course stepper with hole-by-hole layout details',
       'Player profile at signup — name, distance, hand, and throw style',
-      'Pro vs Free membership tracked on your account',
+      'Player profile saved to your account',
     ],
   },
   {
@@ -337,7 +337,7 @@ export const RELEASES: ReleaseNote[] = [
       'Arm-speed-aware disc recommendations from your bag',
       'Multiple bags, disc photos, and player distance tuning',
       'Shared course catalog with per-hole distances and doglegs',
-      'Pro membership — unlimited bags and live-round features',
+      'Unlimited bags and live-round features for everyone',
       'Fairway Sunset branding',
     ],
   },

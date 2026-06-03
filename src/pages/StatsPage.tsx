@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { ProGate } from '../components/ProGate'
-import { isWebCheckoutAvailable } from '../lib/platform'
 import { fetchCaddyAdherenceStats, fetchDiscPerformanceStats, fetchPlayerStatsDashboard, fetchThrowPhaseStats } from '../lib/stats'
 import { CaddyAdherencePanel } from '../components/CaddyAdherencePanel'
 import { formatScoreToPar } from '../lib/rounds'
@@ -40,24 +38,6 @@ export function StatsPage() {
       )
       .finally(() => setLoading(false))
   }, [me?.isPro])
-
-  if (!me?.isPro) {
-    return (
-      <div className="container">
-        <div className="card">
-          <h2>Player stats</h2>
-          <ProGate feature="Player stats dashboard">
-            See scoring trends, birdie counts, and which discs perform best for you.
-          </ProGate>
-          {isWebCheckoutAvailable() && (
-            <Link to="/upgrade" className="btn-primary" style={{ marginTop: 12 }}>
-              Upgrade to Pro
-            </Link>
-          )}
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="container stats-page">

@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
 import { signOut } from '../lib/auth'
 import { deleteAccount } from '../lib/account'
-import { isStripeConfigured, openBillingPortal, PRO_BILLING_COMING_SOON, syncSubscription } from '../lib/subscription'
-import { isNativeApp, isWebCheckoutAvailable } from '../lib/platform'
 import { ProfileNameEditor } from '../components/ProfileNameEditor'
 import { PageHeader } from '../components/PageHeader'
 import { ProfilePhotoUploader } from '../components/ProfilePhotoUploader'
@@ -17,9 +15,6 @@ import { Hand, ThrowStyle } from '../types'
 export function SettingsPage() {
   const { user, me, refreshMe } = useAuth()
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const [busy, setBusy] = useState(false)
-  const [syncing, setSyncing] = useState(false)
   const [savingPlayer, setSavingPlayer] = useState(false)
   const [deletingAccount, setDeletingAccount] = useState(false)
   const [playerError, setPlayerError] = useState<string | null>(null)
@@ -36,19 +31,6 @@ export function SettingsPage() {
   const [venmoUsername, setVenmoUsername] = useState('')
   const [savingVenmo, setSavingVenmo] = useState(false)
   const [venmoError, setVenmoError] = useState<string | null>(null)
-
-  // After Stripe Checkout redirects here, pull fresh subscription state.
-  useEffect(() => {
-    if (searchParams.get('upgraded') !== '1') return
-    setSyncing(true)
-    syncSubscription()
-      .then(() => refreshMe())
-      .catch(err => console.error('[settings] subscription sync failed', err))
-      .finally(() => {
-        setSyncing(false)
-        navigate('/settings', { replace: true })
-      })
-  }, [searchParams, refreshMe, navigate])
 
   useEffect(() => {
     if (!me) return
@@ -189,29 +171,6 @@ export function SettingsPage() {
       alert(err instanceof Error ? err.message : 'Could not delete account')
     } finally {
       setDeletingAccount(false)
-    }
-  }
-
-  async function handleBilling() {
-    setBusy(true)
-    try {
-      await openBillingPortal()
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Could not open billing portal')
-    } finally {
-      setBusy(false)
-    }
-  }
-
-  async function handleSyncSubscription() {
-    setSyncing(true)
-    try {
-      await syncSubscription()
-      await refreshMe()
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Could not sync subscription')
-    } finally {
-      setSyncing(false)
     }
   }
 
@@ -495,79 +454,6 @@ export function SettingsPage() {
                 keys on the <code>dispatch-notification</code> edge function. Run{' '}
                 <code>node scripts/generate-vapid.mjs</code> to generate a key pair.
               </p>
-            )}
-          </>
-        )}
-      </div>
-
-      <div className="card settings-section" id="subscription">
-        <h2>Subscription</h2>
-        {isNativeApp() && (
-          <p className="muted small native-billing-note">
-            Pro subscriptions aren't sold inside this app. If you have an
-            active Pro subscription, your Pro features sync here automatically
-            when you're signed in.
-          </p>
-        )}
-        <div className="setting-row">
-          <span className="setting-label">Plan</span>
-          <span>
-            {me.isPro ? (
-              <span className="pill pill-pro">Pro</span>
-            ) : (
-              <span className="pill">Free</span>
-            )}
-          </span>
-        </div>
-        <div className="setting-row">
-          <span className="setting-label">Status</span>
-          <span>{me.subscriptionStatus}</span>
-        </div>
-        {me.subscriptionPeriodEnd && (
-          <div className="setting-row">
-            <span className="setting-label">
-              {me.subscriptionStatus === 'canceled' ? 'Ends' : 'Renews'}
-            </span>
-            <span>
-              {new Date(me.subscriptionPeriodEnd).toLocaleDateString()}
-            </span>
-          </div>
-        )}
-        {me.isPro ? (
-          isStripeConfigured &&
-          isWebCheckoutAvailable() && (
-            <button
-              className="btn-secondary"
-              onClick={handleBilling}
-              disabled={busy}
-            >
-              {busy ? 'Opening…' : 'Manage billing'}
-            </button>
-          )
-        ) : (
-          <>
-            {PRO_BILLING_COMING_SOON && (
-              <p className="muted small">
-                Pro checkout is being set up — see the{' '}
-                <Link to="/upgrade">Upgrade page</Link> for plan details. Billing
-                will be available shortly.
-              </p>
-            )}
-            {isWebCheckoutAvailable() && !PRO_BILLING_COMING_SOON && (
-              <Link to="/upgrade" className="btn-primary">
-                Upgrade to Pro
-              </Link>
-            )}
-            {isStripeConfigured && isWebCheckoutAvailable() && (
-              <button
-                type="button"
-                className="btn-secondary"
-                onClick={handleSyncSubscription}
-                disabled={syncing}
-                style={{ marginTop: 10 }}
-              >
-                {syncing ? 'Syncing…' : 'Already subscribed? Sync status'}
-              </button>
             )}
           </>
         )}

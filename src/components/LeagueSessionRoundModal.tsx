@@ -89,11 +89,6 @@ export function LeagueSessionRoundModal({ card, isPro, onClose, onError }: Props
           <strong>{card.label}</strong> — {roster}. Everyone on this card gets the same live
           scorecard.
         </p>
-        {!isPro && (
-          <p className="league-pair-round-pro-note">
-            Live scorecards are a Pro feature. Upgrade to start a card round.
-          </p>
-        )}
         {loading ? (
           <p className="muted">Loading…</p>
         ) : (

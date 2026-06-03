@@ -1,11 +1,9 @@
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ActivityNotificationsPanel } from '../components/ActivityNotificationsPanel'
-import { ProGate } from '../components/ProGate'
 import { PageHeader } from '../components/PageHeader'
 import { useAuth } from '../contexts/AuthContext'
 import { useAppNotifications } from '../hooks/useAppNotifications'
-import { isWebCheckoutAvailable } from '../lib/platform'
 import { markCommunityMessageNotificationsRead } from '../lib/notifications'
 import {
   buildCommunityThreads,
@@ -195,13 +193,6 @@ export function CommunityMessagesPage() {
                 {sending ? 'Sending…' : 'Send reply'}
               </button>
             </form>
-          ) : !me.isPro ? (
-            <div className="community-thread-compose">
-              <ProGate feature="Community messaging">
-                {' '}
-                You can still read messages here on the free plan.
-              </ProGate>
-            </div>
           ) : (
             <p className="community-thread-compose-hint muted small">
               Turn on Community on the{' '}
@@ -217,11 +208,7 @@ export function CommunityMessagesPage() {
     <div className="container community-messages-page">
       <PageHeader
         title="Messages"
-        description={
-          me.isPro
-            ? 'Conversations with players in your home areas.'
-            : 'Read messages from nearby players. Upgrade to Pro to send and reply.'
-        }
+        description="Conversations with players in your home areas."
         backTo="/social"
         backLabel="Social"
       />
@@ -250,24 +237,9 @@ export function CommunityMessagesPage() {
         <div className="card">
           <p className="muted">No direct messages yet.</p>
           <p className="muted small">
-            {me.isPro ? (
-              <>
-                Event alerts and friend activity show in <strong>Updates</strong> above.
-                To start a chat, find players on the{' '}
-                <Link to="/community">Community page</Link>.
-              </>
-            ) : (
-              <>
-                When a Pro player messages you, it will show up here. Alerts about events
-                and friends appear in <strong>Updates</strong> above.
-                {isWebCheckoutAvailable() && (
-                  <>
-                    {' '}
-                    <Link to="/upgrade">Upgrade to Pro</Link> to start conversations.
-                  </>
-                )}
-              </>
-            )}
+            Event alerts and friend activity show in <strong>Updates</strong> above.
+            To start a chat, find players on the{' '}
+            <Link to="/community">Community page</Link>.
           </p>
         </div>
       ) : (

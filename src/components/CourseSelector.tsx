@@ -6,8 +6,6 @@ import {
   listCourseSummaries,
   listHolesForCourse,
 } from '../lib/courses'
-import { isWebCheckoutAvailable } from '../lib/platform'
-
 interface Props {
   /** Currently selected course id, or null. */
   courseId: string | null
@@ -370,20 +368,7 @@ function RoundView({
                   </p>
                 )}
               </>
-            ) : (
-              <p className="muted small">
-                {isWebCheckoutAvailable() ? (
-                  <>
-                    <Link to="/upgrade" className="link-button">
-                      Upgrade to Pro
-                    </Link>{' '}
-                    to log throws and keep score hole-by-hole during a round.
-                  </>
-                ) : (
-                  'Logging throws and keeping score hole-by-hole during a round is a Pro feature.'
-                )}
-              </p>
-            )}
+            ) : null}
           </div>
 
           <div className="round-stepper">

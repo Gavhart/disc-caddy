@@ -57,26 +57,16 @@ export function PrivacyPage() {
           location&quot; for wind, community matching, or nearby courses (not
           tracked in the background).
         </li>
-        <li>
-          <strong>Subscription status</strong> — if you have an active Pro
-          subscription, we store your plan tier. Payment details are processed
-          by our payment provider and not stored on our servers.
-        </li>
       </ul>
       <h3>How we use it</h3>
       <p>
-        To power recommendations, sync your data across devices, connect you with
-        nearby players, and manage your subscription. We do not sell your personal
-        data.
+        To power recommendations, sync your data across devices, and connect you
+        with nearby players. We do not sell your personal data.
       </p>
       <h3>Third parties</h3>
       <ul>
         <li>
           <strong>Supabase</strong> — authentication, database, and file storage.
-        </li>
-        <li>
-          <strong>Stripe</strong> — payment processor for subscription billing
-          (optional).
         </li>
         <li>
           <strong>Open-Meteo</strong> — weather and geocoding when you search

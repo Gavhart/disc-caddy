@@ -14,13 +14,11 @@ import {
   setDefaultBag,
   updateBagDisc,
 } from '../lib/bags'
-import { FREE_TIER } from '../lib/subscription'
-import { isWebCheckoutAvailable } from '../lib/platform'
 import { Bag, BagDisc } from '../types'
 
 export function BagsListPage() {
   const { me } = useAuth()
-  const isPro = me?.isPro ?? false
+  void me
   const [bags, setBags] = useState<Bag[]>([])
   const [selectedBagId, setSelectedBagId] = useState<string | null>(null)
   const [discs, setDiscs] = useState<BagDisc[]>([])
@@ -55,12 +53,10 @@ export function BagsListPage() {
       .catch(err => setError(err instanceof Error ? err.message : 'Load failed'))
   }, [selectedBagId])
 
-  const reachedFreeLimit = !isPro && bags.length >= FREE_TIER.maxBags
   const selectedBag = bags.find(b => b.id === selectedBagId) ?? null
 
   const handleCreate = useCallback(async () => {
     if (!newName.trim()) return
-    if (reachedFreeLimit) return
     setBusy(true)
     try {
       const created = await createBag(newName.trim())
@@ -73,7 +69,7 @@ export function BagsListPage() {
     } finally {
       setBusy(false)
     }
-  }, [newName, reachedFreeLimit])
+  }, [newName])
 
   const handleRename = useCallback(async (id: string) => {
     if (!editName.trim()) return
@@ -165,7 +161,7 @@ export function BagsListPage() {
       <div className="card">
         <div className="card-header">
           <h2>Your Bags</h2>
-          {!creating && !reachedFreeLimit && (
+          {!creating && (
             <button
               type="button"
               className="btn-secondary"
@@ -211,25 +207,6 @@ export function BagsListPage() {
             >
               Cancel
             </button>
-          </div>
-        )}
-
-        {reachedFreeLimit && (
-          <div className="paywall-inline">
-            <div>
-              <strong>Free plan: 1 bag.</strong>
-              {isWebCheckoutAvailable() && (
-                <>
-                  {' '}
-                  <span className="muted">Upgrade to add more.</span>
-                </>
-              )}
-            </div>
-            {isWebCheckoutAvailable() && (
-              <Link to="/upgrade" className="btn-secondary">
-                Upgrade
-              </Link>
-            )}
           </div>
         )}
 

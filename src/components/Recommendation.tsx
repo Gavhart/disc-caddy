@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from 'react-router-dom'
 import { HoleProgressStatus } from '../lib/holeShots'
 import { nextThrowPhase, throwPhasePickLabel } from '../lib/throwPhase'
-import { isWebCheckoutAvailable } from '../lib/platform'
 import { BagDisc, Hand, Recommendation as Rec, ThrowStyle } from '../types'
 import { ProGate } from './ProGate'
 
@@ -389,20 +387,7 @@ export function Recommendation({
                   disc from your bag, not just the top recommendation.
                 </p>
               </>
-            ) : (
-              <p className="muted small">
-                {isWebCheckoutAvailable() ? (
-                  <>
-                    <Link to="/upgrade" className="link-button">
-                      Upgrade to Pro
-                    </Link>{' '}
-                    to log throws during a live round.
-                  </>
-                ) : (
-                  'Logging throws during a live round is a Pro feature.'
-                )}
-              </p>
-            )}
+            ) : null}
           </div>
         )}
       </div>
