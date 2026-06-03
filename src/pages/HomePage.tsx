@@ -140,7 +140,8 @@ export function HomePage() {
   const [holeShots, setHoleShots] = useState<HoleShot[]>([])
   const [lieLayout, setLieLayout] = useState<Partial<LieLayoutValue>>({})
 
-  const isPro = me?.isPro ?? false
+  const isPro = true
+  void me
 
   useEffect(() => localState.saveHole(hole), [hole])
 

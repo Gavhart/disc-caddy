@@ -346,7 +346,8 @@ export function LeagueDetailTabs({
   onSubmitRound: (roundId: string) => Promise<void>
 }) {
   const { me, user } = useAuth()
-  const isPro = me?.isPro ?? false
+  void me
+  const isPro = true
   const [tab, setTab] = useState<LeagueTab>('overview')
   const [messages, setMessages] = useState<LeagueMessage[]>([])
   const [announcements, setAnnouncements] = useState<LeagueAnnouncement[]>([])

@@ -66,11 +66,6 @@ export function ProfilePage() {
           <ProfileNameEditor variant="hero" />
           <p className="profile-email muted">{me.email}</p>
           <div className="profile-badges">
-            {me.isPro ? (
-              <span className="pill pill-pro">Pro</span>
-            ) : (
-              <span className="pill">Free</span>
-            )}
             {me.communityVisible && (
               <span className="pill profile-pill-community">On Community</span>
             )}

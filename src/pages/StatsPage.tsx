@@ -17,7 +17,7 @@ export function StatsPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!me?.isPro) {
+    if (!me) {
       setLoading(false)
       return
     }
@@ -37,7 +37,7 @@ export function StatsPage() {
         setError(err instanceof Error ? err.message : 'Could not load stats'),
       )
       .finally(() => setLoading(false))
-  }, [me?.isPro])
+  }, [me])
 
   return (
     <div className="container stats-page">

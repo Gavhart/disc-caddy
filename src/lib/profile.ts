@@ -32,10 +32,6 @@ export async function fetchMe(): Promise<Me | null> {
     // the column / view is older so the app stays functional pre-migration.
     primaryThrow: (data.primary_throw ?? 'backhand') as ThrowStyle,
     forehandMaxDistance: data.forehand_max_distance ?? data.max_distance,
-    subscriptionTier: data.subscription_tier,
-    subscriptionStatus: data.subscription_status,
-    subscriptionPeriodEnd: data.subscription_period_end,
-    isPro: data.is_pro,
     communityVisible: Boolean(data.community_visible),
     lookingForPlayers: Boolean(data.looking_for_players),
     avatarPath: data.avatar_path ?? null,

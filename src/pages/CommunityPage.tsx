@@ -4,7 +4,6 @@ import { CommunityCheckInSection } from '../components/CommunityCheckInSection'
 import { CommunityMessageModal } from '../components/CommunityMessageModal'
 import { PlayingTodayPanel } from '../components/PlayingTodayPanel'
 import { PageHeader } from '../components/PageHeader'
-import { ProGate } from '../components/ProGate'
 import { useAuth } from '../contexts/AuthContext'
 import { searchCoursesByName } from '../lib/courses'
 import {
@@ -111,7 +110,7 @@ export function CommunityPage() {
   }, [me, loadAll])
 
   useEffect(() => {
-    if (!me?.isPro) {
+    if (!me?.id) {
       setActiveRoundId(null)
       return
     }
@@ -121,7 +120,7 @@ export function CommunityPage() {
         else setActiveRoundId(null)
       })
       .catch(() => setActiveRoundId(null))
-  }, [me?.isPro, me?.id])
+  }, [me?.id])
 
   useEffect(() => {
     const q = courseQuery.trim()
@@ -374,7 +373,7 @@ export function CommunityPage() {
     )
   }
 
-  const canMessage = me.isPro && me.lookingForPlayers && me.communityVisible
+  const canMessage = me.lookingForPlayers && me.communityVisible
   const needsLookingSave = lookingForPlayers && !me.lookingForPlayers
 
   const isSavedVisible = me.communityVisible && savedCities.length > 0
@@ -395,13 +394,7 @@ export function CommunityPage() {
       <div className="card community-callout">
         <p className="community-callout-lead">
           Opt in to appear on Community, then browse players within your search radius.
-          Messaging is a Pro feature.
         </p>
-        {!me.isPro && (
-          <p className="muted small community-pro-note">
-            Free accounts can browse; upgrade to send and reply to messages.
-          </p>
-        )}
       </div>
 
       <PlayingTodayPanel />
@@ -694,7 +687,7 @@ export function CommunityPage() {
       <div className="card">
         <h2 className="section-title">Players at your courses</h2>
         {inviteOk && <div className="form-success small">{inviteOk}</div>}
-        {activeRoundId && me.isPro && (
+        {activeRoundId && (
           <p className="muted small community-live-round-hint">
             You have a live scorecard — use <strong>Invite to scorecard</strong>{' '}
             to pull looking players onto your card.
@@ -746,7 +739,7 @@ export function CommunityPage() {
                     >
                       Message {m.displayName.split(' ')[0]}
                     </button>
-                    {activeRoundId && me.isPro && (
+                    {activeRoundId && (
                       <button
                         type="button"
                         className="btn-secondary community-action-btn"
@@ -759,8 +752,6 @@ export function CommunityPage() {
                       </button>
                     )}
                   </div>
-                ) : !me.isPro ? (
-                  <ProGate feature="Community messaging" />
                 ) : (
                   <p className="community-member-hint">
                     {needsLookingSave

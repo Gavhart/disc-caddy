@@ -110,9 +110,8 @@ export function CommunityMessagesPage() {
   }
 
   const unreadTotal = countUnreadCommunityMessages(messages)
-  const canStartNew = me.isPro && me.communityVisible && me.lookingForPlayers
+  const canStartNew = me.communityVisible && me.lookingForPlayers
   const canReplyInThread =
-    me.isPro &&
     me.communityVisible &&
     (activeThread != null ? activeThread.messages.length > 0 : canStartNew)
 

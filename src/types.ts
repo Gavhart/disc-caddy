@@ -245,15 +245,6 @@ export interface Me {
   primaryThrow: ThrowStyle
   /** Resolved at view time: falls back to maxDistance when null. */
   forehandMaxDistance: number
-  subscriptionTier: 'free' | 'pro'
-  subscriptionStatus:
-    | 'free'
-    | 'active'
-    | 'canceled'
-    | 'past_due'
-    | 'trialing'
-  subscriptionPeriodEnd: string | null
-  isPro: boolean
   /** Opt-in: visible to other members on the Community page. */
   communityVisible: boolean
   /** Opt-in: open to new card-mates; required to send community messages. */
