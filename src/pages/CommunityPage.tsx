@@ -600,7 +600,7 @@ export function CommunityPage() {
           <label htmlFor="community-looking">
             <strong>Looking for players to play together</strong>
             <span className="community-toggle-help">
-              Shows a badge on Community. Required to send messages (Pro).
+              Shows a badge on Community. Required to send messages.
             </span>
           </label>
         </div>

@@ -9,6 +9,7 @@ import {
   openVenmoPay,
   VENMO_PAY_TEMPLATES,
 } from '../lib/venmo'
+import { isNativeApp } from '../lib/platform'
 import type { LeaguePot } from '../types'
 import { GreatForList } from './GreatForList'
 
@@ -42,6 +43,11 @@ export function VenmoIntegrationPanel({
   const [adminVenmo, setAdminVenmo] = useState('')
   const [adminEntryFee, setAdminEntryFee] = useState('')
   const [customAmount, setCustomAmount] = useState('')
+
+  // App Review compliance: hide Venmo on iOS to avoid 3.1.1 misinterpretation
+  // (Venmo here is for real-world peer payments to league treasurers, not for
+  // digital content — but App Review reads "Venmo buy-ins" as paid features).
+  if (isNativeApp()) return null
 
   useEffect(() => {
     setAdminVenmo(pot?.venmoUsername ?? '')

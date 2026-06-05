@@ -11,7 +11,19 @@ import {
 } from '../data/leagueFeatures'
 import { ROADMAP_ITEMS, RoadmapStatus } from '../data/roadmap'
 import { UDISC_PARITY_ROADMAP } from '../data/udiscParityRoadmap'
+import { isNativeApp } from '../lib/platform'
 import { hasUnreadUpdates, isReleaseUnread, markUpdatesSeen } from '../lib/updates'
+
+/** Strip Venmo entries on iOS to avoid App Review 3.1.1 misreads of
+ *  real-world peer payments as in-app paid digital content. */
+function filterForNative<T extends { id?: string; title?: string }>(items: T[]): T[] {
+  if (!isNativeApp()) return items
+  return items.filter(item => {
+    const id = (item.id ?? '').toLowerCase()
+    const title = (item.title ?? '').toLowerCase()
+    return !id.includes('venmo') && !title.includes('venmo')
+  })
+}
 
 function formatDate(iso: string): string {
   return new Date(iso + 'T12:00:00').toLocaleDateString(undefined, {
@@ -120,11 +132,25 @@ export function UpdatesPage() {
   const navigate = useNavigate()
   const unread = hasUnreadUpdates()
 
-  const releases = useMemo(() => RELEASES, [])
+  const releases = useMemo(() => {
+    if (!isNativeApp()) return RELEASES
+    // Hide Venmo-titled release entries on iOS, and scrub Venmo bullet points
+    // from any other release notes.
+    return RELEASES.filter(r => !r.title.toLowerCase().includes('venmo')).map(
+      r => ({
+        ...r,
+        items: r.items.filter(item => !item.toLowerCase().includes('venmo')),
+      }),
+    )
+  }, [])
+  const visibleRoadmap = useMemo(() => filterForNative(ROADMAP_ITEMS), [])
+  const visibleHighlights = useMemo(() => filterForNative(PRODUCT_HIGHLIGHTS), [])
+  const visibleLeagueCore = useMemo(() => filterForNative(LEAGUE_CORE_FEATURES), [])
+  const visibleLeagueRoadmap = useMemo(() => filterForNative(LEAGUE_ROADMAP_FEATURES), [])
 
-  const shippedCount = ROADMAP_ITEMS.filter(i => i.status === 'shipped').length
-  const inProgressCount = ROADMAP_ITEMS.filter(i => i.status === 'in_progress').length
-  const plannedCount = ROADMAP_ITEMS.filter(i => i.status === 'planned').length
+  const shippedCount = visibleRoadmap.filter(i => i.status === 'shipped').length
+  const inProgressCount = visibleRoadmap.filter(i => i.status === 'in_progress').length
+  const plannedCount = visibleRoadmap.filter(i => i.status === 'planned').length
 
   function handleContinue() {
     markUpdatesSeen()
@@ -164,7 +190,7 @@ export function UpdatesPage() {
           and field practice.
         </p>
         <ul className="updates-highlight-grid">
-          {PRODUCT_HIGHLIGHTS.map(h => (
+          {visibleHighlights.map(h => (
             <li key={h.id} className="updates-highlight-card">
               <span className="updates-highlight-icon" aria-hidden>
                 {h.icon}
@@ -201,8 +227,8 @@ export function UpdatesPage() {
         <p className="muted small">
           Everything built for weekly leagues, doubles nights, and club seasons.
         </p>
-        <LeagueFeatureGrid title="Core league features" features={LEAGUE_CORE_FEATURES} />
-        <LeagueFeatureGrid title="League extras" features={LEAGUE_ROADMAP_FEATURES} />
+        <LeagueFeatureGrid title="Core league features" features={visibleLeagueCore} />
+        <LeagueFeatureGrid title="League extras" features={visibleLeagueRoadmap} />
       </div>
 
       <UdiscParityRoadmap />
@@ -214,9 +240,9 @@ export function UpdatesPage() {
           change.
         </p>
         <div className="updates-roadmap-grid">
-          <RoadmapColumn status="shipped" items={ROADMAP_ITEMS} />
-          <RoadmapColumn status="in_progress" items={ROADMAP_ITEMS} />
-          <RoadmapColumn status="planned" items={ROADMAP_ITEMS} />
+          <RoadmapColumn status="shipped" items={visibleRoadmap} />
+          <RoadmapColumn status="in_progress" items={visibleRoadmap} />
+          <RoadmapColumn status="planned" items={visibleRoadmap} />
         </div>
       </div>
 

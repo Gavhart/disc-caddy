@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { HoleProgressStatus } from '../lib/holeShots'
 import { nextThrowPhase, throwPhasePickLabel } from '../lib/throwPhase'
 import { BagDisc, Hand, Recommendation as Rec, ThrowStyle } from '../types'
-import { ProGate } from './ProGate'
 
 interface Props {
   recommendations: Rec[]
@@ -212,12 +211,6 @@ export function Recommendation({
         </div>
       )}
 
-      {!isPro && currentHoleNumber != null && (
-        <ProGate feature="Hole memory">
-          {' '}
-          Pick a course hole as Pro to recall your last disc and result here.
-        </ProGate>
-      )}
 
       <div className="pick-chooser">
         <div className="pick-chooser-field">

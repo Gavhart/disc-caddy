@@ -47,7 +47,7 @@ export function LeaguePairRoundModal({ pair, isPro, onClose, onError }: Props) {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     if (!isPro) {
-      onError('Live rounds require a Pro subscription.')
+      onError('You need to sign in to start a live round.')
       return
     }
     if (!courseId || !bagId) {

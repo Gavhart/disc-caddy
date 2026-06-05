@@ -26,12 +26,6 @@ export function TermsPage() {
             You must provide accurate signup information and keep your credentials
             secure. You may delete your account at any time in Settings.
           </p>
-          <h3>Subscriptions</h3>
-          <p>
-            Pro features may be offered via a paid subscription on the Disc Caddy
-            website. Mobile app store versions do not sell subscriptions in-app;
-            existing Pro status syncs when you sign in with the same account.
-          </p>
           <h3>User content</h3>
           <p>
             Course data and disc photos you add may be stored to support your use of

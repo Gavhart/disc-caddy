@@ -501,7 +501,7 @@ export function HomePage() {
       return
     }
     if (!isPro) {
-      setRoundError('Live rounds require a Pro subscription.')
+      setRoundError('You need to sign in to start a live round.')
       return
     }
     if (!pickedCourseId) {

@@ -43,7 +43,7 @@ export const PRODUCT_HIGHLIGHTS: ProductHighlight[] = [
     icon: '🏆',
     title: 'League platform',
     summary:
-      'Season standings, doubles pairs, shuffle draw, league night cards, chat, ace pots, Venmo buy-ins, rivalries, handicaps, and auto-submit.',
+      'Season standings, doubles pairs, shuffle draw, league night cards, chat, ace pots, rivalries, handicaps, and auto-submit.',
     href: '/social/leagues',
   },
   {

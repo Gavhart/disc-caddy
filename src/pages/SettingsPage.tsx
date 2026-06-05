@@ -10,6 +10,7 @@ import { setNotifyEmail } from '../lib/notifications'
 import { isPushSupported, registerForPushNotifications } from '../lib/pushNotifications'
 import { updatePlayer } from '../lib/profile'
 import { isValidVenmoUsername } from '../lib/venmo'
+import { isNativeApp } from '../lib/platform'
 import { Hand, ThrowStyle } from '../types'
 
 export function SettingsPage() {
@@ -216,32 +217,34 @@ export function SettingsPage() {
         </div>
       </div>
 
-      <div className="card settings-section" id="venmo">
-        <h2>Venmo</h2>
-        <p className="muted small">
-          Optional — league admins can send payouts to this handle. Buy-ins on league ace pots use
-          the treasurer Venmo set on each league.
-        </p>
-        <label>
-          Your Venmo username
-          <input
-            value={venmoUsername}
-            onChange={e => setVenmoUsername(e.target.value)}
-            placeholder="YourVenmoHandle"
-            autoComplete="off"
-            spellCheck={false}
-          />
-        </label>
-        {venmoError && <p className="form-error">{venmoError}</p>}
-        <button
-          type="button"
-          className="btn-secondary"
-          onClick={saveVenmoUsername}
-          disabled={savingVenmo}
-        >
-          {savingVenmo ? 'Saving…' : 'Save Venmo'}
-        </button>
-      </div>
+      {!isNativeApp() && (
+        <div className="card settings-section" id="venmo">
+          <h2>Venmo</h2>
+          <p className="muted small">
+            Optional — league admins can send payouts to this handle. Buy-ins on league ace pots use
+            the treasurer Venmo set on each league.
+          </p>
+          <label>
+            Your Venmo username
+            <input
+              value={venmoUsername}
+              onChange={e => setVenmoUsername(e.target.value)}
+              placeholder="YourVenmoHandle"
+              autoComplete="off"
+              spellCheck={false}
+            />
+          </label>
+          {venmoError && <p className="form-error">{venmoError}</p>}
+          <button
+            type="button"
+            className="btn-secondary"
+            onClick={saveVenmoUsername}
+            disabled={savingVenmo}
+          >
+            {savingVenmo ? 'Saving…' : 'Save Venmo'}
+          </button>
+        </div>
+      )}
 
       <div className="card settings-section" id="player">
         <h2>Player</h2>
